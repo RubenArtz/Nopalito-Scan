@@ -1,0 +1,87 @@
+<!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="108dp"
+        android:height="108dp"
+        android:viewportWidth="441.74"
+        android:viewportHeight="443.1">
+    <group
+            android:scaleX="0.4286802"
+            android:scaleY="0.43"
+            android:translateX="126.1874"
+            android:translateY="126.2835">
+        <path
+                android:fillColor="#dfe8ce"
+                android:pathData="m103.28,64.29 l173.8,-1.24 66.21,66.82 2.36,241.28 -243.55,2.47z"
+                android:strokeWidth="36.7123"
+                android:strokeColor="#7ef09f"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#ffffff"
+                android:pathData="m115.59,73.46 l158.54,-1.17 60.4,63.04 2.16,227.63 -222.17,2.33z"
+                android:strokeWidth="17.38"
+                android:strokeColor="#ffffff"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#19c367"
+                android:pathData="m146.52,252.82l74.71,0"
+                android:strokeWidth="22"
+                android:strokeColor="#92d892"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#19c367"
+                android:pathData="M146.52,209.91L277.93,209.91"
+                android:strokeWidth="22"
+                android:strokeColor="#92d892"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#00000000"
+                android:pathData="m15.21,99.06c0,-27.95 -2.99,-47.32 16.77,-67.08C51.74,12.21 71.11,15.21 99.06,15.21"
+                android:strokeWidth="30"
+                android:strokeColor="#ffffff"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#00000000"
+                android:pathData="M100.21,425.9C72.26,425.9 52.89,428.89 33.13,409.13 13.36,389.36 16.35,369.99 16.35,342.04"
+                android:strokeWidth="30"
+                android:strokeColor="#ffffff"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#00000000"
+                android:pathData="m340.04,427.9c27.95,0 47.32,2.99 67.08,-16.77 19.76,-19.76 16.77,-39.13 16.77,-67.08"
+                android:strokeWidth="30"
+                android:strokeColor="#ffffff"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+        <path
+                android:fillColor="#00000000"
+                android:pathData="m342.68,17.21c27.95,0 47.32,-2.99 67.08,16.77 19.76,19.76 16.77,39.13 16.77,67.08"
+                android:strokeWidth="30"
+                android:strokeColor="#ffffff"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"/>
+    </group>
+</vector>

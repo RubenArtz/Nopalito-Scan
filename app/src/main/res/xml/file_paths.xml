@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<paths>
+    <cache-path
+            name="pdfs"
+            path="pdfs/"/>
+    <!-- temp camera captures (used by imported signature camera flow) -->
+    <cache-path
+            name="temp_images"
+            path="temp_images/"/>
+    <external-path
+            name="external_files"
+            path="."/>
+    <!-- source images (to send the last captured image) -->
+    <files-path
+            name="sources"
+            path="sources/"/>
+    <!-- private backup of exported files (history preview/share) -->
+    <files-path
+            name="exports_backup"
+            path="exports_backup/"/>
+    <!-- materialized exported files for sharing/download when no backup exists -->
+    <cache-path
+            name="history_export_tmp"
+            path="history_export_tmp/"/>
+    <!-- cloud cached files (preview/share) -->
+    <files-path
+            name="cloud_cache"
+            path="cloud_cache/"/>
+    <!-- source images, when scanning via Intent (to send the last captured image) -->
+    <cache-path
+            name="session_sources"
+            path="sessions/"/>
+    <!-- Tools: temporary files for compression (input/output/cloud upload) -->
+    <cache-path
+            name="tools"
+            path="tools/"/>
+    <!-- QR generator: temp files written before sharing -->
+    <cache-path
+            name="qr_generated"
+            path="qr_generated/"/>
+</paths>

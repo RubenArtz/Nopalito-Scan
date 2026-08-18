@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<!--
+  Project-wide lint configuration.
+
+  UnsafeOptInUsageError / androidx.camera.core.ExperimentalGetImage:
+  `ImageProxy.getImage()` (used in CameraViewModel.analyzeQrFrame) is marked
+  with androidx's ExperimentalGetImage marker, but that marker is NOT annotated
+  with kotlin @RequiresOptIn -- the Kotlin compiler itself requires no opt-in
+  (it compiles clean without any annotation), so the Kotlin `@OptIn` form has
+  no effect and only lint's androidx.annotation.experimental check flags it.
+  The usage is safe: the null case is handled explicitly right after the call
+  (imageProxy.close() + early return). Project-wide opt-in is the documented
+  mechanism for exactly this case (see the lint explanation for this check).
+
+  IconLocation / res/drawable/icon.png:
+  UI-only icon (About screen, 88.dp with rounded clip), NOT the launcher icon
+  (the manifest uses @mipmap/ic_launcher). It is a raster logo rendered at a
+  fixed dp size, so moving it to drawable-nodpi would change its visual size
+  on different screen densities, and drawable-mdpi would be misleading; a
+  single densityless copy is intentional. Kept in place with this ignore.
+-->
+<lint>
+    <issue id="UnsafeOptInUsageError">
+        <option name="opt-in" value="androidx.camera.core.ExperimentalGetImage"/>
+    </issue>
+    <issue id="IconLocation">
+        <ignore path="res/drawable/icon.png"/>
+    </issue>
+</lint>
