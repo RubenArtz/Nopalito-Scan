@@ -37,6 +37,7 @@ import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import nopalito.app.AppContainer
+import nopalito.app.BuildConfig
 import nopalito.app.R
 import nopalito.app.domain.CapturedPage
 import nopalito.app.i18n.AppLocaleOverride
@@ -99,6 +100,10 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     val captureMode: StateFlow<nopalito.app.ui.screens.settings.CaptureMode> =
         _captureMode.asStateFlow()
 
+    /** Human-readable summary of the bound camera, e.g. "0.6x · HD" (debug only). */
+    private val _boundCameraInfo = MutableStateFlow<String?>(null)
+    val boundCameraInfo: StateFlow<String?> = _boundCameraInfo.asStateFlow()
+
     fun setAutoDetectEnabled(enabled: Boolean) {
         _autoDetectEnabled.value = enabled
     }
@@ -107,12 +112,17 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         _captureMode.value = mode
     }
 
+    /** Called by the camera binding with the lens/quality actually in use. */
+    fun setBoundCameraInfo(info: String?) {
+        _boundCameraInfo.value = info
+    }
+
     private val _events = MutableSharedFlow<CameraEvent>()
     val events = _events.asSharedFlow()
 
     private var _liveAnalysisState = MutableStateFlow(LiveAnalysisState())
     val liveAnalysisState: StateFlow<LiveAnalysisState> = _liveAnalysisState.asStateFlow()
-    private var quadStabilizer = QuadStabilizer()
+    private val liveAnalyzer = LiveDocumentAnalyzer(imageSegmentationService)
 
     private val _captureState = MutableStateFlow<CaptureState>(CaptureState.Idle)
     val captureState: StateFlow<CaptureState> = _captureState
@@ -180,7 +190,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     }
 
     fun resetLiveAnalysis() {
-        quadStabilizer = QuadStabilizer()
+        liveAnalyzer.reset()
         _liveAnalysisState.value = LiveAnalysisState()
     }
 
@@ -202,6 +212,12 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         }
     }
 
+    /**
+     * Runs on the dedicated ImageAnalysis executor. The analyzer is
+     * synchronous so CameraX `STRATEGY_KEEP_ONLY_LATEST` coalesces frames
+     * while this one is processed (stale frames are dropped, not queued).
+     * The ImageProxy is always closed, on every path.
+     */
     fun liveAnalysis(imageProxy: ImageProxy) {
         if (_captureState.value !is CaptureState.Idle || _importState.value !is ImportState.Idle) {
             imageProxy.close()
@@ -211,61 +227,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
             analyzeQrFrame(imageProxy)
             return
         }
-
-        viewModelScope.launch {
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            val startTime = System.currentTimeMillis()
-            val result = withContext(Dispatchers.IO) {
-                imageSegmentationService.runSegmentationAndReturn(imageProxy.toBitmap())
-            }
-            val segTime = System.currentTimeMillis() - startTime
-
-            result?.let {
-                val segmentation = result.segmentation
-                val maskSize = segmentation.maskSize()
-                val originalSize = ImageSize(imageProxy.width, imageProxy.height)
-                Log.d(
-                    "CameraVM",
-                    "Segmentation completed in ${segTime}ms, maskSize=${maskSize}, originalSize=${originalSize}, rotationDegrees=${rotationDegrees}"
-                )
-
-                val rawQuad = withContext(Dispatchers.Default) {
-                    val quad = detectDocumentQuad(segmentation, originalSize, Mode.LIVE_ANALYSIS)
-                    Log.d(
-                        "CameraVM",
-                        "detectDocumentQuad returned: ${if (quad != null) "Quad(${quad.topLeft}, ${quad.topRight}, ${quad.bottomRight}, ${quad.bottomLeft})" else "null"}"
-                    )
-                    quad?.rotate90(rotationDegrees / 90, maskSize)
-                }
-                Log.d(
-                    "CameraVM",
-                    "rawQuad after rotate90: ${if (rawQuad != null) "Quad(${rawQuad.topLeft}, ${rawQuad.topRight}, ${rawQuad.bottomRight}, ${rawQuad.bottomLeft})" else "null"}"
-                )
-
-                val binaryMaskProvider = {
-                    var binaryMask: Bitmap = segmentation.toBinaryMask()
-                    if (rotationDegrees != 0) {
-                        binaryMask = rotateBitmap(binaryMask, rotationDegrees.toFloat())
-                    }
-                    binaryMask
-                }
-                val stableQuad =
-                    quadStabilizer.update(rawQuad, maskSize.width.toInt(), maskSize.height.toInt())
-                Log.d(
-                    "CameraVM",
-                    "stableQuad: ${if (stableQuad != null) "PRESENT" else "null"}, autoDetect=${_autoDetectEnabled.value}"
-                )
-
-                _liveAnalysisState.value = LiveAnalysisState(
-                    inferenceTime = result.inferenceTime,
-                    binaryMaskProvider = binaryMaskProvider,
-                    maskSize = maskSize,
-                    stableQuad = stableQuad,
-                )
-            }
-
-            imageProxy.close()
-        }
+        _liveAnalysisState.value = liveAnalyzer.analyzeFrame(imageProxy)
     }
 
     private fun analyzeQrFrame(imageProxy: ImageProxy) {
@@ -371,6 +333,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
 
     override fun onCleared() {
         qrScanner.close()
+        liveAnalyzer.release()
         super.onCleared()
     }
 
@@ -380,9 +343,22 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
                 try {
                     val source = imageProxy.toBitmap()
                     val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+                    val captureStart = System.currentTimeMillis()
+                    if (BuildConfig.DEBUG) {
+                        Log.d(
+                            "Capture",
+                            "capture: ${imageProxy.width}x${imageProxy.height} format=${imageProxy.format} rot=${rotationDegrees} camera=${_boundCameraInfo.value ?: "?"}"
+                        )
+                    }
                     val page =
                         processCapturedImage(source, rotationDegrees, opticalMeasures, Mode.CAPTURE)
                     imageProxy.close()
+                    if (BuildConfig.DEBUG) {
+                        Log.d(
+                            "Capture",
+                            "processed: ${page.pageJpeg.bytes.size} bytes in ${System.currentTimeMillis() - captureStart}ms"
+                        )
+                    }
                     onCaptureProcessed(page)
                 } catch (e: RuntimeException) {
                     logger.e("Camera", "Failed to process captured image", e)

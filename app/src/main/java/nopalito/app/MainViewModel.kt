@@ -189,10 +189,11 @@ class MainViewModel(
      */
     fun setIneMode(enabled: Boolean) {
         _ineMode.value = enabled
-        if (enabled) {
-            _isIneDocument.value = true
-        }
-        imageRepository.setIneSession(_isIneDocument.value)
+        // Turning the mode off also ends the credential session: the persisted flag
+        // must be cleared, otherwise resuming the app would restore INE mode even
+        // though the user disabled it.
+        _isIneDocument.value = enabled
+        imageRepository.setIneSession(enabled)
     }
 
     /**

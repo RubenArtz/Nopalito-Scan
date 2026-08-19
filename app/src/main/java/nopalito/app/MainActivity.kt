@@ -41,9 +41,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.*
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -219,9 +222,16 @@ class MainActivity : FragmentActivity() {
                 val languageState by languageViewModel.uiState.collectAsStateWithLifecycle()
                 val permissionsOnboardingDone by
                 permissionsViewModel.isOnboardingDone.collectAsStateWithLifecycle()
-                if (!languageState.isConfigured || !languageState.isLegalComplete) {
+                val language = languageState
+                val permissionsDone = permissionsOnboardingDone
+                if (language == null || permissionsDone == null) {
+                    // First-run flags are still loading from disk: show a neutral
+                    // window background instead of flashing the onboarding screens
+                    // on every cold start.
+                    Box(modifier = Modifier.fillMaxSize())
+                } else if (!language.isConfigured || !language.isLegalComplete) {
                     var selectedLanguageCode by rememberSaveable {
-                        mutableStateOf(languageState.selectedLanguage.code)
+                        mutableStateOf(language.selectedLanguage.code)
                     }
                     var legalAccepted by rememberSaveable { mutableStateOf(false) }
                     OnboardingScreen(
@@ -238,7 +248,7 @@ class MainActivity : FragmentActivity() {
                             finish()
                         },
                     )
-                } else if (!permissionsOnboardingDone) {
+                } else if (!permissionsDone) {
                     // First run after the language selection: ask for the app's
                     // permissions one by one, then go to the main app.
                     PermissionsOnboardingScreen(

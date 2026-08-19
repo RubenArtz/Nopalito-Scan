@@ -48,13 +48,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.scale
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import nopalito.app.BuildConfig
 import nopalito.app.R
 import nopalito.app.ui.components.CameraPermissionState
 import nopalito.imageprocessing.*
@@ -70,6 +73,8 @@ fun CameraPreview(
     cameraPermission: CameraPermissionState,
     onError: (String, Throwable) -> Unit,
     onImageAnalyzed: ((ImageProxy) -> Unit)? = null,
+    onCameraBound: (String?) -> Unit = {},
+    torchEnabled: Boolean = false,
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
@@ -128,7 +133,7 @@ fun CameraPreview(
                 }
             )
 
-            LaunchedEffect(previewView, retryKey) {
+            LaunchedEffect(previewView, retryKey, torchEnabled) {
                 val view = previewView ?: return@LaunchedEffect
 
                 val provider = cameraProviderFuture.get()
@@ -141,6 +146,8 @@ fun CameraPreview(
                         captureController,
                         onImageAnalyzed = onImageAnalyzed,
                         analysisExecutor = analysisExecutor,
+                        onCameraBound = onCameraBound,
+                        torchEnabled = torchEnabled,
                     )
                 }
 
@@ -163,11 +170,27 @@ fun bindCameraUseCases(
     cameraProvider: ProcessCameraProvider,
     previewView: PreviewView,
     captureController: CameraCaptureController,
-    captureMode: nopalito.app.ui.screens.settings.CaptureMode = nopalito.app.ui.screens.settings.CaptureMode.BATCH,
     onImageAnalyzed: ((ImageProxy) -> Unit)? = null,
     analysisExecutor: java.util.concurrent.Executor? = null,
+    onCameraBound: (String?) -> Unit = {},
+    torchEnabled: Boolean = false,
 ) {
     cameraProvider.unbindAll()
+
+    // With the torch on, the ultra-wide lens is skipped: the auxiliary back
+    // cameras expose no flash unit of their own, so the default back camera
+    // is used instead (its torch actually works). Back to 0.6x when off.
+    val wideCameraId = if (torchEnabled) null else findUltraWideCameraId(cameraProvider)
+    val cameraSelector = if (wideCameraId != null) {
+        CameraSelector.Builder()
+            .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+            .addCameraFilter { infos ->
+                infos.filter { Camera2CameraInfo.from(it).getCameraId() == wideCameraId }
+            }
+            .build()
+    } else {
+        CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+    }
 
     val ratio_4_3 = ResolutionSelector.Builder()
         .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
@@ -175,21 +198,15 @@ fun bindCameraUseCases(
     val preview: Preview = Preview.Builder().setResolutionSelector(ratio_4_3).build()
     preview.surfaceProvider = previewView.surfaceProvider
 
-    val cameraSelector: CameraSelector =
-        CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
-
-    val imageCaptureMode =
-        if (captureMode == nopalito.app.ui.screens.settings.CaptureMode.INDIVIDUAL)
-            ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
-        else
-            ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
-
+    // Photos are always captured in HD: maximum quality and the highest
+    // resolution JPEG the device supports (best effort). ImageAnalysis is
+    // intentionally untouched: the live pipeline stays at low resolution.
     val imageCaptureBuilder = ImageCapture.Builder()
         .setResolutionSelector(
             ResolutionSelector.Builder()
                 .setResolutionStrategy(
                     ResolutionStrategy(
-                        Size(4400, 3300),
+                        Size(8160, 6120),
                         ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
                     )
                 )
@@ -198,7 +215,7 @@ fun bindCameraUseCases(
                 )
                 .build()
         )
-        .setCaptureMode(imageCaptureMode)
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
 
     Camera2Interop.Extender(imageCaptureBuilder)
         .setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
@@ -253,99 +270,194 @@ fun bindCameraUseCases(
         *useCases.toTypedArray()
     )
     captureController.cameraControl = camera.cameraControl
+    captureController.cameraHasFlashUnit = camera.cameraInfo.hasFlashUnit()
     captureController.setCameraCharacteristics(Camera2CameraInfo.from(camera.cameraInfo))
+    val cameraLabel = if (wideCameraId != null) "0.6x · HD" else "1x · HD"
+    onCameraBound(cameraLabel)
+    // Apply the requested torch as soon as the (flash-capable) camera is bound.
+    if (torchEnabled && camera.cameraInfo.hasFlashUnit()) {
+        camera.cameraControl.enableTorch(true)
+    }
+    if (BuildConfig.DEBUG) {
+        Log.d(
+            "Camera",
+            "bound camera=${Camera2CameraInfo.from(camera.cameraInfo).getCameraId()} " +
+                "label=$cameraLabel flashUnit=${camera.cameraInfo.hasFlashUnit()}"
+        )
+    }
 }
 
+@OptIn(ExperimentalCamera2Interop::class)
+private fun findUltraWideCameraId(provider: ProcessCameraProvider): String? {
+    val backLenses = provider.availableCameraInfos.mapNotNull { info ->
+        val camera2Info = Camera2CameraInfo.from(info)
+        val facing = camera2Info.getCameraCharacteristic(CameraCharacteristics.LENS_FACING)
+        if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
+            val focalLengths = camera2Info.getCameraCharacteristic(
+                CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS
+            )
+            val minFocal = focalLengths?.minOrNull()
+            if (minFocal != null) {
+                LensSpec(camera2Info.getCameraId(), minFocal.toDouble())
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    }
+    if (BuildConfig.DEBUG) {
+        Log.d(
+            "Camera",
+            "back lenses: ${backLenses.joinToString { "${it.id}:${it.minFocalLengthMm}mm" }}"
+        )
+    }
+    return pickUltraWideLens(backLenses)?.id
+}
+
+/**
+ * Draws the live document quadrilateral on top of the preview.
+ *
+ * Two separate states keep the drawing independent from the analysis thread:
+ * [LiveAnalysisState.stableQuad] is the raw tracked/detected target in
+ * sensor-orientation mask coordinates (written by the analyzer), while the
+ * displayed quad is integrated with a damped spring here on the UI side
+ * (animation frame clock) so the overlay follows the document smoothly
+ * without vibrating or jumping. Fade-in/fade-out is driven by the same loop,
+ * so appearing/disappearing is always animated.
+ *
+ * The mask -> PreviewView transform uses [mapAnalysisQuadToPreview], which
+ * un-squishes the segmentation mask to the analysis frame (the mask may have
+ * a different aspect ratio than the frame), applies the sensor rotation and
+ * center-crops onto the canvas.
+ *
+ * In debug mode three quads are drawn to isolate geometry problems:
+ * - blue: raw detection mapped WITHOUT rotation;
+ * - orange: mapped target (pre-spring);
+ * - green: the spring-smoothed quad actually displayed.
+ */
 @Composable
-fun AnalysisOverlay(liveAnalysisState: LiveAnalysisState, debugMode: Boolean) {
+fun AnalysisOverlay(
+    liveAnalysisState: LiveAnalysisState,
+    debugMode: Boolean,
+    ineMode: Boolean = false,
+) {
     val maskSize = liveAnalysisState.maskSize ?: return
+    val frameSize = liveAnalysisState.analysisFrameSize ?: maskSize
     val targetQuad = liveAnalysisState.stableQuad
+    val rotationDegrees = liveAnalysisState.rotationDegrees
+    val currentTarget by rememberUpdatedState(targetQuad)
+    val spring = remember(rotationDegrees) { QuadSpring() }
     var displayedQuad by remember { mutableStateOf<Quad?>(null) }
+    var fade by remember { mutableFloatStateOf(0f) }
+    var lastFrameMillis by remember { mutableLongStateOf(0L) }
 
-    // Smooth animation: lerps toward target quad each frame
-    LaunchedEffect(targetQuad) {
-        if (targetQuad == null) {
-            displayedQuad = null
-            return@LaunchedEffect
-        }
-
-        // If no quad is currently displayed, use target directly
-        if (displayedQuad == null) {
-            displayedQuad = targetQuad
-        }
-
-        // Animation loop with controlled delays
+    LaunchedEffect(Unit) {
         while (true) {
-            displayedQuad = displayedQuad?.let { current ->
-                lerpQuad(current, targetQuad, 0.12f)
-            } ?: targetQuad
+            withInfiniteAnimationFrameMillis { frameMillis ->
+                val deltaMillis =
+                    if (lastFrameMillis == 0L) 16L else (frameMillis - lastFrameMillis).coerceIn(0L, 50L)
+                lastFrameMillis = frameMillis
+                val dtSeconds = deltaMillis / 1000f
 
-            // Wait ~16ms for ~60fps
-            withInfiniteAnimationFrameMillis { }
+                val target = currentTarget
+                if (target != null) {
+                    displayedQuad =
+                        spring.update(target, dtSeconds, maskSize.width, maskSize.height)
+                    fade = (fade + (1f - fade) * (dtSeconds * 10f)).coerceAtMost(1f)
+                } else {
+                    displayedQuad =
+                        spring.update(null, dtSeconds, maskSize.width, maskSize.height)
+                    fade = (fade * (1f - dtSeconds * 8f)).coerceAtLeast(0f)
+                }
+            }
         }
     }
 
-    // Debug log
-    Log.d(
-        "AnalysisOverlay",
-        "targetQuad=${liveAnalysisState.stableQuad}, displayedQuad=$displayedQuad"
-    )
-
-    val cornerRadius = 12f
+    val density = LocalDensity.current
+    val strokeWidth = with(density) { 2.5.dp.toPx() }
+    val green = Color(0xFF0CAD55)
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         if (debugMode) {
-            val binaryMask = liveAnalysisState.binaryMaskProvider.invoke()
-            binaryMask?.let { drawMask(this, it) }
+            liveAnalysisState.binaryMaskProvider.invoke()?.let { drawMask(this, it) }
         }
-        displayedQuad?.let { quad ->
-            // PreviewView uses FILL_CENTER (center-crop): map the detection quad from the
-            // full analysis frame to the visible, uniformly-scaled and centered region.
-            val scale = max(size.width / maskSize.width, size.height / maskSize.height)
-            val offsetX = (size.width - maskSize.width * scale) / 2.0
-            val offsetY = (size.height - maskSize.height * scale) / 2.0
-            fun map(p: Point) = Point(p.x * scale + offsetX, p.y * scale + offsetY)
-            val scaledQuad = Quad(
-                map(quad.topLeft),
-                map(quad.topRight),
-                map(quad.bottomRight),
-                map(quad.bottomLeft)
-            )
+        // In ID (INE) mode the detection pipeline keeps running (auto-capture,
+        // tracking) but the green quad is not drawn: the guide frame is the
+        // only visual the user should see.
+        if (ineMode) return@Canvas
+        val quad = displayedQuad ?: return@Canvas
+        if (fade <= 0.01f) return@Canvas
 
-            // Draw lines in CamScanner style (bright green/blue)
-            val lineColor = Color(0xFF0CAD55) // Bright green
-            val strokeWidth = 6f
+        val previewSize = ImageSize(size.width.toDouble(), size.height.toDouble())
+        fun map(maskQuad: Quad, rotation: Int) =
+            mapAnalysisQuadToPreview(maskQuad, maskSize, frameSize, previewSize, rotation)
 
-            scaledQuad.edges().forEach { edge ->
-                drawLine(
-                    color = lineColor,
-                    start = edge.from.toOffset(),
-                    end = edge.to.toOffset(),
-                    strokeWidth = strokeWidth
-                )
+        val finalQuad = map(quad, rotationDegrees)
+
+        val path = Path().apply {
+            moveTo(finalQuad.topLeft.x.toFloat(), finalQuad.topLeft.y.toFloat())
+            lineTo(finalQuad.topRight.x.toFloat(), finalQuad.topRight.y.toFloat())
+            lineTo(finalQuad.bottomRight.x.toFloat(), finalQuad.bottomRight.y.toFloat())
+            lineTo(finalQuad.bottomLeft.x.toFloat(), finalQuad.bottomLeft.y.toFloat())
+            close()
+        }
+
+        if (debugMode) {
+            // Blue: raw quad mapped without rotation; orange: mapped target
+            // (pre-spring). Green (above) is the spring-smoothed quad.
+            val raw = liveAnalysisState.stableQuad
+            if (raw != null) {
+                drawQuadOutline(this, map(raw, 0), Color(0xFF2196F3).copy(alpha = 0.9f), strokeWidth)
+                drawQuadOutline(this, map(raw, rotationDegrees), Color(0xFFFF9800).copy(alpha = 0.9f), strokeWidth)
             }
+        }
 
-            // Draw circles at the 4 corners
-            val cornerPoints = listOf(
-                scaledQuad.topLeft.toOffset(),
-                scaledQuad.topRight.toOffset(),
-                scaledQuad.bottomRight.toOffset(),
-                scaledQuad.bottomLeft.toOffset()
+        // Translucent green fill (~18% opacity).
+        drawPath(path, green.copy(alpha = 0.18f * fade))
+
+        // Bright green border with rounded corners and joins.
+        drawPath(
+            path,
+            green.copy(alpha = 0.95f * fade),
+            style = Stroke(
+                width = strokeWidth,
+                pathEffect = PathEffect.cornerPathEffect(16f),
             )
-            cornerPoints.forEach { point ->
-                drawCircle(
-                    color = Color(0xFF0CAD55),
-                    radius = cornerRadius,
-                    center = point
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = cornerRadius * 0.5f,
-                    center = point
-                )
-            }
+        )
+
+        // Small anchor dots at the four corners, CamScanner-style.
+        val dotRadius = strokeWidth * 0.8f
+        listOf(
+            finalQuad.topLeft,
+            finalQuad.topRight,
+            finalQuad.bottomRight,
+            finalQuad.bottomLeft
+        ).forEach { corner ->
+            drawCircle(
+                color = Color.White.copy(alpha = 0.95f * fade),
+                radius = dotRadius,
+                center = corner.toOffset()
+            )
+            drawCircle(
+                color = green.copy(alpha = 0.95f * fade),
+                radius = dotRadius + strokeWidth * 0.5f,
+                center = corner.toOffset(),
+                style = Stroke(width = strokeWidth * 0.45f)
+            )
         }
     }
+}
+
+private fun drawQuadOutline(drawScope: DrawScope, quad: Quad, color: Color, strokeWidth: Float) {
+    val path = Path().apply {
+        moveTo(quad.topLeft.x.toFloat(), quad.topLeft.y.toFloat())
+        lineTo(quad.topRight.x.toFloat(), quad.topRight.y.toFloat())
+        lineTo(quad.bottomRight.x.toFloat(), quad.bottomRight.y.toFloat())
+        lineTo(quad.bottomLeft.x.toFloat(), quad.bottomLeft.y.toFloat())
+        close()
+    }
+    drawScope.drawPath(path, color, style = Stroke(width = strokeWidth * 0.7f))
 }
 
 private fun drawMask(drawScope: DrawScope, binaryMask: Bitmap) {
@@ -381,8 +493,11 @@ fun replaceColor(bitmap: Bitmap, toReplace: Color, replacement: Color): Bitmap {
 fun Point.toOffset() = Offset(x.toFloat(), y.toFloat())
 
 class CameraCaptureController {
-    var cameraControl: CameraControl? = null
+    // Snapshot state so composables observing it re-run (e.g. the torch
+    // LaunchedEffect) when a (re)bind swaps the camera control.
+    var cameraControl: CameraControl? by mutableStateOf(null)
     var imageCapture: ImageCapture? = null
+    var cameraHasFlashUnit: Boolean = false
     private val executor = Executors.newSingleThreadExecutor()
     var previewView: PreviewView? = null
     var cameraIntrinsics: CameraIntrinsics? = null

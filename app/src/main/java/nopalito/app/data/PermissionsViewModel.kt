@@ -32,11 +32,16 @@ class PermissionsViewModel(
     private val repo: PermissionsRepository,
 ) : ViewModel() {
 
-    val isOnboardingDone: StateFlow<Boolean> = repo.isOnboardingDone
+    /**
+     * True once the user finished the first-run permission screen. `null` while
+     * the persisted value is still loading from disk, so the UI can wait for the
+     * real state instead of flashing the onboarding on every cold start.
+     */
+    val isOnboardingDone: StateFlow<Boolean?> = repo.isOnboardingDone
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = false,
+            initialValue = null,
         )
 
     /** Marks the first-run permission screen as finished. */

@@ -200,12 +200,14 @@ fun MyScaffold(
                         )
                     },
                     underActions = {
-                        if (captureMode != null && onCaptureModeChanged != null) {
-                            Spacer(Modifier.height(8.dp))
-                            CaptureModeSelector(
-                                captureMode = captureMode,
-                                onCaptureModeChanged = onCaptureModeChanged,
-                            )
+                        Column(horizontalAlignment = Alignment.End) {
+                            if (captureMode != null && onCaptureModeChanged != null) {
+                                Spacer(Modifier.height(8.dp))
+                                CaptureModeSelector(
+                                    captureMode = captureMode,
+                                    onCaptureModeChanged = onCaptureModeChanged,
+                                )
+                            }
                         }
                     },
                 )

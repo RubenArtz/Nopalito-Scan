@@ -30,6 +30,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.util.Log
 import android.widget.Toast
+import androidx.camera.core.CameraControl
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
@@ -48,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -64,9 +66,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import nopalito.app.BuildConfig
 import nopalito.app.MainViewModel
 import nopalito.app.R
 import nopalito.app.ui.Navigation
@@ -76,10 +80,20 @@ import nopalito.app.ui.screens.qr.QrDetected
 import nopalito.app.ui.screens.qr.QrResultDialog
 import nopalito.app.ui.screens.qr.rememberWifiConnect
 import nopalito.app.ui.screens.settings.CaptureMode
+import nopalito.imageprocessing.ImageSize
+import nopalito.imageprocessing.QuadStabilityMonitor
+import nopalito.imageprocessing.TrackMode
+import nopalito.imageprocessing.isQuadAlignedWithFrame
 import kotlin.time.Duration.Companion.milliseconds
 
 const val CAPTURED_IMAGE_DISPLAY_DURATION = 1500L
 const val ANIMATION_DURATION = 200
+
+/** Hidden debug mode: number of quick taps on the preview required to toggle it. */
+const val DEBUG_TAPS_REQUIRED = 7
+
+/** Hidden debug mode: maximum gap (ms) between consecutive taps for the sequence. */
+const val DEBUG_TAP_INTERVAL_MS = 500L
 
 @SuppressLint("ContextCastToActivity")
 @Composable
@@ -105,6 +119,7 @@ fun CameraScreen(
     val isTorchEnabled by cameraViewModel.isTorchEnabled.collectAsStateWithLifecycle()
     val qrScanMode by cameraViewModel.qrScanMode.collectAsStateWithLifecycle()
     val qrDetected by cameraViewModel.qrDetected.collectAsStateWithLifecycle()
+    val boundCameraInfo by cameraViewModel.boundCameraInfo.collectAsStateWithLifecycle()
     var torchReapplied by remember { mutableStateOf(false) }
 
     // Styled snackbar for import failures (password-protected / unsupported files).
@@ -128,6 +143,7 @@ fun CameraScreen(
     val onConnectWifi = rememberWifiConnect()
 
     val captureController = remember { CameraCaptureController() }
+    val mainExecutor = remember { ContextCompat.getMainExecutor(qrContext) }
     DisposableEffect(Unit) {
         onDispose {
             captureController.shutdown()
@@ -135,7 +151,37 @@ fun CameraScreen(
         }
     }
     LaunchedEffect(captureController.cameraControl, isTorchEnabled) {
-        captureController.cameraControl?.enableTorch(isTorchEnabled)
+        // The ultra-wide lens exposes no flash unit, so the camera bind
+        // switches to the flash-capable main lens while the torch is requested
+        // and back to 0.6x when it is turned off. Only the bound camera's own
+        // torch is driven here.
+        val control = captureController.cameraControl
+        if (control == null || !captureController.cameraHasFlashUnit) return@LaunchedEffect
+        if (BuildConfig.DEBUG) Log.d("Torch", "enableTorch($isTorchEnabled)")
+        val future = control.enableTorch(isTorchEnabled)
+        future.addListener(
+            {
+                runCatching { future.get() }
+                    .onSuccess {
+                        if (BuildConfig.DEBUG) Log.d("Torch", "enableTorch($isTorchEnabled) OK")
+                    }
+                    .onFailure { e ->
+                        if (BuildConfig.DEBUG) {
+                            val superseded =
+                                e.cause is CameraControl.OperationCanceledException
+                            if (superseded) {
+                                Log.d(
+                                    "Torch",
+                                    "enableTorch($isTorchEnabled) superseded by rebind (expected)"
+                                )
+                            } else {
+                                Log.e("Torch", "enableTorch($isTorchEnabled) failed", e)
+                            }
+                        }
+                    }
+            },
+            mainExecutor
+        )
     }
 
     val captureState by cameraViewModel.captureState.collectAsStateWithLifecycle()
@@ -205,6 +251,10 @@ fun CameraScreen(
             cameraViewModel.afterCaptureError()
         }
     }
+
+    // Hidden easter egg: a little cactus that sprouts when debug mode is
+    // unlocked with the secret tap sequence.
+    var showNopalEgg by remember { mutableStateOf(false) }
 
     // --- INE mode: the credential capture overlay and its 2-shot front/back flow ---
     fun toggleIneMode() {
@@ -337,30 +387,19 @@ fun CameraScreen(
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // --- Auto-capture with stability timer ---
-    // Requires the quad to be present and stable for STABILITY_DELAY_MS
-    // CamScanner-style: detect â†’ visible overlay â†’ wait for stability â†’ capture
-    val STABILITY_DELAY_MS = 1200L
-    val STABILITY_FRAMES = 5
-
-    var previousQuadWasNull by remember { mutableStateOf(true) }
-    var quadPresentStartTime by remember { mutableLongStateOf(0L) }
-    var stabilityFrameCount by remember { mutableIntStateOf(0) }
-    var lastQuadCenter by remember { mutableStateOf<Offset?>(null) }
+    // Requires the quad to be present and stable for STABILITY_DELAY_MS and a
+    // minimum number of consecutive low-movement updates.
+    // CamScanner-style: detect → visible overlay → wait for stability → capture.
+    val stabilityMonitor = remember { QuadStabilityMonitor() }
     val currentQuad = liveAnalysisState.stableQuad
 
-    // Reset timers when quad disappears
-    LaunchedEffect(currentQuad) {
-        if (currentQuad == null) {
-            quadPresentStartTime = 0L
-            stabilityFrameCount = 0
-            lastQuadCenter = null
-            previousQuadWasNull = true
-        }
-    }
-
-    // Evaluate auto-capture conditions on each quad frame
+    // Evaluate auto-capture conditions on each quad update
     LaunchedEffect(currentQuad, ineMode, qrScanMode) {
-        if (currentQuad == null) return@LaunchedEffect
+        val quad = currentQuad
+        if (quad == null) {
+            stabilityMonitor.reset()
+            return@LaunchedEffect
+        }
         // Manual capture while the INE guide is active: the framed flow must be
         // user-paced so the front/back shots land in order.
         if (ineMode) return@LaunchedEffect
@@ -372,54 +411,8 @@ fun CameraScreen(
         if (captureState !is CaptureState.Idle) return@LaunchedEffect
         if (importState !is ImportState.Idle) return@LaunchedEffect
 
-        // Initialize timer when the first quad appears after null
-        if (previousQuadWasNull) {
-            quadPresentStartTime = System.currentTimeMillis()
-            stabilityFrameCount = 0
-            lastQuadCenter = null
-            Log.d(
-                "AutoCapture",
-                "Quad appeared, starting stability timer (${STABILITY_DELAY_MS}ms)"
-            )
-            previousQuadWasNull = false
-            return@LaunchedEffect
-        }
-
-        // Calculate quad center to measure movement
-        val cx =
-            (currentQuad.topLeft.x + currentQuad.topRight.x + currentQuad.bottomRight.x + currentQuad.bottomLeft.x) / 4.0
-        val cy =
-            (currentQuad.topLeft.y + currentQuad.topRight.y + currentQuad.bottomRight.y + currentQuad.bottomLeft.y) / 4.0
-        val currentCenter = Offset(cx.toFloat(), cy.toFloat())
-        val prevCenter = lastQuadCenter
-
-        // Verify center does not move more than 3% of canvas size
-        val hasMoved = if (prevCenter != null) {
-            val dx = (currentCenter.x - prevCenter.x)
-            val dy = (currentCenter.y - prevCenter.y)
-            val movement = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
-            movement > 3.0 // 3 pixels tolerance
-        } else {
-            true // first frame with center, don't count as movement
-        }
-
-        if (!hasMoved) {
-            stabilityFrameCount++
-        } else {
-            stabilityFrameCount = 0
-            quadPresentStartTime = System.currentTimeMillis()
-        }
-        lastQuadCenter = currentCenter
-
-        val elapsed = System.currentTimeMillis() - quadPresentStartTime
-        Log.d(
-            "AutoCapture",
-            "stabilityFrameCount=$stabilityFrameCount/$STABILITY_FRAMES, elapsed=${elapsed}ms"
-        )
-
-        // Only capture if enough time AND enough stable frames have elapsed
-        if (elapsed >= STABILITY_DELAY_MS && stabilityFrameCount >= STABILITY_FRAMES) {
-            Log.d("AutoCapture", "Triggering auto-capture after ${elapsed}ms stable")
+        if (stabilityMonitor.update(quad, System.currentTimeMillis())) {
+            Log.d("AutoCapture", "Triggering auto-capture after stable period")
             onCapture()
         }
     }
@@ -434,7 +427,9 @@ fun CameraScreen(
                     },
                     cameraPermission = cameraPermission,
                     onError = { message, throwable -> cameraViewModel.logError(message, throwable) },
-                    onImageAnalyzed = { imageProxy -> onImageAnalyzed(imageProxy) }
+                    onImageAnalyzed = { imageProxy -> onImageAnalyzed(imageProxy) },
+                    onCameraBound = { info -> cameraViewModel.setBoundCameraInfo(info) },
+                    torchEnabled = isTorchEnabled,
                 )
             },
             pageListState =
@@ -454,11 +449,15 @@ fun CameraScreen(
                 showDetectionError,
                 isLandscape = isLandscape,
                 isDebugMode,
-                isTorchEnabled
+                isTorchEnabled,
+                boundCameraInfo
             ),
             onCapture = onCapture,
             onFinalizePressed = onFinalizePressed,
-            onDebugModeSwitched = { isDebugMode = !isDebugMode },
+            onDebugModeSwitched = {
+                isDebugMode = !isDebugMode
+                if (isDebugMode) showNopalEgg = true
+            },
             onTorchSwitched = {
                 cameraViewModel.setTorchEnabled(!isTorchEnabled)
             },
@@ -553,6 +552,8 @@ fun CameraScreen(
         )
     }
 
+    NopalEasterEgg(visible = showNopalEgg, onFinished = { showNopalEgg = false })
+
     qrDetected?.let { result ->
         QrResultDialog(
             detected = result,
@@ -623,14 +624,16 @@ private fun CameraScreenScaffold(
         }
     }
 
+    // Hidden debug toggle: 7 quick consecutive taps on the preview
+    // (less than DEBUG_TAP_INTERVAL_MS between each one). Deliberately longer
+    // than a casual triple tap so it is hard to trigger by accident.
     var tapCount by remember { mutableLongStateOf(0) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
-    val tapThreshold = 500L
-    val onPageCountClick = {
+    val onPreviewTap = {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastTapTime < tapThreshold) {
+        if (currentTime - lastTapTime < DEBUG_TAP_INTERVAL_MS) {
             tapCount++
-            if (tapCount >= 3) {
+            if (tapCount >= DEBUG_TAPS_REQUIRED) {
                 onDebugModeSwitched()
                 tapCount = 0
             }
@@ -714,13 +717,14 @@ private fun CameraScreenScaffold(
                             detectTapGestures { offset ->
                                 focusPoint = offset
                                 captureController.tapToFocus(offset)
-                                onPageCountClick()
+                                onPreviewTap()
                             }
                         }
                     )
                     if (ineMode) {
                         IneGuideOverlay(
                             showBack = ineCaptured >= 1,
+                            liveAnalysisState = cameraUiState.liveAnalysisState,
                             modifier = Modifier.matchParentSize(),
                         )
                     } else if (qrScanMode) {
@@ -794,10 +798,14 @@ private fun CameraPreviewBox(
         CameraPreviewWithOverlay(
             cameraPreview,
             cameraUiState,
-            Modifier
+            Modifier,
+            ineMode = ineMode,
         )
         if (cameraUiState.isDebugMode) {
-            MessageBox(cameraUiState.liveAnalysisState.inferenceTime)
+            MessageBox(
+                cameraUiState.liveAnalysisState,
+                cameraUiState.boundCameraInfo,
+            )
         }
         FocusOverlay(focusPoint)
         if (cameraUiState.isLandscape) {
@@ -934,23 +942,48 @@ private fun DeckSideButton(
  * is punched out of the dim via an even-odd path so the live camera stays visible.
  */
 @Composable
-private fun IneGuideOverlay(showBack: Boolean, modifier: Modifier = Modifier) {
+private fun IneGuideOverlay(
+    showBack: Boolean,
+    liveAnalysisState: LiveAnalysisState,
+    modifier: Modifier = Modifier,
+) {
     val label = stringResource(
         if (showBack) R.string.ine_scan_back else R.string.ine_scan_front
     )
     val hint = stringResource(R.string.ine_place_hint)
 
-    Box(modifier = modifier) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            // Landscape frame matching a debit/bank card: 8 cm wide Ã— 5 cm high
-            // (aspect ratio 1.6:1). Wider than tall, like the physical document.
-            // Slightly above vertical center so it clears the bottom capture deck.
-            val frameW = size.width * 0.85f
-            val frameH = frameW * (5f / 8f)
-            val left = (size.width - frameW) / 2f
-            val top = (size.height - frameH) / 2f - size.height * 0.09f
-            val corner = 28f
+    BoxWithConstraints(modifier = modifier) {
+        val density = LocalDensity.current
+        val previewWidth = with(density) { maxWidth.toPx() }
+        val previewHeight = with(density) { maxHeight.toPx() }
 
+        // Landscape frame matching a debit/bank card: 8 cm wide x 5 cm high
+        // (aspect ratio 1.6:1). Wider than tall, like the physical document.
+        // Slightly above vertical center so it clears the bottom capture deck.
+        val frameW = previewWidth * 0.85f
+        val frameH = frameW * (5f / 8f)
+        val left = (previewWidth - frameW) / 2f
+        val top = (previewHeight - frameH) / 2f - previewHeight * 0.09f
+        val corner = 28f
+        val frameRect = Rect(left, top, left + frameW, top + frameH)
+
+        // Turns green when the tracked card quad is detected inside the frame.
+        val quad = liveAnalysisState.stableQuad
+        val maskSize = liveAnalysisState.maskSize
+        val detected = quad != null && maskSize != null && isQuadAlignedWithFrame(
+            quad,
+            maskSize,
+            liveAnalysisState.analysisFrameSize ?: maskSize,
+            liveAnalysisState.rotationDegrees,
+            ImageSize(previewWidth.toDouble(), previewHeight.toDouble()),
+            frameRect.left.toDouble(),
+            frameRect.top.toDouble(),
+            frameRect.right.toDouble(),
+            frameRect.bottom.toDouble(),
+        )
+        val frameColor = if (detected) Color(0xFF0CAD55) else Color.White
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
             // Dim the whole screen, leaving the frame transparent via EvenOdd fill.
             val path = Path().apply {
                 fillType = PathFillType.EvenOdd
@@ -965,20 +998,21 @@ private fun IneGuideOverlay(showBack: Boolean, modifier: Modifier = Modifier) {
             drawPath(path, Color.Black.copy(alpha = 0.68f))
 
             // Soft rounded border around the transparent frame (crisp inner edge,
-            // faint outer glow) to read as a capture guide.
+            // faint outer glow) to read as a capture guide. Green once the card
+            // is detected inside.
             drawRoundRect(
-                color = Color.White.copy(alpha = 0.9f),
+                color = frameColor.copy(alpha = 0.9f),
                 topLeft = Offset(left, top),
                 size = Size(frameW, frameH),
                 cornerRadius = CornerRadius(corner),
-                style = Stroke(width = 3f),
+                style = Stroke(width = if (detected) 4f else 3f),
             )
             drawRoundRect(
-                color = Color.White.copy(alpha = 0.18f),
+                color = frameColor.copy(alpha = if (detected) 0.45f else 0.18f),
                 topLeft = Offset(left - 8f, top - 8f),
                 size = Size(frameW + 16f, frameH + 16f),
                 cornerRadius = CornerRadius(corner),
-                style = Stroke(width = 2f),
+                style = Stroke(width = if (detected) 3f else 2f),
             )
         }
 
@@ -996,7 +1030,7 @@ private fun IneGuideOverlay(showBack: Boolean, modifier: Modifier = Modifier) {
             ) {
                 Text(
                     text = label,
-                    color = Color.White,
+                    color = if (detected) Color(0xFF0CAD55) else Color.White,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -1214,6 +1248,7 @@ private fun CameraPreviewWithOverlay(
     cameraPreview: @Composable () -> Unit,
     cameraUiState: CameraUiState,
     modifier: Modifier,
+    ineMode: Boolean = false,
 ) {
     val captureState = cameraUiState.captureState
 
@@ -1230,7 +1265,11 @@ private fun CameraPreviewWithOverlay(
         modifier = modifier.fillMaxSize()
     ) {
         cameraPreview()
-        AnalysisOverlay(cameraUiState.liveAnalysisState, cameraUiState.isDebugMode)
+        AnalysisOverlay(
+            cameraUiState.liveAnalysisState,
+            cameraUiState.isDebugMode,
+            ineMode,
+        )
         captureState.frozenImage?.let {
             Image(
                 bitmap = it.asImageBitmap(),
@@ -1279,10 +1318,146 @@ fun FocusOverlay(focusPoint: Offset?) {
     }
 }
 
+/**
+ * Hidden easter egg: a smiling cactus that sprouts with a spring animation
+ * when the secret debug sequence is entered, then fades away by itself.
+ */
 @Composable
-fun MessageBox(inferenceTime: Long) {
+private fun NopalEasterEgg(visible: Boolean, onFinished: () -> Unit) {
+    if (!visible) return
+    var dismissed by remember { mutableStateOf(false) }
+    val scale = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+        )
+        delay(2400.milliseconds)
+        dismissed = true
+        onFinished()
+    }
+    if (dismissed) return
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(bottom = 230.dp)
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                },
+        ) {
+            Canvas(modifier = Modifier.size(110.dp, 130.dp)) {
+                drawCactus()
+            }
+            Text(
+                text = "¡Modo Nopalito! \uD83C\uDF35",
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawCactus() {
+    val w = size.width
+    val h = size.height
+    val green = Color(0xFF2E8B57)
+    val potBrown = Color(0xFF8B5A2B)
+
+    // Pot
+    drawPath(
+        Path().apply {
+            moveTo(w * 0.24f, h * 0.76f)
+            lineTo(w * 0.3f, h * 0.97f)
+            lineTo(w * 0.7f, h * 0.97f)
+            lineTo(w * 0.76f, h * 0.76f)
+            close()
+        },
+        potBrown,
+    )
+
+    // Trunk
+    drawRoundRect(
+        color = green,
+        topLeft = Offset(w * 0.37f, h * 0.26f),
+        size = Size(w * 0.26f, h * 0.56f),
+        cornerRadius = CornerRadius(w * 0.13f),
+    )
+
+    // Left arm
+    drawRoundRect(
+        color = green,
+        topLeft = Offset(w * 0.11f, h * 0.36f),
+        size = Size(w * 0.26f, h * 0.14f),
+        cornerRadius = CornerRadius(w * 0.07f),
+    )
+    drawRoundRect(
+        color = green,
+        topLeft = Offset(w * 0.11f, h * 0.36f),
+        size = Size(w * 0.12f, h * 0.24f),
+        cornerRadius = CornerRadius(w * 0.06f),
+    )
+
+    // Right arm
+    drawRoundRect(
+        color = green,
+        topLeft = Offset(w * 0.63f, h * 0.42f),
+        size = Size(w * 0.26f, h * 0.14f),
+        cornerRadius = CornerRadius(w * 0.07f),
+    )
+    drawRoundRect(
+        color = green,
+        topLeft = Offset(w * 0.77f, h * 0.42f),
+        size = Size(w * 0.12f, h * 0.22f),
+        cornerRadius = CornerRadius(w * 0.06f),
+    )
+
+    // Face: eyes + smile
+    drawCircle(Color.White, radius = w * 0.035f, center = Offset(w * 0.44f, h * 0.38f))
+    drawCircle(Color.White, radius = w * 0.035f, center = Offset(w * 0.56f, h * 0.38f))
+    drawArc(
+        color = Color.White,
+        startAngle = 25f,
+        sweepAngle = 130f,
+        useCenter = false,
+        topLeft = Offset(w * 0.44f, h * 0.40f),
+        size = Size(w * 0.12f, h * 0.08f),
+        style = Stroke(width = w * 0.02f),
+    )
+}
+
+@Composable
+fun MessageBox(
+    liveAnalysisState: LiveAnalysisState,
+    boundCameraInfo: String?,
+) {
+    if (liveAnalysisState.inferenceTime == 0L && liveAnalysisState.analysisTimeMs == 0L) return
+    val modeLabel = when (liveAnalysisState.detectionMode) {
+        TrackMode.FULL_DETECTION -> "DET"
+        TrackMode.OPTICAL_FLOW -> "TRK"
+        null -> "-"
+    }
+    val maskLabel = liveAnalysisState.maskSize?.let { "${it.width.toInt()}x${it.height.toInt()}" } ?: "-"
+    val frameLabel =
+        liveAnalysisState.analysisFrameSize?.let { "${it.width.toInt()}x${it.height.toInt()}" } ?: "-"
     Text(
-        text = if (inferenceTime == 0L) "" else stringResource(R.string.segmentation_time, inferenceTime),
+        text = stringResource(R.string.segmentation_time, liveAnalysisState.inferenceTime) +
+                " · ${liveAnalysisState.analysisTimeMs} ms" +
+                " · $modeLabel" +
+                " · %.1f fps".format(liveAnalysisState.analysisFps) +
+                " · mask=$maskLabel frame=$frameLabel rot=${liveAnalysisState.rotationDegrees}" +
+                (boundCameraInfo?.let { " · $it" } ?: ""),
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth(),

@@ -25,13 +25,23 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import nopalito.imageprocessing.ImageSize
 import nopalito.imageprocessing.Quad
+import nopalito.imageprocessing.TrackMode
 
 @Immutable
 data class LiveAnalysisState(
     val inferenceTime: Long = 0L,
     val maskSize: ImageSize? = null,
     val binaryMaskProvider: () -> Bitmap? = { null },
+    /** Raw tracked/detected quad in mask coordinates, sensor orientation. */
     val stableQuad: Quad? = null,
+    /** Analysis frame dimensions in sensor orientation (e.g. 640x480). */
+    val analysisFrameSize: ImageSize? = null,
+    /** ImageProxy rotation (0, 90, 180 or 270). */
+    val rotationDegrees: Int = 0,
+    val analysisTimeMs: Long = 0L,
+    val detectionMode: TrackMode? = null,
+    val trackingError: Float = 0f,
+    val analysisFps: Float = 0f,
 )
 
 sealed class ImportState {
@@ -49,4 +59,5 @@ data class CameraUiState(
     val isLandscape: Boolean,
     val isDebugMode: Boolean,
     val isTorchEnabled: Boolean,
+    val boundCameraInfo: String? = null,
 )

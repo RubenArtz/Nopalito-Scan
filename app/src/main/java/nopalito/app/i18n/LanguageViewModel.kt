@@ -46,7 +46,12 @@ class LanguageViewModel(
     legalRepo: LegalConsentRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<LanguageUiState> =
+    /**
+     * Resolved first-run state. `null` while the persisted values are still
+     * loading from disk, so the UI can wait for the real state instead of
+     * flashing the onboarding screens on every cold start.
+     */
+    val uiState: StateFlow<LanguageUiState?> =
         combine(
             repo.isConfigured,
             repo.selectedLanguage,
@@ -61,7 +66,7 @@ class LanguageViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = LanguageUiState(selectedLanguage = AppLanguage.detect()),
+            initialValue = null,
         )
 
     /** Applies a language change from Settings. */
