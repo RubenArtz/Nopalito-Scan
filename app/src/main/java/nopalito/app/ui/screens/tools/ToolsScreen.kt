@@ -65,6 +65,7 @@ import nopalito.app.R
 import nopalito.app.ui.Navigation
 import nopalito.app.ui.components.GradientHeroHeader
 import nopalito.app.ui.components.TopActionButtons
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.shared.*
 import kotlin.time.Duration.Companion.milliseconds
@@ -337,6 +338,7 @@ private fun ToolCard(
     hintVisible: Boolean = false,
     onHintChange: (Boolean) -> Unit = {},
 ) {
+    val haptics = rememberHapticManager()
     LaunchedEffect(hintVisible) {
         if (hintVisible) {
             delay(10_000.milliseconds)
@@ -344,7 +346,10 @@ private fun ToolCard(
         }
     }
     Surface(
-        onClick = onClick,
+        onClick = {
+            haptics.click()
+            onClick()
+        },
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(
@@ -597,6 +602,9 @@ fun ToolCompressScreen(
     BackHandler { navigation.back() }
     LaunchedEffect(tool) { viewModel.bindTool(tool) }
 
+    // Tactile confirmation for result actions (share / open).
+    val haptics = rememberHapticManager()
+
     val singleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -819,7 +827,10 @@ fun ToolCompressScreen(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Button(
-                                onClick = { onShare(state.results) },
+                                onClick = {
+                                    haptics.click()
+                                    onShare(state.results)
+                                },
                                 modifier = Modifier
                                     .weight(1f)
                                     .heightIn(min = 48.dp),
@@ -830,7 +841,10 @@ fun ToolCompressScreen(
                                 Text(stringResource(R.string.share), fontWeight = FontWeight.SemiBold)
                             }
                             OutlinedButton(
-                                onClick = { onOpen(state.results) },
+                                onClick = {
+                                    haptics.click()
+                                    onOpen(state.results)
+                                },
                                 modifier = Modifier
                                     .weight(1f)
                                     .heightIn(min = 48.dp),

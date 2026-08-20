@@ -67,6 +67,7 @@ import nopalito.app.ui.*
 import nopalito.app.ui.components.FileTypeBadge
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.ExportArtifact
 import nopalito.app.ui.screens.export.ExportArtifactMapper
 import java.io.File
@@ -82,6 +83,8 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    // Tactile confirmation for share / open / confirmed deletes.
+    val haptics = rememberHapticManager()
     var showSortMenu by remember { mutableStateOf(false) }
     var showFilterMenu by remember { mutableStateOf(false) }
     var deleteConfirmItem by remember { mutableStateOf<ExportHistoryEntity?>(null) }
@@ -361,11 +364,15 @@ fun HistoryScreen(
                                 }
                             },
                             onExport = { viewModel.exportHistory(context, item) },
-                            onShare = { viewModel.shareHistory(context, item) },
+                            onShare = {
+                                haptics.click()
+                                viewModel.shareHistory(context, item)
+                            },
                             onDelete = {
                                 deleteConfirmItem = item
                             },
                             onOpenResult = { artifact ->
+                                haptics.click()
                                 onOpenArtifact(artifact)
                             }
                         )
@@ -384,6 +391,7 @@ fun HistoryScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        haptics.success()
                         viewModel.deleteHistoryItem(item.id)
                         deleteConfirmItem = null
                     }
@@ -408,6 +416,7 @@ fun HistoryScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        haptics.success()
                         val items = uiState.history.filter { it.id in selectedIds }
                         viewModel.deleteHistoryItems(items, context)
                         deleteBatchConfirm = false

@@ -30,7 +30,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** The two legal documents that must both be accepted before using FairScan. */
+/** The two legal documents that must both be accepted before using Nopalito Scan. */
 enum class LegalDocument { TERMS, PRIVACY }
 
 /**

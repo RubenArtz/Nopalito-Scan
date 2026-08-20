@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.ZoomableBitmapDialog
 import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.PickedFile
 import nopalito.app.ui.screens.tools.queryDisplayName
@@ -83,6 +84,8 @@ fun ExtractScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val defaultFileName = stringResource(R.string.tools_default_filename)
+    // Tactile confirmation for result actions (share / open).
+    val haptics = rememberHapticManager()
 
     BackHandler { onBack() }
 
@@ -264,7 +267,10 @@ fun ExtractScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Button(
-                            onClick = { onShare(state.results) },
+                            onClick = {
+                                haptics.click()
+                                onShare(state.results)
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp),
@@ -275,7 +281,10 @@ fun ExtractScreen(
                             Text(stringResource(R.string.share), fontWeight = FontWeight.SemiBold)
                         }
                         OutlinedButton(
-                            onClick = { onOpen(state.results) },
+                            onClick = {
+                                haptics.click()
+                                onOpen(state.results)
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp),

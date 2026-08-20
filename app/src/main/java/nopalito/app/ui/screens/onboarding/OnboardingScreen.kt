@@ -61,7 +61,7 @@ import nopalito.app.i18n.readLegalDocument
 import nopalito.app.i18n.stringFor
 
 /**
- * First-run language selection + legal acceptance screen. Keeps the FairScan
+ * First-run language selection + legal acceptance screen. Keeps the NopalitoScan
  * brand: green → purple gradient, rounded cards, the real app logo and a
  * primary action button.
  *
@@ -93,7 +93,7 @@ fun OnboardingScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var openDocument by remember { mutableStateOf<LegalDocument?>(null) }
 
-    // Back / exit without accepting: ask before leaving FairScan.
+    // Back / exit without accepting: ask before leaving NopalitoScan.
     BackHandler { showExitDialog = true }
 
     // Acceptance requires a language too (there is always one selected, so in
@@ -121,7 +121,7 @@ fun OnboardingScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Real FairScan logo (found in the drawable resources).
+            // Real NopalitoScan logo (found in the drawable resources).
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier

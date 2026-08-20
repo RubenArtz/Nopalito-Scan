@@ -30,7 +30,7 @@ import org.junit.Test
  *
  * Pure JVM tests for [sanitizeNotificationText] and the
  * `raw → sanitize → translate → sanitize final` pipeline
- * ([localizeNotificationText]) used by [FairScanMessagingService]: null/blank
+ * ([localizeNotificationText]) used by [NopalitoScanMessagingService]: null/blank
  * handling, HTML, URLs, credentials, paths, stack traces, SQL, control
  * characters, length cap, Unicode preservation, no-throw guarantee, and the
  * never-raw fallback (the translator is injected).

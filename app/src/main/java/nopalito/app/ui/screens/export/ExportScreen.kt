@@ -70,6 +70,7 @@ import nopalito.app.ui.components.GradientHeroHeader
 import nopalito.app.ui.components.NewDocumentDialog
 import nopalito.app.ui.components.TopActionButtons
 import nopalito.app.ui.components.isLandscape
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.state.DocumentUiModel
 
 @Composable
@@ -88,6 +89,14 @@ fun ExportScreenWrapper(
     LaunchedEffect(Unit) {
         exportActions.prepareExportIfNeeded()
         exportActions.checkCloudAuth()
+    }
+    // Tactile confirmation when a save finishes or fails (UI-layer only).
+    val haptics = rememberHapticManager()
+    LaunchedEffect(uiState.savedBundle) {
+        if (uiState.savedBundle != null) haptics.success()
+    }
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) haptics.error()
     }
     DisposableEffect(Unit) {
         onDispose {
@@ -540,11 +549,15 @@ private fun PdfInfosAndResultBar(
     onOpen: (ExportArtifact) -> Unit,
     onThumbnailClick: () -> Unit,
 ) {
+    val haptics = rememberHapticManager()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
         SectionCard {
             PdfInfos(uiState, currentDocument, onThumbnailClick)
-            SaveStatusBar(uiState, onOpen)
+            SaveStatusBar(uiState) { artifact ->
+                haptics.click()
+                onOpen(artifact)
+            }
         }
 
         ExportPreviewStrip(currentDocument)
@@ -854,6 +867,7 @@ private fun MainActions(
     onCloseScan: () -> Unit,
     onUploadToCloud: () -> Unit = {},
 ) {
+    val haptics = rememberHapticManager()
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -866,7 +880,10 @@ private fun MainActions(
             modifier = Modifier.fillMaxWidth()
         ) {
             ExportButton(
-                onClick = onShare,
+                onClick = {
+                    haptics.click()
+                    onShare()
+                },
                 enabled = uiState.result != null,
                 isPrimary = false,
                 icon = Icons.Default.Share,
@@ -874,7 +891,10 @@ private fun MainActions(
                 modifier = Modifier.weight(1f)
             )
             ExportButton(
-                onClick = onSave,
+                onClick = {
+                    haptics.click()
+                    onSave()
+                },
                 enabled = uiState.result != null,
                 isPrimary = true,
                 icon = Icons.Default.Download,

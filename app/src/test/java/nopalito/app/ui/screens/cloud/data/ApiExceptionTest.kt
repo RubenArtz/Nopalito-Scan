@@ -90,6 +90,37 @@ class ApiExceptionTest {
         assertEquals("EMAIL_ALREADY_REGISTERED", ApiException.EMAIL_ALREADY_REGISTERED)
         assertEquals("ACCOUNT_NOT_FOUND", ApiException.ACCOUNT_NOT_FOUND)
         assertEquals("INVALID_APP_SECRET", ApiException.INVALID_APP_SECRET)
+        assertEquals("AUTH_ACCOUNT_SUSPENDED", ApiException.AUTH_ACCOUNT_SUSPENDED)
+        assertEquals("AUTH_ACCOUNT_STATUS_UNKNOWN", ApiException.AUTH_ACCOUNT_STATUS_UNKNOWN)
+        assertEquals("AUTH_REGISTER_IP_LIMIT_REACHED", ApiException.AUTH_REGISTER_IP_LIMIT_REACHED)
+        assertEquals("AUTH_REGISTER_VPN_NOT_ALLOWED", ApiException.AUTH_REGISTER_VPN_NOT_ALLOWED)
+        assertEquals(
+            "AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED",
+            ApiException.AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED
+        )
+        assertEquals("ACCOUNT_ALREADY_DELETED", ApiException.ACCOUNT_ALREADY_DELETED)
+        assertEquals("ANONYMOUS_USER_PROTECTED", ApiException.ANONYMOUS_USER_PROTECTED)
+    }
+
+    @Test
+    fun accountSuspendedHelperMatchesSuspensionCodesOnly() {
+        assertTrue(ApiException(ApiException.AUTH_ACCOUNT_SUSPENDED, "x").isAccountSuspended())
+        assertTrue(
+            ApiException(ApiException.AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED, "x").isAccountSuspended()
+        )
+        assertFalse(ApiException(ApiException.AUTH_ACCOUNT_STATUS_UNKNOWN, "x").isAccountSuspended())
+        assertFalse(ApiException("OTHER", "x").isAccountSuspended())
+        assertFalse(ApiException(null, "no code").isAccountSuspended())
+    }
+
+    @Test
+    fun registrationBlockedHelperMatchesIpPolicyCodesOnly() {
+        assertTrue(
+            ApiException(ApiException.AUTH_REGISTER_IP_LIMIT_REACHED, "x").isRegistrationBlocked()
+        )
+        assertTrue(ApiException(ApiException.AUTH_REGISTER_VPN_NOT_ALLOWED, "x").isRegistrationBlocked())
+        assertFalse(ApiException(ApiException.AUTH_ACCOUNT_SUSPENDED, "x").isRegistrationBlocked())
+        assertFalse(ApiException(null, "no code").isRegistrationBlocked())
     }
 
     @Test

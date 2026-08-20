@@ -91,7 +91,7 @@ suspend fun saveQrToDownloads(context: Context, bytes: ByteArray, format: String
 fun shareQr(context: Context, bytes: ByteArray, format: String): Boolean {
     return try {
         val dir = File(context.cacheDir, "qr_generated").apply { mkdirs() }
-        val file = File(dir, "fairscan_qr.${format.lowercase()}")
+        val file = File(dir, "nopalitoscan_qr.${format.lowercase()}")
         file.writeBytes(bytes)
         val uri = uriForFile(context, file)
         val intent = Intent(Intent.ACTION_SEND).apply {

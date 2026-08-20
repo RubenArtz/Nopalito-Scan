@@ -569,6 +569,7 @@
     <!-- Cloud: repository error messages -->
     <string name="cloud_error_400">Solicitud inválida. Verifica los datos ingresados.</string>
     <string name="cloud_error_401">No autorizado. La sesión expiró.</string>
+    <string name="cloud_error_403">Acceso denegado (403).</string>
     <string name="cloud_error_404">Recurso no encontrado.</string>
     <string name="cloud_error_413">El archivo es demasiado grande.</string>
     <string name="cloud_error_415">Tipo de archivo no compatible.</string>
@@ -577,6 +578,30 @@
     <string name="cloud_error_503">Servicio temporalmente no disponible.</string>
     <string name="cloud_error_unexpected">Error inesperado (%1$d)</string>
     <string name="cloud_error_load_more">Error al cargar más archivos</string>
+
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">No se pudo iniciar sesión. Inténtalo de nuevo.</string>
+    <string name="cloud_error_auth_account_suspended">Tu cuenta está suspendida. Se detectaron varios intentos para
+        acceder a la cuenta desde diferentes ubicaciones. Para desbloquearla, contacta a contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">No se pudo verificar el estado de la cuenta. Inténtalo más
+        tarde.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">No se pudo crear una cuenta. Se alcanzó el límite de cuentas para
+        este dispositivo o red.
+    </string>
+    <string name="cloud_error_auth_register_vpn">No se puede crear una cuenta usando una VPN. Desactívala e inténtalo de
+        nuevo.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Tu cuenta está suspendida. Para administrarla, contacta a
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">Esta cuenta fue eliminada y ya no puede usarse.</string>
+    <string name="cloud_error_anonymous_protected">Esta cuenta no puede administrarse.</string>
+    <string name="cloud_dialog_account_suspended_title">Cuenta suspendida</string>
+    <string name="cloud_dialog_account_suspended_body">Tu cuenta está suspendida. Para desbloquearla, contacta a
+        contact@nopalitoscan.org.
+    </string>
 
     <!-- Cloud: ViewModel messages -->
     <string name="cloud_error_load_files">Error al cargar archivos</string>
@@ -1229,6 +1254,26 @@
     <string name="cloud_maint_generic_reason">Estamos trabajando en ello.</string>
     <string name="cloud_notif_completed">Mantenimiento finalizado</string>
     <string name="cloud_notif_cancelled">Mantenimiento cancelado</string>
+
+    <!-- Notificaciones proactivas del cloud (FCM data-only; el backend no
+         envía texto — la bandeja se renderiza con estos strings en el idioma
+         de la app). %1$s = porcentaje, %2$s = usado, %3$s = cuota, %4$s = nombre -->
+    <string name="notif_storage_80_title">Almacenamiento casi lleno</string>
+    <string name="notif_storage_80_body">Estás usando el %1$s de tu almacenamiento (%2$s de %3$s). Considera liberar espacio.</string>
+    <string name="notif_storage_95_title">Almacenamiento crítico</string>
+    <string name="notif_storage_95_body">Tu almacenamiento está al %1$s (%2$s de %3$s). Libera espacio pronto para evitar bloqueos.</string>
+    <string name="notif_storage_100_title">Almacenamiento al límite</string>
+    <string name="notif_storage_100_body">Alcanzaste el límite de almacenamiento (%2$s de %3$s). Libera espacio para seguir subiendo archivos.</string>
+    <string name="notif_storage_reminder_title">Recordatorio de almacenamiento</string>
+    <string name="notif_storage_reminder_body">Sigues usando el %1$s de tu almacenamiento (%2$s de %3$s).</string>
+    <string name="notif_storage_rejected_title">Archivo rechazado</string>
+    <string name="notif_storage_rejected_body">El archivo “%1$s” fue rechazado por el escaneo de seguridad.</string>
+    <string name="notif_account_inactive_title">Tu cuenta está inactiva</string>
+    <string name="notif_account_inactive_body">No has iniciado sesión en %1$s días. Vuelve a Nopalito Scan para conservar tu cuenta y tus archivos.</string>
+    <string name="notif_upload_error_title">Error de subida</string>
+    <string name="notif_upload_error_body">Ocurrió un error al subir “%1$s”. Inténtalo nuevamente.</string>
+    <string name="notif_test_title">Notificación de prueba</string>
+    <string name="notif_test_body">Esta es una notificación de prueba enviada desde el panel de administración.</string>
 
     <!-- ===== Backend error code / group strings (ErrorCodeMapper) ===== -->
     <string name="cloud_error_quota_exceeded">Alcanzaste el límite de almacenamiento.</string>

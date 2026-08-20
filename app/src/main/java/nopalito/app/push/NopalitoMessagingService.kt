@@ -58,6 +58,10 @@ private const val CHANNEL_ID = "push_general"
  *  - `type: maintenance`  → maintenance lifecycle events (created /
  *    pre_notification / activated / completed / cancelled).
  *  - `type: push`         → broadcasts from the admin panel (title/body text).
+ *  - Proactive cloud events (`quota_80` / `quota_95` / `quota_100` /
+ *    `quota_reminder` / `rejected_file` / `inactive_account` / `upload_error`
+ *    / `test`) → data-only, NO title/body: the tray notification is built from
+ *    the device's own string resources by [ProactiveNotificationMapper].
  *  - Legacy messages with a plain notification payload are still supported.
  *
  * All text sent by the server goes through the defensive pipeline
@@ -66,7 +70,7 @@ private const val CHANNEL_ID = "push_general"
  * original. No full payloads or secrets are ever logged.
  */
 @Suppress("DEPRECATION")
-class FairScanMessagingService : FirebaseMessagingService() {
+class NopalitoScanMessagingService : FirebaseMessagingService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -94,6 +98,15 @@ class FairScanMessagingService : FirebaseMessagingService() {
             Log.i(TAG, "onMessageReceived: maintenance event=${data["event"]?.take(30)}")
             ensureChannel()
             showMaintenanceNotification(remoteMessage.messageId, data)
+            return
+        }
+
+        // Proactive cloud events (data-only, no title/body): the tray
+        // notification is rendered from the device's own string resources.
+        if (ProactiveNotificationMapper.contentFor(data["type"], data) != null) {
+            Log.i(TAG, "onMessageReceived: proactive type=${data["type"]}")
+            ensureChannel()
+            showProactiveNotification(remoteMessage.messageId, data)
             return
         }
 
@@ -173,14 +186,14 @@ class FairScanMessagingService : FirebaseMessagingService() {
 
             val contentIntent: PendingIntent = if (openBrowser) {
                 PendingIntent.getActivity(
-                    this@FairScanMessagingService,
+                    this@NopalitoScanMessagingService,
                     notificationRequestCode(messageId),
                     Intent(Intent.ACTION_VIEW, url.toUri()),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
             } else {
                 // Default behavior: launch the main activity of the app
-                val intent = Intent(this@FairScanMessagingService, MainActivity::class.java).apply {
+                val intent = Intent(this@NopalitoScanMessagingService, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     clickAction?.let {
                         putExtra(PushActions.EXTRA_PUSH_ACTION, it)
@@ -191,14 +204,14 @@ class FairScanMessagingService : FirebaseMessagingService() {
                     }
                 }
                 PendingIntent.getActivity(
-                    this@FairScanMessagingService,
+                    this@NopalitoScanMessagingService,
                     notificationRequestCode(messageId),
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
             }
 
-            val builder = NotificationCompat.Builder(this@FairScanMessagingService, CHANNEL_ID)
+            val builder = NotificationCompat.Builder(this@NopalitoScanMessagingService, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_notification)
                 .setContentTitle(finalTitle.ifBlank { null })
                 .setContentText(finalBody.ifBlank { null })
@@ -207,7 +220,7 @@ class FairScanMessagingService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
             try {
-                NotificationManagerCompat.from(this@FairScanMessagingService)
+                NotificationManagerCompat.from(this@NopalitoScanMessagingService)
                     .notify(notificationId(messageId), builder.build())
             } catch (_: SecurityException) {
                 // POST_NOTIFICATIONS revoked between the check and notify.
@@ -288,16 +301,16 @@ class FairScanMessagingService : FirebaseMessagingService() {
             Log.i(TAG, "maintenance notification: event=${event.take(30)} title=${(eventTitle ?: finalTitle).take(60)}")
 
             val contentIntent = PendingIntent.getActivity(
-                this@FairScanMessagingService,
+                this@NopalitoScanMessagingService,
                 notificationRequestCode(messageId),
-                Intent(this@FairScanMessagingService, MainActivity::class.java).apply {
+                Intent(this@NopalitoScanMessagingService, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     putExtra(PushActions.EXTRA_PUSH_ACTION, "open_app")
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-            val builder = NotificationCompat.Builder(this@FairScanMessagingService, CHANNEL_ID)
+            val builder = NotificationCompat.Builder(this@NopalitoScanMessagingService, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_notification)
                 .setContentTitle((eventTitle ?: finalTitle).ifBlank { null })
                 .setContentText(notifBody)
@@ -307,11 +320,55 @@ class FairScanMessagingService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
             try {
-                NotificationManagerCompat.from(this@FairScanMessagingService)
+                NotificationManagerCompat.from(this@NopalitoScanMessagingService)
                     .notify(notificationId(messageId), builder.build())
             } catch (_: SecurityException) {
                 Log.w(TAG, "Could not show maintenance notification: permission revoked")
             }
+        }
+    }
+
+    /**
+     * Shows a proactive cloud notification (quota / rejected file / inactive
+     * account / upload error / test). The text comes from the device's string
+     * resources in the CURRENT app locale — the backend never sends title/body
+     * for these events, only the semantic data keys.
+     */
+    private fun showProactiveNotification(messageId: String?, data: Map<String, String>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !NotificationManagerCompat.from(this).areNotificationsEnabled()
+        ) {
+            Log.d(TAG, "Post notifications permission not granted; skipping proactive notification")
+            return
+        }
+
+        val content = ProactiveNotificationMapper.contentFor(data["type"], data) ?: return
+        val bodyText = getString(content.bodyRes, *content.bodyArgs.toTypedArray())
+
+        val contentIntent = PendingIntent.getActivity(
+            this@NopalitoScanMessagingService,
+            notificationRequestCode(messageId),
+            Intent(this@NopalitoScanMessagingService, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(PushActions.EXTRA_PUSH_ACTION, content.clickAction)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val builder = NotificationCompat.Builder(this@NopalitoScanMessagingService, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(getString(content.titleRes, *content.titleArgs.toTypedArray()))
+            .setContentText(bodyText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bodyText))
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        try {
+            NotificationManagerCompat.from(this@NopalitoScanMessagingService)
+                .notify(notificationId(messageId), builder.build())
+        } catch (_: SecurityException) {
+            Log.w(TAG, "Could not show proactive notification: permission revoked")
         }
     }
 

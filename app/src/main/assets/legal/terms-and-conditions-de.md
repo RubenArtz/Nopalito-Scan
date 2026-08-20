@@ -1,6 +1,6 @@
 # AGB für Nopalito Scan
 
-**Zuletzt aktualisiert:** 09.08.2026
+**Zuletzt aktualisiert:** 19.08.2026
 
 ## 1. Angaben zum Dienst
 
@@ -19,7 +19,9 @@ aktiviert, die Verwaltung von QR-Codes und Dokumenten über lokale Funktionen un
 
 Die Erfassung und die normale Verarbeitung erfolgen lokal auf dem Gerät, sofern die Funktion nicht ausdrücklich angibt,
 dass eine Verbindung erforderlich ist. Einige optionale Funktionen erfordern, dass eine Datei vorübergehend an die
-Server des Betreibers gesendet wird, um sie zu konvertieren oder zu verarbeiten.
+Server des Betreibers gesendet wird, um sie zu konvertieren oder zu verarbeiten. Einige Konvertierungsfunktionen und die
+Registrierung für Benachrichtigungen können ohne Anmeldung unter einer anonymen technischen Identität genutzt werden.
+Erzeugte QR-Codes werden unter öffentlichen, unveränderlichen URLs veröffentlicht.
 
 ## 3. Konto und Sicherheit
 
@@ -42,6 +44,13 @@ Wenn der Nutzer eine Konvertierung oder Verarbeitung in der Cloud anfordert:
 - wenn der Nutzer die Speicherung autorisiert und sich anmeldet, kann die resultierende Datei in seinem Konto
   gespeichert bleiben, bis er sie löscht oder die Löschung des Kontos beantragt.
 
+Technische Fristen: Temporäre Dateien werden bei Abschluss des Vorgangs gelöscht; Überbleibsel von Fehlern oder
+Unterbrechungen werden automatisch innerhalb von höchstens 1 Stunde (Upload-Zwischenspeicher) und 24 Stunden
+(Arbeitsverzeichnisse der Konvertierung) bereinigt. Ohne Anmeldung werden Konvertierungsergebnisse unter einer anonymen
+technischen Identität aufbewahrt und nach 90 Tagen automatisch gelöscht. Vom Nutzer gelöschte Dateien werden für
+30 Tage in einen Papierkorb verschoben und danach endgültig gelöscht; die endgültige Löschung einer Datei oder das
+Leeren des Papierkorbs ist sofort und unumkehrbar.
+
 Der Nutzer kann gespeicherte Dateien über die in der Anwendung verfügbaren Funktionen herunterladen, einsehen, in der
 Vorschau anzeigen und löschen. Die Löschung kann eine angemessene Zeit benötigen, um sich auf Sicherungskopien, Caches
 oder Systeme der Betriebskontinuität auszuwirken, die gemäß dem geltenden technischen Zyklus gelöscht oder überschrieben
@@ -55,8 +64,9 @@ einer gesetzlichen Verpflichtung erforderlich ist.
 
 Der Nutzer darf Nopalito Scan nicht verwenden, um gegen das Gesetz zu verstoßen, Rechte Dritter zu verletzen, Malware zu
 verbreiten, unbefugt auf Systeme oder Konten zuzugreifen, den Dienst zu beeinträchtigen, die Infrastruktur zu
-missbrauchen, rechtswidrige Inhalte hochzuladen oder die Anwendung für Zwecke zu nutzen, die Personen oder Eigentum
-schädigen könnten.
+missbrauchen, rechtswidrige Inhalte hochzuladen, QR-Codes mit rechtswidrigen Inhalten zu erzeugen, Massen- oder
+automatisierte Uploads durchzuführen, die die Infrastruktur missbrauchen, oder die Anwendung für Zwecke zu nutzen, die
+Personen oder Eigentum schädigen könnten.
 
 ## 6. Geistiges Eigentum
 
@@ -73,7 +83,8 @@ Rechte ein, die durch eine anwendbare Softwarelizenz gewährt werden.
 
 Der Dienst kann geändert, vorübergehend unterbrochen oder aufgrund von Wartungsarbeiten, Ausfällen, Updates, höherer
 Gewalt oder Problemen Dritter nicht verfügbar sein. Der Betreiber wird, soweit dies angemessen möglich ist, über
-wichtige Änderungen informieren.
+wichtige Änderungen informieren. Während geplanter Wartungsarbeiten kann der Zugriff auf Cloud-Funktionen vorübergehend
+gesperrt werden.
 
 Der Betreiber kann diese AGB aktualisieren. Die jeweils gültige Version wird in der Anwendung verfügbar sein, und bei
 wesentlichen Änderungen kann vor der weiteren Nutzung der betroffenen Funktionen eine erneute Zustimmung angefordert

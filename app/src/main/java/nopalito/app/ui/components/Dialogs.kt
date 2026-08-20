@@ -42,12 +42,14 @@ fun ConfirmationDialog(
     showDialog: MutableState<Boolean>,
     onConfirm: () -> Unit,
 ) {
+    val haptics = rememberHapticManager()
     AlertDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = {
             TextButton(onClick = {
                 showDialog.value = false
+                haptics.success()
                 onConfirm()
             }) {
                 Text(stringResource(R.string.yes), fontWeight = FontWeight.Bold)

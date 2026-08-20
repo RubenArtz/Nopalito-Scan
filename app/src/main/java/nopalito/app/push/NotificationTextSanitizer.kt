@@ -23,7 +23,7 @@ package nopalito.app.push
 
 /**
  * Sanitizer for notification payload text (FCM data-only messages rendered by
- * [FairScanMessagingService]). The payload is untrusted server text, so it is
+ * [NopalitoScanMessagingService]). The payload is untrusted server text, so it is
  * sanitized BEFORE on-device translation (a URL/token is never sent to the
  * translator) and the translator output is sanitized AGAIN before display.
  *

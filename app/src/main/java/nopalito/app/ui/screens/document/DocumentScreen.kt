@@ -657,6 +657,7 @@ private fun BottomBar(
     onAddPageClick: () -> Unit,
     onNewSession: () -> Unit,
 ) {
+    val haptics = rememberHapticManager()
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -705,7 +706,10 @@ private fun BottomBar(
         }
 
         Button(
-            onClick = onExportClick,
+            onClick = {
+                haptics.click()
+                onExportClick()
+            },
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .weight(1f)

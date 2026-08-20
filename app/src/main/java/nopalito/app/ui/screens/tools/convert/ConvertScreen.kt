@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.*
 import nopalito.app.ui.screens.tools.shared.*
@@ -74,6 +75,8 @@ fun ConvertScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val defaultFileName = stringResource(R.string.tools_default_filename)
+    // Tactile confirmation for save / share / open actions.
+    val haptics = rememberHapticManager()
 
     BackHandler { onBack() }
 
@@ -297,7 +300,10 @@ fun ConvertScreen(
                 )
 
                 Button(
-                    onClick = viewModel::save,
+                    onClick = {
+                        haptics.click()
+                        viewModel.save()
+                    },
                     enabled = state.cached.isNotEmpty() && !state.isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -323,7 +329,10 @@ fun ConvertScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Button(
-                        onClick = viewModel::saveAndShare,
+                        onClick = {
+                            haptics.click()
+                            viewModel.saveAndShare()
+                        },
                         enabled = state.cached.isNotEmpty() && !state.isSaving,
                         modifier = Modifier
                             .weight(1f)
@@ -335,7 +344,10 @@ fun ConvertScreen(
                         Text(stringResource(R.string.share), fontWeight = FontWeight.SemiBold)
                     }
                     OutlinedButton(
-                        onClick = viewModel::saveAndOpen,
+                        onClick = {
+                            haptics.click()
+                            viewModel.saveAndOpen()
+                        },
                         enabled = state.cached.isNotEmpty() && !state.isSaving,
                         modifier = Modifier
                             .weight(1f)

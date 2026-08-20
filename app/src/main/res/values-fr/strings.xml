@@ -433,6 +433,7 @@
 
     <string name="cloud_error_400">Demande invalide. Vérifiez les données saisies.</string>
     <string name="cloud_error_401">Non autorisé. Votre session a expiré.</string>
+    <string name="cloud_error_403">Accès refusé (403).</string>
     <string name="cloud_error_404">Ressource introuvable.</string>
     <string name="cloud_error_413">Le fichier est trop volumineux.</string>
     <string name="cloud_error_415">Type de fichier non pris en charge.</string>
@@ -441,6 +442,30 @@
     <string name="cloud_error_503">Service temporairement indisponible.</string>
     <string name="cloud_error_unexpected">Erreur inattendue (%1$d)</string>
     <string name="cloud_error_load_more">Erreur lors du chargement de fichiers supplémentaires</string>
+
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">La connexion a échoué. Veuillez réessayer.</string>
+    <string name="cloud_error_auth_account_suspended">Votre compte est suspendu. Plusieurs tentatives d\'accès au compte
+        depuis des emplacements différents ont été détectées. Pour le débloquer, contactez contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">Le statut du compte n\'a pas pu être vérifié. Veuillez
+        réessayer plus tard.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">Le compte n\'a pas pu être créé. La limite de comptes pour cet
+        appareil ou ce réseau a été atteinte.
+    </string>
+    <string name="cloud_error_auth_register_vpn">Vous ne pouvez pas créer un compte en utilisant un VPN. Désactivez-le et
+        réessayez.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Votre compte est suspendu. Pour le gérer, contactez
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">Ce compte a été supprimé et ne peut plus être utilisé.</string>
+    <string name="cloud_error_anonymous_protected">Ce compte ne peut pas être géré.</string>
+    <string name="cloud_dialog_account_suspended_title">Compte suspendu</string>
+    <string name="cloud_dialog_account_suspended_body">Votre compte est suspendu. Pour le débloquer, contactez
+        contact@nopalitoscan.org.
+    </string>
 
     <string name="cloud_error_load_files">Erreur lors du chargement des fichiers</string>
     <string name="cloud_error_load_folder">Erreur lors du chargement du dossier</string>
@@ -1084,6 +1109,26 @@
     <string name="cloud_maint_generic_reason">Nous travaillons dessus.</string>
     <string name="cloud_notif_completed">Maintenance terminée</string>
     <string name="cloud_notif_cancelled">Maintenance annulée</string>
+
+    <!-- Notifications cloud proactives (FCM data-only ; le backend n\'envoie
+         pas de texte — la notification est rendue avec ces chaînes dans la
+         langue de l\'app). %1$s = pourcentage, %2$s = utilisé, %3$s = quota -->
+    <string name="notif_storage_80_title">Stockage presque plein</string>
+    <string name="notif_storage_80_body">Vous utilisez %1$s de votre stockage (%2$s sur %3$s). Pensez à libérer de l\'espace.</string>
+    <string name="notif_storage_95_title">Stockage critique</string>
+    <string name="notif_storage_95_body">Votre stockage est à %1$s (%2$s sur %3$s). Libérez de l\'espace rapidement pour éviter les blocages.</string>
+    <string name="notif_storage_100_title">Limite de stockage atteinte</string>
+    <string name="notif_storage_100_body">Vous avez atteint la limite de stockage (%2$s sur %3$s). Libérez de l\'espace pour continuer à envoyer des fichiers.</string>
+    <string name="notif_storage_reminder_title">Rappel de stockage</string>
+    <string name="notif_storage_reminder_body">Vous utilisez toujours %1$s de votre stockage (%2$s sur %3$s).</string>
+    <string name="notif_storage_rejected_title">Fichier rejeté</string>
+    <string name="notif_storage_rejected_body">Le fichier « %1$s » a été rejeté par l\'analyse de sécurité.</string>
+    <string name="notif_account_inactive_title">Votre compte est inactif</string>
+    <string name="notif_account_inactive_body">Vous ne vous êtes pas connecté depuis %1$s jours. Revenez sur Nopalito Scan pour conserver votre compte et vos fichiers.</string>
+    <string name="notif_upload_error_title">Erreur de téléversement</string>
+    <string name="notif_upload_error_body">Une erreur est survenue lors du téléversement de « %1$s ». Veuillez réessayer.</string>
+    <string name="notif_test_title">Notification de test</string>
+    <string name="notif_test_body">Ceci est une notification de test envoyée depuis le panneau d\'administration.</string>
     <!-- Push notifications (FCM) -->
     <string name="push_channel_name">Notifications</string>
     <string name="push_channel_description">Actualités et alertes de Nopalito Scan Cloud</string>

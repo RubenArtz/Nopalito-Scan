@@ -1,6 +1,6 @@
 # Nopalito Scan Terms and Conditions
 
-**Last updated:** 08/09/2026
+**Last updated:** 08/19/2026
 
 ## 1. Service identification
 
@@ -18,7 +18,8 @@ documents through local features and cloud services.
 
 Capture and ordinary processing happen locally on the device whenever the feature does not expressly state that it
 requires a connection. Some optional features require temporarily sending a file to the Operator's servers to convert or
-process it.
+process it. Some conversion features and notification registration can be used without signing in, under an anonymous
+technical identity. Generated QR codes are published at public, immutable URLs.
 
 ## 3. Account and security
 
@@ -40,6 +41,12 @@ When the User requests a conversion or cloud processing:
 - if the User authorizes storage and signs in, the resulting file may be kept in their account until they delete it or
   request account deletion.
 
+Technical timeframes: temporary files are deleted when the operation completes; leftovers from failures or
+interruptions are automatically cleaned within at most 1 hour (upload staging files) and 24 hours (conversion working
+directories). Without signing in, conversion results are kept under an anonymous technical identity and automatically
+deleted after 90 days. Files deleted by the User are moved to a trash for 30 days and then permanently deleted;
+permanent deletion of a file or emptying the trash is immediate and irreversible.
+
 The User can download, view, preview and delete stored files from the features available in the Application. Deletion
 may take a reasonable time to propagate to backup copies, caches or business continuity systems, which will be deleted
 or overwritten according to the applicable technical cycle.
@@ -51,7 +58,8 @@ necessary to provide the service, maintain security, provide support or comply w
 
 The User may not use Nopalito Scan to break the law, infringe the rights of third parties, distribute malware, attempt
 to access systems or accounts without authorization, interfere with the service, abuse the infrastructure, upload
-unlawful Content or use the Application for purposes that may harm people or property.
+unlawful Content, generate QR codes containing unlawful Content, make mass or automated uploads that abuse the
+infrastructure or use the Application for purposes that may harm people or property.
 
 ## 6. Intellectual property
 
@@ -67,7 +75,8 @@ license.
 ## 7. Availability and changes
 
 The service may be modified, temporarily interrupted or become unavailable due to maintenance, failures, updates, force
-majeure or third-party issues. The Operator will try to inform of important changes when reasonably possible.
+majeure or third-party issues. The Operator will try to inform of important changes when reasonably possible. During
+scheduled maintenance, access to cloud features may be temporarily blocked.
 
 The Operator may update these Terms. The current version will be available within the Application and, when the change
 is material, a new acceptance may be requested before continuing to use the affected features.

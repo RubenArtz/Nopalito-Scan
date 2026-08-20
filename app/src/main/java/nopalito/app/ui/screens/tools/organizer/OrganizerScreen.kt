@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.ZoomableBitmapDialog
 import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.PickedFile
 import nopalito.app.ui.screens.tools.deletepages.BlankPageInfo
@@ -1258,6 +1259,8 @@ private fun ExportControls(
     onShare: (List<OrganizerResult>) -> Unit,
     onOpen: (List<OrganizerResult>) -> Unit,
 ) {
+    // Tactile confirmation for result actions (share / open).
+    val haptics = rememberHapticManager()
     SectionTitle(stringResource(R.string.org_output_name_label))
     OutlinedTextField(
         value = state.outputFileName,
@@ -1330,7 +1333,10 @@ private fun ExportControls(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Button(
-                onClick = { onShare(state.results) },
+                onClick = {
+                    haptics.click()
+                    onShare(state.results)
+                },
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 48.dp),
@@ -1341,7 +1347,10 @@ private fun ExportControls(
                 Text(stringResource(R.string.share), fontWeight = FontWeight.SemiBold)
             }
             OutlinedButton(
-                onClick = { onOpen(state.results) },
+                onClick = {
+                    haptics.click()
+                    onOpen(state.results)
+                },
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 48.dp),

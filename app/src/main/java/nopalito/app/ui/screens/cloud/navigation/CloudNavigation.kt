@@ -27,6 +27,24 @@ enum class CloudRecoverMode {
     FORGOT,
 }
 
+/**
+ * One-shot deep link into the cloud overlay, set by the push-action handler
+ * (e.g. a quota notification tap wants to land on the Storage screen instead
+ * of Home). CloudHost consumes it once it reaches the Authenticated state.
+ *
+ * [consume] clears the target so a later cloud entry never replays it.
+ */
+object CloudDeepLink {
+    @Volatile
+    var target: CloudScreen? = null
+
+    fun consume(): CloudScreen? {
+        val value = target
+        target = null
+        return value
+    }
+}
+
 sealed class CloudScreen {
     object Splash : CloudScreen()
     object EmailLogin : CloudScreen()

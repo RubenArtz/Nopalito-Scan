@@ -37,6 +37,7 @@ object PushActions {
     const val OPEN_APP = "open_app"
     const val OPEN_CLOUD = "open_cloud"
     const val OPEN_SETTINGS = "open_settings"
+    const val OPEN_STORAGE = "open_storage"
     const val OPEN_QR_HISTORY = "open_qr_history"
     const val OPEN_TOOLS = "open_tools"
     const val OPEN_URL = "open_url"
@@ -64,6 +65,7 @@ object PushActions {
         OPEN_APP,
         OPEN_CLOUD,
         OPEN_SETTINGS,
+        OPEN_STORAGE,
         OPEN_QR_HISTORY,
         OPEN_TOOLS,
         OPEN_URL,

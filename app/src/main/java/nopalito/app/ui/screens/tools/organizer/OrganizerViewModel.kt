@@ -420,7 +420,7 @@ class OrganizerViewModel(container: AppContainer) : ViewModel() {
         _state.update {
             it.copy(
                 pageOrder = entry.pageOrder,
-                selectedPreviewIndex = entry.selectedPreviewIndex.coerceIn(0, entry.pageOrder.lastIndex),
+                selectedPreviewIndex = entry.selectedPreviewIndex.coerceIn(0, entry.pageOrder.lastIndex.coerceAtLeast(0)),
                 undoStack = it.undoStack.dropLast(1),
                 deleteMode = false,
                 markedForDeletion = emptySet(),

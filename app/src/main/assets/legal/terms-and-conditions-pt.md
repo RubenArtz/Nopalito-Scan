@@ -1,6 +1,6 @@
 # Termos e Condições do Nopalito Scan
 
-**Última atualização:** 09/08/2026
+**Última atualização:** 19/08/2026
 
 ## 1. Identificação do serviço
 
@@ -18,7 +18,8 @@ QR e documentos por meio de recursos locais e serviços na nuvem.
 
 A captura e o processamento comum são feitos localmente no dispositivo sempre que o recurso não indicar expressamente
 que exige conexão. Alguns recursos opcionais exigem o envio temporário de um arquivo aos servidores do Operador para
-convertê-lo ou processá-lo.
+convertê-lo ou processá-lo. Alguns recursos de conversão e o registro de notificações podem ser usados sem login, sob
+uma identidade técnica anônima. Os códigos QR gerados são publicados em URLs públicas e imutáveis.
 
 ## 3. Conta e segurança
 
@@ -40,6 +41,12 @@ Quando o Usuário solicita uma conversão ou processamento na nuvem:
 - se o Usuário autorizar o armazenamento e entrar, o arquivo resultante poderá ser mantido em sua conta até que ele o
   exclua ou solicite a exclusão da conta.
 
+Prazos técnicos: os arquivos temporários são excluídos ao final da operação; resíduos de falhas ou interrupções são
+limpos automaticamente em no máximo 1 hora (arquivos temporários de envio) e 24 horas (diretórios de trabalho de
+conversão). Sem login, os resultados de conversão são mantidos sob uma identidade técnica anônima e excluídos
+automaticamente após 90 dias. Os arquivos excluídos pelo Usuário vão para uma lixeira por 30 dias e depois são apagados
+definitivamente; a exclusão permanente de um arquivo ou o esvaziamento da lixeira são imediatos e irreversíveis.
+
 O Usuário pode baixar, consultar, pré-visualizar e excluir os arquivos armazenados nos recursos disponíveis no
 Aplicativo. A exclusão pode demorar um período razoável para se propagar para cópias de segurança, caches ou sistemas de
 continuidade operacional, que serão excluídos ou sobrescritos conforme o ciclo técnico aplicável.
@@ -50,8 +57,8 @@ necessário para prestar o serviço, manter a segurança, atender ao suporte ou 
 ## 5. Usos proibidos
 
 O Usuário não pode usar o Nopalito Scan para infringir a lei, violar direitos de terceiros, distribuir malware, tentar
-acessar sistemas ou contas sem autorização, interferir no serviço, abusar da infraestrutura, carregar Conteúdo ilícito
-ou usar o Aplicativo para fins que possam causar danos a pessoas ou bens.
+acessar sistemas ou contas sem autorização, interferir no serviço, abusar da infraestrutura, carregar Conteúdo ilícito, gerar códigos QR com conteúdo ilícito, realizar envios em massa ou automatizados que abusem
+da infraestrutura ou usar o Aplicativo para fins que possam causar danos a pessoas ou bens.
 
 ## 6. Propriedade intelectual
 
@@ -68,7 +75,8 @@ por uma licença de software aplicável.
 
 O serviço pode ser modificado, interrompido temporariamente ou ficar indisponível por manutenção, falhas, atualizações,
 casos de força maior ou problemas de terceiros. O Operador procurará informar sobre mudanças importantes sempre que
-razoavelmente possível.
+razoavelmente possível. Durante uma manutenção programada, o acesso aos recursos na nuvem pode ser bloqueado
+temporariamente.
 
 O Operador pode atualizar estes Termos. A versão vigente estará disponível no Aplicativo e, quando a mudança for
 relevante, uma nova aceitação poderá ser solicitada antes de continuar usando os recursos afetados.

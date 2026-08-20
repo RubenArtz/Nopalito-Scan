@@ -59,6 +59,12 @@ fun authAccountDialog(e: Throwable, application: android.app.Application): Cloud
             application.stringFor(R.string.cloud_dialog_secret_body, AppLocaleOverride.locale)
         )
 
+        ApiException.AUTH_ACCOUNT_SUSPENDED,
+        ApiException.AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED -> CloudAuthDialog(
+            application.stringFor(R.string.cloud_dialog_account_suspended_title, AppLocaleOverride.locale),
+            application.stringFor(R.string.cloud_dialog_account_suspended_body, AppLocaleOverride.locale)
+        )
+
         else -> null
     }
 }

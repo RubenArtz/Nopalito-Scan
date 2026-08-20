@@ -908,6 +908,14 @@ class ApiException(
     /** True when a trash restore was rejected because it would exceed the quota. */
     fun isRestoreQuotaExceeded(): Boolean = code == QUOTA_EXCEEDED_ON_RESTORE
 
+    /** True when the account is suspended (all auth flows are blocked). */
+    fun isAccountSuspended(): Boolean =
+        code == AUTH_ACCOUNT_SUSPENDED || code == AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED
+
+    /** True when registration was rejected by an IP policy (limit or VPN). */
+    fun isRegistrationBlocked(): Boolean =
+        code == AUTH_REGISTER_IP_LIMIT_REACHED || code == AUTH_REGISTER_VPN_NOT_ALLOWED
+
     /** Legacy-compatible constructor: `(code, message)`. */
     constructor(code: String?, message: String) : this(code, null, 0, null, message)
 
@@ -917,6 +925,13 @@ class ApiException(
         const val EMAIL_ALREADY_REGISTERED = "EMAIL_ALREADY_REGISTERED"
         const val ACCOUNT_NOT_FOUND = "ACCOUNT_NOT_FOUND"
         const val INVALID_APP_SECRET = "INVALID_APP_SECRET"
+        const val AUTH_ACCOUNT_SUSPENDED = "AUTH_ACCOUNT_SUSPENDED"
+        const val AUTH_ACCOUNT_STATUS_UNKNOWN = "AUTH_ACCOUNT_STATUS_UNKNOWN"
+        const val AUTH_REGISTER_IP_LIMIT_REACHED = "AUTH_REGISTER_IP_LIMIT_REACHED"
+        const val AUTH_REGISTER_VPN_NOT_ALLOWED = "AUTH_REGISTER_VPN_NOT_ALLOWED"
+        const val AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED = "AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED"
+        const val ACCOUNT_ALREADY_DELETED = "ACCOUNT_ALREADY_DELETED"
+        const val ANONYMOUS_USER_PROTECTED = "ANONYMOUS_USER_PROTECTED"
     }
 }
 

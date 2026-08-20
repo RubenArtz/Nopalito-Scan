@@ -137,7 +137,7 @@ android {
             .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
             .forEach { output ->
                 val abi = output.getFilter("ABI")
-                output.outputFileName = "FairScan-${variant.versionName}-${abi}.apk"
+                output.outputFileName = "Nopalito Scan-${variant.versionName}-${abi}.apk"
             }
     }
 

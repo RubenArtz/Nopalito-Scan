@@ -427,6 +427,7 @@
 
     <string name="cloud_error_400">Ungültige Anfrage. Prüfen Sie die eingegebenen Daten.</string>
     <string name="cloud_error_401">Nicht autorisiert. Ihre Sitzung ist abgelaufen.</string>
+    <string name="cloud_error_403">Zugriff verweigert (403).</string>
     <string name="cloud_error_404">Ressource nicht gefunden.</string>
     <string name="cloud_error_413">Die Datei ist zu groß.</string>
     <string name="cloud_error_415">Nicht unterstützter Dateityp.</string>
@@ -435,6 +436,31 @@
     <string name="cloud_error_503">Dienst vorübergehend nicht verfügbar.</string>
     <string name="cloud_error_unexpected">Unerwarteter Fehler (%1$d)</string>
     <string name="cloud_error_load_more">Fehler beim Laden weiterer Dateien</string>
+
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.</string>
+    <string name="cloud_error_auth_account_suspended">Ihr Konto ist gesperrt. Es wurden mehrere Zugriffsversuche auf das
+        Konto von verschiedenen Standorten erkannt. Zum Entsperren wenden Sie sich an contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">Der Kontostatus konnte nicht überprüft werden. Bitte
+        versuchen Sie es später erneut.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">Das Konto konnte nicht erstellt werden. Das Limit für Konten auf
+        diesem Gerät oder in diesem Netzwerk wurde erreicht.
+    </string>
+    <string name="cloud_error_auth_register_vpn">Sie können kein Konto erstellen, während Sie ein VPN verwenden. Schalten
+        Sie es aus und versuchen Sie es erneut.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Ihr Konto ist gesperrt. Zur Verwaltung wenden Sie sich an
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">Dieses Konto wurde gelöscht und kann nicht mehr verwendet werden.
+    </string>
+    <string name="cloud_error_anonymous_protected">Dieses Konto kann nicht verwaltet werden.</string>
+    <string name="cloud_dialog_account_suspended_title">Konto gesperrt</string>
+    <string name="cloud_dialog_account_suspended_body">Ihr Konto ist gesperrt. Zum Entsperren wenden Sie sich an
+        contact@nopalitoscan.org.
+    </string>
 
     <string name="cloud_error_load_files">Fehler beim Laden der Dateien</string>
     <string name="cloud_error_load_folder">Fehler beim Laden des Ordners</string>
@@ -1077,6 +1103,26 @@
     <string name="cloud_maint_generic_reason">Wir arbeiten daran.</string>
     <string name="cloud_notif_completed">Wartung abgeschlossen</string>
     <string name="cloud_notif_cancelled">Wartung abgebrochen</string>
+
+    <!-- Proaktive Cloud-Benachrichtigungen (FCM data-only; der Backend sendet
+         keinen Text — die Benachrichtigung wird mit diesen Strings in der
+         App-Sprache gerendert). %1$s = Prozent, %2$s = belegt, %3$s = Kontingent -->
+    <string name="notif_storage_80_title">Speicher fast voll</string>
+    <string name="notif_storage_80_body">Du verbrauchst %1$s deines Speichers (%2$s von %3$s). Überlege, Speicherplatz freizugeben.</string>
+    <string name="notif_storage_95_title">Speicher kritisch</string>
+    <string name="notif_storage_95_body">Dein Speicher ist bei %1$s (%2$s von %3$s). Gib bald Speicherplatz frei, um Blockaden zu vermeiden.</string>
+    <string name="notif_storage_100_title">Speicherlimit erreicht</string>
+    <string name="notif_storage_100_body">Du hast dein Speicherlimit erreicht (%2$s von %3$s). Gib Speicherplatz frei, um weiter Dateien hochzuladen.</string>
+    <string name="notif_storage_reminder_title">Speicher-Erinnerung</string>
+    <string name="notif_storage_reminder_body">Du verbrauchst weiterhin %1$s deines Speichers (%2$s von %3$s).</string>
+    <string name="notif_storage_rejected_title">Datei abgelehnt</string>
+    <string name="notif_storage_rejected_body">Die Datei „%1$s“ wurde vom Sicherheitsscan abgelehnt.</string>
+    <string name="notif_account_inactive_title">Dein Konto ist inaktiv</string>
+    <string name="notif_account_inactive_body">Du hast dich seit %1$s Tagen nicht angemeldet. Kehre zu Nopalito Scan zurück, um dein Konto und deine Dateien zu behalten.</string>
+    <string name="notif_upload_error_title">Upload-Fehler</string>
+    <string name="notif_upload_error_body">Beim Hochladen von „%1$s“ ist ein Fehler aufgetreten. Bitte versuche es erneut.</string>
+    <string name="notif_test_title">Test-Benachrichtigung</string>
+    <string name="notif_test_body">Dies ist eine Test-Benachrichtigung aus dem Admin-Panel.</string>
     <!-- Push notifications (FCM) -->
     <string name="push_channel_name">Benachrichtigungen</string>
     <string name="push_channel_description">Updates und Benachrichtigungen von Nopalito Scan Cloud</string>

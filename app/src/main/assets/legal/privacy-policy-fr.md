@@ -1,6 +1,6 @@
 # Politique de confidentialité de Nopalito Scan
 
-**Dernière mise à jour :** 09/08/2026
+**Dernière mise à jour :** 19/08/2026
 
 ## 1. Responsable du traitement et contact
 
@@ -20,9 +20,11 @@ l'Utilisateur utilise, nous pouvons traiter :
 - **Fichiers temporaires :** fichiers envoyés au service cloud pour exécuter une conversion ou un traitement demandé.
 - **Fichiers stockés :** documents et métadonnées minimales — par exemple, nom, taille, date et type — lorsque
   l'Utilisateur se connecte et autorise leur stockage dans le cloud.
-- **Données techniques et journaux :** adresse IP, date et heure, identifiants de requête, version de l'Application,
-  type d'appareil, événements d'authentification, erreurs et journaux de sécurité. Cette liste doit être vérifiée pour
-  correspondre exactement à ce que le backend enregistre.
+- **Données techniques et journaux :** adresse IP (stockée en clair ou sous forme de hash à sens unique selon la
+  configuration), pays approximatif dérivé de l'IP, agent utilisateur, version de l'Application et plateforme,
+  identifiant de la requête, endpoint, méthode, statut et durée de chaque requête, e-mail et identifiant de
+  l'Utilisateur lorsqu'il est connecté, jeton de notification push lorsqu'elles sont activées, et événements
+  métier (connexion, envoi, téléchargement, suppression, conversion et actions administratives).
 - **Autorisations de l'appareil :** caméra et stockage ou sélecteur de fichiers, uniquement lorsque cela est nécessaire
   à la fonction choisie. Nopalito Scan ne doit pas déclarer des autorisations qu'il ne demande pas réellement.
 
@@ -44,7 +46,7 @@ Nous utilisons les données pour :
 Nous ne vendons pas de données personnelles et n'utilisons pas le Contenu de l'Utilisateur à des fins publicitaires.
 Nous n'utilisons pas les documents pour entraîner des modèles ni à des fins autres que la fourniture de la fonction
 demandée, sauf si l'Utilisateur accorde une autorisation distincte et explicite ou si la loi l'exige de manière
-impérative. **Confirmez que cette phrase reflète réellement votre backend et vos fournisseurs.**
+impérative.
 
 ## 4. Ce qui se passe lorsque le cloud est utilisé
 
@@ -52,9 +54,13 @@ Le traitement local ne nécessite pas l'envoi du document à l'Exploitant. Si l'
 conversion ou de traitement dans le cloud, le fichier est transmis via **HTTPS/TLS** à l'infrastructure de l'Exploitant
 ou à ses fournisseurs techniques pour exécuter cette demande.
 
-Le fichier envoyé pour un traitement temporaire n'est pas conservé une fois la conversion terminée et le résultat livré,
-sauf copies techniques inévitables, raisons de sécurité ou obligation légale. Précisez ici le délai réel :
-**[par exemple : suppression automatique dans un délai maximum de X minutes/heures]**.
+Le fichier envoyé pour un traitement temporaire est supprimé à la fin de l'opération : pour les conversions en aperçu,
+le fichier et tous les artefacts intermédiaires sont effacés dès que le résultat est livré ; pour les conversions par
+lots, les fichiers envoyés et les répertoires de travail sont supprimés à la fin du travail. Les résidus dus à des
+pannes ou interruptions sont nettoyés automatiquement dans un délai maximal de 1 heure (fichiers temporaires d'envoi)
+et de 24 heures (répertoires de travail de conversion). Si l'Utilisateur n'est pas connecté, les résultats de conversion
+sont conservés sous une identité technique anonyme et supprimés automatiquement après 90 jours. Les codes QR générés par
+l'Utilisateur sont publiés à des URLs publiques et immuables et ne sont pas supprimés automatiquement.
 
 Si l'Utilisateur se connecte et autorise le stockage du résultat, le document est conservé dans son compte jusqu'à ce
 qu'il le supprime ou demande la suppression du compte. L'Utilisateur peut le prévisualiser, le télécharger et le
@@ -64,7 +70,11 @@ supprimer depuis l'Application.
 
 Nous pouvons partager des données avec des fournisseurs qui hébergent des serveurs, stockent des fichiers, livrent des
 e-mails, gèrent l'authentification, surveillent les erreurs ou protègent l'infrastructure. Ces fournisseurs ne doivent
-traiter les données qu'en suivant les instructions de l'Exploitant et pour fournir ces services.
+traiter les données qu'en suivant les instructions de l'Exploitant et pour fournir ces services. En particulier, les
+fournisseurs peuvent inclure : hébergement et base de données (MySQL), stockage d'objets local ou compatible S3 (par
+exemple Amazon S3, Cloudflare R2, MinIO, Backblaze B2 ou Wasabi selon la configuration), envoi d'e-mails (SMTP), réseau
+de diffusion et protection (Cloudflare), notifications push (Firebase Cloud Messaging) et géolocalisation des IP
+(ip-api.com, avec un cache local au niveau du pays).
 
 Nous ne partageons pas les documents avec des annonceurs ni avec des tiers à des fins commerciales propres. Nous pouvons
 divulguer des informations si cela est nécessaire pour se conformer à une obligation légale, protéger les droits et la
@@ -75,11 +85,13 @@ sécurité, enquêter sur une fraude ou répondre à une urgence.
 Nous conservons les données de compte tant que le compte existe ou tant qu'elles sont nécessaires à la fourniture du
 service. Les fichiers stockés restent jusqu'à ce que l'Utilisateur les supprime ou demande la suppression du compte.
 
-Les fichiers de traitement temporaire sont automatiquement supprimés après la fin de l'opération, dans un délai de **1
-minute**. Les journaux techniques et de sécurité sont conservés pendant **1 minute** puis supprimés ou anonymisés, sauf
-nécessité de les conserver pour des raisons de sécurité, de fraude, de résolution de réclamations ou d'obligation
-légale. N'inventez pas ces délais : ils doivent correspondre à la configuration réelle du backend, des sauvegardes et
-des fournisseurs.
+Les fichiers de traitement temporaire sont supprimés à la fin de l'opération ; les résidus dus à des pannes ou
+interruptions sont nettoyés automatiquement dans un délai maximal de 1 heure (fichiers temporaires d'envoi) et de
+24 heures (répertoires de travail de conversion). Les fichiers envoyés dans la corbeille sont définitivement supprimés
+automatiquement après **30 jours**. Les journaux d'activité et de sécurité (audit) sont conservés pendant **90 jours** ;
+les travaux de conversion, pendant **90 jours** ; les données de session et de jeton de rafraîchissement sont purgées
+après **30 jours** ; les journaux d'application sont conservés dans des fichiers rotatifs (14 à 30 fichiers de 10 Mo) ;
+et la géolocalisation des IP est mise en cache pendant **30 jours**.
 
 ## 7. Droits de l'Utilisateur
 
@@ -104,9 +116,13 @@ automatiquement un compte ni les données stockées dans le cloud.
 ## 9. Sécurité
 
 Nous appliquons des mesures de sécurité raisonnables, telles que le chiffrement en transit, les contrôles d'accès, la
-séparation des comptes, la gestion des identifiants, les journaux de sécurité et la minimisation des données. Aucun
-système connecté à Internet n'est totalement sécurisé ; l'Utilisateur doit également protéger son appareil et ses
-identifiants.
+séparation des comptes, la gestion des identifiants, les journaux de sécurité et la minimisation des données. La
+connexion se fait en deux étapes (mot de passe plus un code à usage unique envoyé par e-mail), les jetons d'accès sont
+de courte durée, les sessions peuvent être révoquées, les tentatives sont limitées en fréquence, les mots de passe sont
+stockés sous forme de hash à sens unique et les journaux filtrent les valeurs sensibles. Le contenu est transmis
+chiffré, mais n'est pas chiffré au repos sur notre infrastructure ; évitez de stocker des documents exigeant un niveau
+de protection supérieur. Aucun système connecté à Internet n'est totalement sécurisé ; l'Utilisateur doit également
+protéger son appareil et ses identifiants.
 
 ## 10. Mineurs
 

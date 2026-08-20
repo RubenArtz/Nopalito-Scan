@@ -628,6 +628,7 @@
     <!-- Cloud: repository error messages -->
     <string name="cloud_error_400">Invalid request. Check the data you entered.</string>
     <string name="cloud_error_401">Unauthorized. Your session expired.</string>
+    <string name="cloud_error_403">Access denied (403).</string>
     <string name="cloud_error_404">Resource not found.</string>
     <string name="cloud_error_413">The file is too large.</string>
     <string name="cloud_error_415">Unsupported file type.</string>
@@ -636,6 +637,30 @@
     <string name="cloud_error_503">Service temporarily unavailable.</string>
     <string name="cloud_error_unexpected">Unexpected error (%1$d)</string>
     <string name="cloud_error_load_more">Error loading more files</string>
+
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">Sign-in failed. Please try again.</string>
+    <string name="cloud_error_auth_account_suspended">Your account is suspended. Several attempts were detected to
+        access the account from different locations. To unlock it, contact contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">The account status could not be verified. Please try again
+        later.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">The account could not be created. The limit of accounts for this
+        device or network was reached.
+    </string>
+    <string name="cloud_error_auth_register_vpn">You cannot create an account while using a VPN. Turn it off and try
+        again.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Your account is suspended. To manage it, contact
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">This account was deleted and can no longer be used.</string>
+    <string name="cloud_error_anonymous_protected">This account cannot be managed.</string>
+    <string name="cloud_dialog_account_suspended_title">Account suspended</string>
+    <string name="cloud_dialog_account_suspended_body">Your account is suspended. To unlock it, contact
+        contact@nopalitoscan.org.
+    </string>
 
     <!-- Cloud: ViewModel messages -->
     <string name="cloud_error_load_files">Error loading files</string>
@@ -688,6 +713,26 @@
     <string name="cloud_maint_generic_reason">We are working on it.</string>
     <string name="cloud_notif_completed">Maintenance finished</string>
     <string name="cloud_notif_cancelled">Maintenance cancelled</string>
+
+    <!-- Proactive cloud notifications (data-only FCM; the backend sends no
+         text — the tray is rendered with these strings in the app locale).
+         %1$s = percent, %2$s = used bytes, %3$s = quota bytes, %4$s = file name -->
+    <string name="notif_storage_80_title">Storage almost full</string>
+    <string name="notif_storage_80_body">You are using %1$s of your storage (%2$s of %3$s). Consider freeing up space.</string>
+    <string name="notif_storage_95_title">Storage critical</string>
+    <string name="notif_storage_95_body">Your storage is at %1$s (%2$s of %3$s). Free up space soon to avoid blocks.</string>
+    <string name="notif_storage_100_title">Storage limit reached</string>
+    <string name="notif_storage_100_body">You have reached your storage limit (%2$s of %3$s). Free up space to keep uploading files.</string>
+    <string name="notif_storage_reminder_title">Storage reminder</string>
+    <string name="notif_storage_reminder_body">You are still using %1$s of your storage (%2$s of %3$s).</string>
+    <string name="notif_storage_rejected_title">File rejected</string>
+    <string name="notif_storage_rejected_body">The file “%1$s” was rejected by the security scan.</string>
+    <string name="notif_account_inactive_title">Your account is inactive</string>
+    <string name="notif_account_inactive_body">You have not signed in for %1$s days. Come back to Nopalito Scan to keep your account and files.</string>
+    <string name="notif_upload_error_title">Upload error</string>
+    <string name="notif_upload_error_body">An error occurred while uploading “%1$s”. Please try again.</string>
+    <string name="notif_test_title">Test notification</string>
+    <string name="notif_test_body">This is a test notification sent from the admin panel.</string>
 
     <!-- Document screen (editor): gradient header -->
     <string name="document_title">Document editor</string>

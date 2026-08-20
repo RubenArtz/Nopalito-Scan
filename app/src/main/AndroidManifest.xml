@@ -27,6 +27,9 @@
             android:name="android.hardware.camera"
             android:required="false"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Haptic feedback: normal permission, auto-granted; needed for the direct
+         Vibrator fallback on API 26-29 (the system haptics path needs none). -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
     <!-- QR WiFi connect: network suggestions need a nearby/location runtime permission -->
     <uses-permission
             android:name="android.permission.ACCESS_FINE_LOCATION"
@@ -61,7 +64,7 @@
             android:networkSecurityConfig="@xml/network_security_config"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
-            android:theme="@style/Theme.FairScan"
+            android:theme="@style/Theme.NopalitoScan"
             tools:targetApi="tiramisu">
         <!-- Push notifications (FCM): default channel used by FCM notifications
              when no channel id is specified in the message. -->
@@ -73,7 +76,7 @@
              the backend) and foreground notifications. No Firebase secret is
              stored in the app: everything server-side. -->
         <service
-                android:name=".push.FairScanMessagingService"
+                android:name=".push.NopalitoScanMessagingService"
                 android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
@@ -82,7 +85,7 @@
         <activity
                 android:name=".MainActivity"
                 android:exported="true"
-                android:theme="@style/Theme.FairScan"
+                android:theme="@style/Theme.NopalitoScan"
                 android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

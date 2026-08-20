@@ -1,6 +1,6 @@
 # Datenschutzerklärung von Nopalito Scan
 
-**Zuletzt aktualisiert:** 09.08.2026
+**Zuletzt aktualisiert:** 19.08.2026
 
 ## 1. Verantwortlicher und Kontakt
 
@@ -21,9 +21,11 @@ Funktionen, die der Nutzer verwendet, können wir verarbeiten:
   Verarbeitung auszuführen.
 - **Gespeicherte Dateien:** Dokumente und minimale Metadaten – zum Beispiel Name, Größe, Datum und Typ –, wenn der
   Nutzer sich anmeldet und deren Speicherung in der Cloud autorisiert.
-- **Technische Daten und Protokolle:** IP-Adresse, Datum und Uhrzeit, Anfragekennungen, Version der Anwendung,
-  Gerätetyp, Authentifizierungsereignisse, Fehler und Sicherheitsprotokolle. Diese Liste sollte geprüft werden, damit
-  sie exakt dem entspricht, was das Backend aufzeichnet.
+- **Technische Daten und Protokolle:** IP-Adresse (je nach Konfiguration im Klartext oder als Einweg-Hash
+  gespeichert), ungefähres, aus der IP abgeleitetes Land, Benutzeragent, Version und Plattform der Anwendung,
+  Anfragekennung, Endpunkt, Methode, Status und Dauer jeder Anfrage, E-Mail-Adresse und Kennung des Nutzers nach der
+  Anmeldung, Push-Benachrichtigungstoken, sofern Benachrichtigungen aktiviert sind, sowie Geschäftsereignisse
+  (Anmeldung, Upload, Download, Löschung, Konvertierung und administrative Aktionen).
 - **Geräteberechtigungen:** Kamera und Speicher oder Dateiauswahl, nur wenn dies für die gewählte Funktion erforderlich
   ist. Nopalito Scan darf keine Berechtigungen erklären, die es tatsächlich nicht anfordert.
 
@@ -47,7 +49,6 @@ Wir verwenden die Daten, um:
 Wir verkaufen keine personenbezogenen Daten und verwenden die Inhalte des Nutzers nicht für Werbung. Wir verwenden die
 Dokumente nicht zum Trainieren von Modellen oder für andere Zwecke als die Erbringung der angeforderten Funktion, es sei
 denn, der Nutzer erteilt eine gesonderte und ausdrückliche Genehmigung oder das Gesetz verlangt es zwingend.
-**Bestätigen Sie, dass dieser Satz Ihr Backend und Ihre Anbieter tatsächlich widerspiegelt.**
 
 ## 4. Was passiert, wenn die Cloud genutzt wird
 
@@ -55,10 +56,14 @@ Die lokale Verarbeitung erfordert kein Senden des Dokuments an den Betreiber. We
 Cloud-Verarbeitungsfunktion auswählt, wird die Datei per **HTTPS/TLS** an die Infrastruktur des Betreibers oder seine
 technischen Anbieter übertragen, um diese Anfrage auszuführen.
 
-Die für die vorübergehende Verarbeitung hochgeladene Datei wird nach Abschluss der Konvertierung und Zustellung des
-Ergebnisses nicht aufbewahrt, außer bei unvermeidlichen technischen Kopien, aus Sicherheitsgründen oder aufgrund einer
-gesetzlichen Verpflichtung. Geben Sie hier die tatsächliche Frist an:
-**[z. B. automatische Löschung innerhalb von höchstens X Minuten/Stunden]**.
+Die für die vorübergehende Verarbeitung hochgeladene Datei wird bei Abschluss des Vorgangs gelöscht: Bei
+Vorschaukonvertierungen werden die Datei und alle Zwischenartefakte entfernt, sobald das Ergebnis zugestellt wurde; bei
+Stapelkonvertierungen werden die hochgeladenen Dateien und Arbeitsverzeichnisse nach Abschluss des Auftrags gelöscht.
+Überbleibsel von Fehlern oder Unterbrechungen werden automatisch innerhalb von höchstens 1 Stunde (Upload-Zwischenspeicher)
+und 24 Stunden (Arbeitsverzeichnisse der Konvertierung) bereinigt. Wenn der Nutzer nicht angemeldet ist, werden
+Konvertierungsergebnisse unter einer anonymen technischen Identität aufbewahrt und nach 90 Tagen automatisch gelöscht. Die
+vom Nutzer erzeugten QR-Codes werden unter öffentlichen, unveränderlichen URLs veröffentlicht und nicht automatisch
+gelöscht.
 
 Wenn der Nutzer sich anmeldet und die Speicherung des Ergebnisses autorisiert, wird das Dokument in seinem Konto
 aufbewahrt, bis er es löscht oder die Löschung des Kontos beantragt. Der Nutzer kann es in der Vorschau anzeigen,
@@ -68,7 +73,11 @@ herunterladen und aus der Anwendung löschen.
 
 Wir können Daten mit Anbietern teilen, die Server hosten, Dateien speichern, E-Mails zustellen, die Authentifizierung
 verwalten, Fehler überwachen oder die Infrastruktur schützen. Diese Anbieter dürfen die Daten nur nach den Anweisungen
-des Betreibers und zur Erbringung dieser Dienste verarbeiten.
+des Betreibers und zur Erbringung dieser Dienste verarbeiten. Insbesondere können Anbieter umfassen: Hosting und
+Datenbank (MySQL), lokale oder S3-kompatible Objektspeicherung (zum Beispiel Amazon S3, Cloudflare R2, MinIO, Backblaze
+B2 oder Wasabi je nach Konfiguration), E-Mail-Zustellung (SMTP), Content-Delivery und Schutz (Cloudflare),
+Push-Benachrichtigungen (Firebase Cloud Messaging) und IP-Geolokalisierung (ip-api.com, mit lokalem Cache auf
+Länderebene).
 
 Wir teilen Dokumente nicht mit Werbetreibenden oder Dritten für deren eigene kommerzielle Zwecke. Wir können
 Informationen offenlegen, wenn dies zur Erfüllung einer gesetzlichen Verpflichtung, zum Schutz von Rechten und
@@ -79,11 +88,13 @@ Sicherheit, zur Untersuchung von Betrug oder zur Reaktion auf einen Notfall erfo
 Wir bewahren Kontodaten auf, solange das Konto besteht oder solange sie zur Erbringung des Dienstes erforderlich sind.
 Gespeicherte Dateien bleiben bestehen, bis der Nutzer sie löscht oder die Löschung des Kontos beantragt.
 
-Temporäre Verarbeitungsdateien werden nach Abschluss des Vorgangs automatisch innerhalb von **1 Minute** gelöscht.
-Technische und Sicherheitsprotokolle werden **1 Minute** lang aufbewahrt und danach gelöscht oder anonymisiert, sofern
-ihre Aufbewahrung nicht aus Sicherheitsgründen, wegen Betrugs, zur Lösung von Ansprüchen oder aufgrund einer
-gesetzlichen Verpflichtung erforderlich ist. Erfinden Sie diese Fristen nicht: Sie müssen mit der tatsächlichen
-Konfiguration von Backend, Backups und Anbietern übereinstimmen.
+Temporäre Verarbeitungsdateien werden nach Abschluss des Vorgangs gelöscht; Überbleibsel von Fehlern oder
+Unterbrechungen werden automatisch innerhalb von höchstens 1 Stunde (Upload-Zwischenspeicher) und 24 Stunden
+(Arbeitsverzeichnisse der Konvertierung) bereinigt. Dateien im Papierkorb werden nach **30 Tagen** automatisch endgültig
+gelöscht. Aktivitäts- und Sicherheitsprotokolle (Audit) werden **90 Tage** lang aufbewahrt; Konvertierungsaufträge
+**90 Tage** lang; Sitzungs- und Refresh-Token-Daten werden nach **30 Tagen** gelöscht; Anwendungsprotokolle werden in
+rotierenden Dateien (14–30 Dateien à 10 MB) aufbewahrt; und IP-Geolokalisierungsdaten werden **30 Tage** lang
+zwischengespeichert.
 
 ## 7. Rechte des Nutzers
 
@@ -108,8 +119,12 @@ noch die in der Cloud gespeicherten Daten.
 ## 9. Sicherheit
 
 Wir wenden angemessene Sicherheitsmaßnahmen an, wie Verschlüsselung während der Übertragung, Zugriffskontrollen,
-Trennung von Konten, Verwaltung von Zugangsdaten, Sicherheitsprotokolle und Datenminimierung. Kein mit dem Internet
-verbundenes System ist vollständig sicher; der Nutzer muss auch sein Gerät und seine Zugangsdaten schützen.
+Trennung von Konten, Verwaltung von Zugangsdaten, Sicherheitsprotokolle und Datenminimierung. Die Anmeldung erfolgt in
+zwei Schritten (Passwort plus ein Einmalcode per E-Mail), Zugriffstokens sind kurzlebig, Sitzungen können widerrufen
+werden, Versuche werden ratenbegrenzt, Passwörter werden als Einweg-Hashes gespeichert und Protokolle filtern sensible
+Werte. Inhalte werden verschlüsselt übertragen, aber auf unserer Infrastruktur nicht im Ruhezustand verschlüsselt;
+vermeiden Sie es, Dokumente zu speichern, die ein höheres Schutzniveau erfordern. Kein mit dem Internet verbundenes
+System ist vollständig sicher; der Nutzer muss auch sein Gerät und seine Zugangsdaten schützen.
 
 ## 10. Minderjährige
 

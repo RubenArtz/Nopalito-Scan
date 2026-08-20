@@ -210,7 +210,7 @@ class AndroidPdfWriter(val ocrService: OcrService, val assets: AssetManager) : P
     ) {
         val doc = PDDocument()
         doc.documentInformation.creationDate = Calendar.getInstance()
-        doc.documentInformation.creator = "FairScan ${BuildConfig.VERSION_NAME}"
+        doc.documentInformation.creator = "NopalitoScan ${BuildConfig.VERSION_NAME}"
         doc.use { document ->
             val ocrDocument = OcrDocument(document, assets)
             for ((index, page) in pages.withIndex()) {

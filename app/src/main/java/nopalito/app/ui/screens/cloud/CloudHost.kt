@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nopalito.app.ui.screens.cloud.data.CloudSessionManager
 import nopalito.app.ui.screens.cloud.data.CloudSessionState
+import nopalito.app.ui.screens.cloud.navigation.CloudDeepLink
 import nopalito.app.ui.screens.cloud.navigation.CloudRecoverMode
 import nopalito.app.ui.screens.cloud.navigation.CloudScreen
 import nopalito.app.ui.screens.cloud.screens.*
@@ -162,8 +163,16 @@ fun CloudHost(
             // OTP just verified). This is the single source of truth for "logged in".
             sessionState is CloudSessionState.Authenticated &&
                     currentScreen !is CloudScreen.Home -> {
-                Log.i(TAG, "Authenticated → navigating Home (was $currentScreen)")
-                currentScreen = CloudScreen.Home
+                // A push-action deep link (e.g. quota notification → Storage)
+                // takes precedence over Home, then it is consumed (one-shot).
+                val deepLink = CloudDeepLink.consume()
+                if (deepLink != null) {
+                    Log.i(TAG, "Authenticated → deep link to $deepLink (was $currentScreen)")
+                    currentScreen = deepLink
+                } else {
+                    Log.i(TAG, "Authenticated → navigating Home (was $currentScreen)")
+                    currentScreen = CloudScreen.Home
+                }
             }
 
             sessionState is CloudSessionState.Unauthenticated &&

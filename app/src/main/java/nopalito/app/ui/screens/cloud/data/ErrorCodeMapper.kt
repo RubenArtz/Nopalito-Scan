@@ -47,6 +47,13 @@ object ErrorCodeMapper {
         ApiException.QUOTA_EXCEEDED_ON_RESTORE to R.string.cloud_error_restore_quota,
         "RESEND_COOLDOWN" to R.string.cloud_error_resend_cooldown,
         "MAINTENANCE_ACTIVE" to R.string.cloud_error_maintenance_active,
+        ApiException.AUTH_ACCOUNT_SUSPENDED to R.string.cloud_error_auth_account_suspended,
+        ApiException.AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED to R.string.cloud_error_auth_password_reset_blocked,
+        ApiException.AUTH_ACCOUNT_STATUS_UNKNOWN to R.string.cloud_error_auth_account_status_unknown,
+        ApiException.AUTH_REGISTER_IP_LIMIT_REACHED to R.string.cloud_error_auth_register_ip_limit,
+        ApiException.AUTH_REGISTER_VPN_NOT_ALLOWED to R.string.cloud_error_auth_register_vpn,
+        ApiException.ACCOUNT_ALREADY_DELETED to R.string.cloud_error_account_already_deleted,
+        ApiException.ANONYMOUS_USER_PROTECTED to R.string.cloud_error_anonymous_protected,
     )
 
     /** Code group prefixes -> string resource (first match wins, insertion order). */
@@ -58,12 +65,14 @@ object ErrorCodeMapper {
         "QR_" to R.string.cloud_error_qr,
         "JOB_" to R.string.cloud_error_job,
         "QUOTA_" to R.string.cloud_error_quota,
+        "AUTH_" to R.string.cloud_error_auth,
     )
 
     /** HTTP status -> existing `cloud_error_*` string resource. */
     private val STATUS: Map<Int, Int> = mapOf(
         400 to R.string.cloud_error_400,
         401 to R.string.cloud_error_401,
+        403 to R.string.cloud_error_403,
         404 to R.string.cloud_error_404,
         413 to R.string.cloud_error_413,
         415 to R.string.cloud_error_415,

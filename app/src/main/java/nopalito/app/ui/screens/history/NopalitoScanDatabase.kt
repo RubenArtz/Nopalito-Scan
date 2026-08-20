@@ -35,13 +35,13 @@ import nopalito.app.ui.screens.qr.QrScanEntity
     version = 8,
     exportSchema = false
 )
-abstract class FairScanDatabase : RoomDatabase() {
+abstract class NopalitoScanDatabase : RoomDatabase() {
     abstract fun exportHistoryDao(): ExportHistoryDao
     abstract fun qrScanDao(): QrScanDao
 
     companion object {
         @Volatile
-        private var INSTANCE: FairScanDatabase? = null
+        private var INSTANCE: NopalitoScanDatabase? = null
 
         /**
          * v2 -> v3: columns for multiple exports (container folder)
@@ -108,12 +108,12 @@ abstract class FairScanDatabase : RoomDatabase() {
             }
         }
 
-        fun getDatabase(context: Context): FairScanDatabase {
+        fun getDatabase(context: Context): NopalitoScanDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    FairScanDatabase::class.java,
-                    "fairscan_database"
+                    NopalitoScanDatabase::class.java,
+                    "nopalitoscan_database"
                 )
                     .addMigrations(
                         MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,

@@ -39,7 +39,7 @@ sealed class Screen {
         object OcrLanguages : Overlay()
         object History : Overlay()
         object QrHistory : Overlay()
-        object FairScanCloud : Overlay()
+        object NopalitoScanCloud : Overlay()
         object Tools : Overlay()
         data class ToolCompress(val tool: CompressTool) : Overlay()
         object PasswordProtect : Overlay()
@@ -64,7 +64,7 @@ data class Navigation(
     val toHistoryScreen: () -> Unit,
     /** Navigate to the QR/barcode scan history. */
     val toQrHistoryScreen: () -> Unit,
-    /** Navigate to FairScan Cloud. Redirects to login screen inside CloudHost if unauthenticated. */
+    /** Navigate to Nopalito Scan Cloud. Redirects to login screen inside CloudHost if unauthenticated. */
     val toCloudScreen: () -> Unit,
     /** Navigate to the Tools section. */
     val toToolsScreen: () -> Unit,

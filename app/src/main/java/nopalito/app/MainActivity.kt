@@ -84,6 +84,8 @@ import nopalito.app.ui.screens.camera.CameraEvent
 import nopalito.app.ui.screens.camera.CameraScreen
 import nopalito.app.ui.screens.camera.CameraViewModel
 import nopalito.app.ui.screens.cloud.CloudHost
+import nopalito.app.ui.screens.cloud.navigation.CloudDeepLink
+import nopalito.app.ui.screens.cloud.navigation.CloudScreen
 import nopalito.app.ui.screens.crop.CropScreen
 import nopalito.app.ui.screens.document.DocumentScreen
 import nopalito.app.ui.screens.export.*
@@ -118,7 +120,7 @@ import nopalito.app.ui.screens.tools.qrgenerator.QrGeneratorScreen
 import nopalito.app.ui.screens.tools.reorder.ReorderResult
 import nopalito.app.ui.screens.tools.reorder.ReorderScreen
 import nopalito.app.ui.screens.tools.reorder.ReorderViewModel
-import nopalito.app.ui.theme.FairScanTheme
+import nopalito.app.ui.theme.NopalitoScanTheme
 import org.opencv.android.OpenCVLoader
 import java.io.File
 import java.time.Instant
@@ -218,7 +220,7 @@ class MainActivity : FragmentActivity() {
             CollectExportEvents(context, exportViewModel)
             CollectAboutEvents(context, aboutViewModel, imageRepository)
 
-            FairScanTheme {
+            NopalitoScanTheme {
                 val languageState by languageViewModel.uiState.collectAsStateWithLifecycle()
                 val permissionsOnboardingDone by
                 permissionsViewModel.isOnboardingDone.collectAsStateWithLifecycle()
@@ -491,7 +493,7 @@ class MainActivity : FragmentActivity() {
                             )
                         }
 
-                        is Screen.Overlay.FairScanCloud -> {
+                        is Screen.Overlay.NopalitoScanCloud -> {
                             CloudHost(
                                 onBack = navigation.back,
                                 cloudSessionManager = appContainer.cloudSessionManager
@@ -729,6 +731,12 @@ class MainActivity : FragmentActivity() {
 
             PushActions.OPEN_CLOUD -> activeNavigation?.toCloudScreen()
             PushActions.OPEN_SETTINGS -> activeNavigation?.toSettingsScreen?.let { it() }
+            PushActions.OPEN_STORAGE -> {
+                // One-shot deep link: the cloud overlay lands on the Storage
+                // screen once the session is Authenticated.
+                CloudDeepLink.target = CloudScreen.Storage
+                activeNavigation?.toCloudScreen()
+            }
             PushActions.OPEN_QR_HISTORY -> activeNavigation?.toQrHistoryScreen()
             PushActions.OPEN_TOOLS -> activeNavigation?.toToolsScreen()
             PushActions.OPEN_APP -> Unit
@@ -826,7 +834,7 @@ class MainActivity : FragmentActivity() {
                 when (event) {
                     is AboutEvent.CopyLogs -> {
                         clipboard.setClipEntry(
-                            ClipData.newPlainText("FairScan logs", event.logs).toClipEntry()
+                            ClipData.newPlainText("NopalitoScan logs", event.logs).toClipEntry()
                         )
                         showToast(msgCopiedLogs)
                     }
@@ -1028,7 +1036,7 @@ class MainActivity : FragmentActivity() {
                 type = mimeForCompressed(results.first().fileName)
                 putExtra(Intent.EXTRA_STREAM, uris[0])
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
             }
         } else {
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
@@ -1058,7 +1066,7 @@ class MainActivity : FragmentActivity() {
             val openIntent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, mimeForCompressed(result.fileName))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "FairScan", uri)
+                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uri)
             }
             startActivity(Intent.createChooser(openIntent, getString(R.string.open_file)))
         } catch (_: ActivityNotFoundException) {
@@ -1074,7 +1082,7 @@ class MainActivity : FragmentActivity() {
                 type = mimeForCompressed(results.first().fileName)
                 putExtra(Intent.EXTRA_STREAM, uris[0])
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
             }
         } else {
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
@@ -1111,7 +1119,7 @@ class MainActivity : FragmentActivity() {
                 type = mimeForCompressed(results.first().fileName)
                 putExtra(Intent.EXTRA_STREAM, uris[0])
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
             }
         } else {
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
@@ -1148,7 +1156,7 @@ class MainActivity : FragmentActivity() {
                 type = mimeForCompressed(results.first().fileName)
                 putExtra(Intent.EXTRA_STREAM, uris[0])
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
             }
         } else {
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
@@ -1184,7 +1192,7 @@ class MainActivity : FragmentActivity() {
             type = mimeForCompressed(results.first().fileName)
             putExtra(Intent.EXTRA_STREAM, uris[0])
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
         }
         startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
@@ -1202,7 +1210,7 @@ class MainActivity : FragmentActivity() {
             type = mimeForCompressed(results.first().fileName)
             putExtra(Intent.EXTRA_STREAM, uris[0])
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
         }
         startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
@@ -1220,7 +1228,7 @@ class MainActivity : FragmentActivity() {
             type = mimeForCompressed(results.first().fileName)
             putExtra(Intent.EXTRA_STREAM, uris[0])
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "FairScan", uris[0])
+            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
         }
         startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
@@ -1315,7 +1323,7 @@ class MainActivity : FragmentActivity() {
             toOcrLanguagesScreen = { viewModel.navigateTo(Screen.Overlay.OcrLanguages) },
             toHistoryScreen = { viewModel.navigateTo(Screen.Overlay.History) },
             toQrHistoryScreen = { viewModel.navigateTo(Screen.Overlay.QrHistory) },
-            toCloudScreen = { viewModel.navigateTo(Screen.Overlay.FairScanCloud) },
+            toCloudScreen = { viewModel.navigateTo(Screen.Overlay.NopalitoScanCloud) },
             toToolsScreen = { viewModel.navigateTo(Screen.Overlay.Tools) },
             toToolCompress = { tool -> viewModel.navigateTo(Screen.Overlay.ToolCompress(tool)) },
             switchTool = { tool ->

@@ -46,6 +46,55 @@ class ErrorCodeMapperTest {
         )
     }
 
+    // ---- Account security codes ----
+
+    @Test
+    fun accountSecurityCodesMapToTheirDedicatedResources() {
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_ACCOUNT_SUSPENDED", 403),
+            R.string.cloud_error_auth_account_suspended
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_PASSWORD_RESET_BLOCKED_SUSPENDED", 403),
+            R.string.cloud_error_auth_password_reset_blocked
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_ACCOUNT_STATUS_UNKNOWN", 503),
+            R.string.cloud_error_auth_account_status_unknown
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_REGISTER_IP_LIMIT_REACHED", 429),
+            R.string.cloud_error_auth_register_ip_limit
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_REGISTER_VPN_NOT_ALLOWED", 403),
+            R.string.cloud_error_auth_register_vpn
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("ACCOUNT_ALREADY_DELETED", 409),
+            R.string.cloud_error_account_already_deleted
+        )
+        assertEquals(
+            ErrorCodeMapper.resolveResId("ANONYMOUS_USER_PROTECTED", 403),
+            R.string.cloud_error_anonymous_protected
+        )
+    }
+
+    @Test
+    fun authGroupMapsUnknownAuthCodesToGenericSignInError() {
+        assertEquals(ErrorCodeMapper.resolveResId("AUTH_UNEXPECTED_CODE", 500), R.string.cloud_error_auth)
+        assertEquals(ErrorCodeMapper.resolveResId("AUTH_SOMETHING_ELSE", 503), R.string.cloud_error_auth)
+    }
+
+    @Test
+    fun authSpecificCodeBeatsAuthGroup() {
+        // AUTH_ACCOUNT_SUSPENDED is both a specific code and an AUTH_ group.
+        assertEquals(
+            ErrorCodeMapper.resolveResId("AUTH_ACCOUNT_SUSPENDED", 500),
+            R.string.cloud_error_auth_account_suspended
+        )
+    }
+
     // ---- Groups ----
 
     @Test
@@ -95,6 +144,7 @@ class ErrorCodeMapperTest {
     fun knownStatusMapsToCloudErrorResource() {
         assertEquals(ErrorCodeMapper.resolveResId(null, 400), R.string.cloud_error_400)
         assertEquals(ErrorCodeMapper.resolveResId(null, 401), R.string.cloud_error_401)
+        assertEquals(ErrorCodeMapper.resolveResId(null, 403), R.string.cloud_error_403)
         assertEquals(ErrorCodeMapper.resolveResId(null, 404), R.string.cloud_error_404)
         assertEquals(ErrorCodeMapper.resolveResId(null, 413), R.string.cloud_error_413)
         assertEquals(ErrorCodeMapper.resolveResId(null, 415), R.string.cloud_error_415)

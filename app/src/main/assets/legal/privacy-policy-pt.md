@@ -1,6 +1,6 @@
 # Política de Privacidade do Nopalito Scan
 
-**Última atualização:** 09/08/2026
+**Última atualização:** 19/08/2026
 
 ## 1. Responsável e contato
 
@@ -20,9 +20,11 @@ recursos que o Usuário utilizar, podemos tratar:
   solicitado.
 - **Arquivos armazenados:** documentos e metadados mínimos — por exemplo, nome, tamanho, data e tipo — quando o Usuário
   entra e autoriza salvá-los na nuvem.
-- **Dados técnicos e registros:** endereço IP, data e hora, identificadores de solicitação, versão do Aplicativo, tipo
-  de dispositivo, eventos de autenticação, erros e registros de segurança. Esta lista deve ser revisada para coincidir
-  exatamente com o que o backend registra.
+- **Dados técnicos e registros:** endereço IP (armazenado em texto simples ou como hash unidirecional, conforme a
+  configuração), país aproximado derivado do IP, agente de usuário, versão do Aplicativo e plataforma, identificador da
+  solicitação, endpoint, método, status e duração de cada requisição, e-mail e identificador do Usuário quando conectado,
+  token de notificação push quando habilitadas, e eventos de negócio (login, envio, download, exclusão, conversão e ações
+  administrativas).
 - **Permissões do dispositivo:** câmera e armazenamento ou seletor de arquivos, apenas quando necessárias para a função
   escolhida. O Nopalito Scan não deve declarar permissões que realmente não solicite.
 
@@ -42,7 +44,7 @@ Usamos os dados para:
 
 Não vendemos dados pessoais nem usamos o Conteúdo do Usuário para publicidade. Não usamos os documentos para treinar
 modelos nem para fins diferentes de prestar a função solicitada, salvo se o Usuário conceder uma autorização separada e
-explícita ou se a lei assim o exigir. **Confirme que esta frase reflete realmente seu backend e seus fornecedores.**
+explícita ou se a lei assim o exigir.
 
 ## 4. O que acontece quando a nuvem é usada
 
@@ -50,9 +52,13 @@ O processamento local não exige o envio do documento ao Operador. Se o Usuário
 processamento na nuvem, o arquivo é transmitido via **HTTPS/TLS** à infraestrutura do Operador ou aos seus fornecedores
 técnicos para executar essa solicitação.
 
-O arquivo enviado para processamento temporário não é conservado depois que a conversão é concluída e o resultado
-entregue, exceto por cópias técnicas inevitáveis, segurança ou obrigação legal. Especifique aqui o prazo real:
-**[por exemplo: exclusão automática em no máximo X minutos/horas]**.
+O arquivo enviado para processamento temporário é excluído ao final da operação: nas conversões em pré-visualização, o
+arquivo e todos os artefatos intermediários são apagados assim que o resultado é entregue; nas conversões em lote, os
+arquivos enviados e os diretórios de trabalho são excluídos ao final do trabalho. Resíduos de falhas ou interrupções
+são limpos automaticamente em no máximo 1 hora (arquivos temporários de envio) e 24 horas (diretórios de trabalho de
+conversão). Se o Usuário não estiver conectado, os resultados de conversão são mantidos sob uma identidade técnica
+anônima e excluídos automaticamente após 90 dias. Os códigos QR gerados pelo Usuário são publicados em URLs públicas e
+imutáveis e não são excluídos automaticamente.
 
 Se o Usuário entrar e autorizar o armazenamento do resultado, o documento fica em sua conta até que ele o exclua ou
 solicite a exclusão da conta. O Usuário pode visualizá-lo em prévia, baixá-lo e excluí-lo no Aplicativo.
@@ -61,7 +67,10 @@ solicite a exclusão da conta. O Usuário pode visualizá-lo em prévia, baixá-
 
 Podemos compartilhar dados com fornecedores que hospedam servidores, armazenam arquivos, entregam e-mails, gerenciam
 autenticação, monitoram erros ou protegem a infraestrutura. Esses fornecedores só devem tratar os dados seguindo as
-instruções do Operador e para prestar esses serviços.
+instruções do Operador e para prestar esses serviços. Em particular, os fornecedores podem incluir: hospedagem e banco
+de dados (MySQL), armazenamento de objetos local ou compatível com S3 (por exemplo, Amazon S3, Cloudflare R2, MinIO,
+Backblaze B2 ou Wasabi conforme a configuração), envio de e-mail (SMTP), rede de entrega e proteção (Cloudflare),
+notificações push (Firebase Cloud Messaging) e geolocalização de IPs (ip-api.com, com cache local em nível de país).
 
 Não compartilhamos documentos com anunciantes nem com terceiros para fins comerciais próprios. Podemos divulgar
 informações se for necessário para cumprir uma obrigação legal, proteger direitos e segurança, investigar fraudes ou
@@ -72,10 +81,13 @@ responder a uma emergência.
 Conservamos os dados de conta enquanto a conta existir ou enquanto forem necessários para prestar o serviço. Os arquivos
 salvos permanecem até que o Usuário os exclua ou solicite a exclusão da conta.
 
-Os arquivos de processamento temporário são excluídos automaticamente após a conclusão da operação, em até **1 minuto**.
-Os registros técnicos e de segurança são conservados por **1 minuto** e depois excluídos ou anonimizados, salvo se for
-necessário conservá-los por segurança, fraude, resolução de reclamações ou obrigação legal. Não invente esses prazos:
-eles devem coincidir com a configuração real do backend, dos backups e dos fornecedores.
+Os arquivos de processamento temporário são excluídos ao final da operação; resíduos de falhas ou interrupções são
+limpos automaticamente em no máximo 1 hora (arquivos temporários de envio) e 24 horas (diretórios de trabalho de
+conversão). Os arquivos enviados para a lixeira são excluídos definitivamente de forma automática após **30 dias**. Os
+registros de atividade e segurança (auditoria) são conservados por **90 dias**; os trabalhos de conversão, por **90
+dias**; os dados de sessão e tokens de atualização são purgados após **30 dias**; os registros do aplicativo são
+conservados em arquivos rotativos (14 a 30 arquivos de 10 MB); e a geolocalização de IPs é armazenada em cache por
+**30 dias**.
 
 ## 7. Direitos do Usuário
 
@@ -100,8 +112,12 @@ nem os dados armazenados na nuvem.
 ## 9. Segurança
 
 Aplicamos medidas razoáveis de segurança, como criptografia em trânsito, controles de acesso, separação de contas,
-gestão de credenciais, registros de segurança e minimização de dados. Nenhum sistema conectado à internet é
-completamente seguro; o Usuário também deve proteger seu dispositivo e suas credenciais.
+gestão de credenciais, registros de segurança e minimização de dados. O login é feito em duas etapas (senha mais um
+código de uso único enviado por e-mail), os tokens de acesso são de curta duração, as sessões podem ser revogadas, as
+tentativas são limitadas por frequência, as senhas são armazenadas como hashes unidirecionais e os registros filtram
+valores sensíveis. O conteúdo é transmitido criptografado, mas não é criptografado em repouso em nossa infraestrutura;
+evite guardar documentos que exijam um nível de proteção superior. Nenhum sistema conectado à internet é completamente
+seguro; o Usuário também deve proteger seu dispositivo e suas credenciais.
 
 ## 10. Menores
 

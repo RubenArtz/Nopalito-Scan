@@ -92,7 +92,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun FairScanTheme(
+fun NopalitoScanTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {

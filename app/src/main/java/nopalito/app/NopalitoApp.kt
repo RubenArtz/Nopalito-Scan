@@ -47,7 +47,7 @@ import nopalito.app.ui.screens.camera.CameraViewModel
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.network.CloudApiClient
 import nopalito.app.ui.screens.cloud.security.BiometricPromptHost
-import nopalito.app.ui.screens.history.FairScanDatabase
+import nopalito.app.ui.screens.history.NopalitoScanDatabase
 import nopalito.app.ui.screens.history.HistoryRepository
 import nopalito.app.ui.screens.history.HistoryViewModel
 import nopalito.app.ui.screens.qr.QrScanRepository
@@ -78,7 +78,7 @@ class NopalitoApp : Application() {
 
 const val THUMBNAIL_SIZE_DP = 120
 
-private val Context.dataStore by preferencesDataStore(name = "fairscan_settings")
+private val Context.dataStore by preferencesDataStore(name = "nopalitoscan_settings")
 
 class AppContainer(private val context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -105,9 +105,9 @@ class AppContainer(private val context: Context) {
     val legalConsentRepository = LegalConsentRepository(dataStore)
     val permissionsRepository = PermissionsRepository(dataStore)
     val historyRepository =
-        HistoryRepository(FairScanDatabase.getDatabase(context).exportHistoryDao())
+        HistoryRepository(NopalitoScanDatabase.getDatabase(context).exportHistoryDao())
     val qrScanRepository =
-        QrScanRepository(FairScanDatabase.getDatabase(context).qrScanDao())
+        QrScanRepository(NopalitoScanDatabase.getDatabase(context).qrScanDao())
     val qrScansDir = File(context.filesDir, "qr_scans")
 
     val cloudSessionManager: nopalito.app.ui.screens.cloud.data.CloudSessionManager by lazy {

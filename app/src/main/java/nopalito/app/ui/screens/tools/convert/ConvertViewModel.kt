@@ -544,7 +544,7 @@ class ConvertViewModel(container: AppContainer) : ViewModel() {
         if (uploadToCloud && uploadFiles.isNotEmpty()) {
             val cloudResults = cloudRepository.uploadGroup(
                 fileUris = uploadFiles.map { uriForFile(context, it) },
-                groupName = batchFolder?.name ?: ExportNames.folderName("FairScan_Convert"),
+                groupName = batchFolder?.name ?: ExportNames.folderName("NopalitoScan_Convert"),
                 formatName = "PDF",
             )
             cloudResults.forEachIndexed { i, r ->
@@ -590,7 +590,7 @@ class ConvertViewModel(container: AppContainer) : ViewModel() {
         }.getOrNull() != null
 
     private fun createBatchFolder(saveLocationUri: String?): BatchFolder? {
-        val folderName = ExportNames.folderName("FairScan_Convert")
+        val folderName = ExportNames.folderName("NopalitoScan_Convert")
         val treeUri = saveLocationUri?.toUri()
         val tree = treeUri?.let {
             androidx.documentfile.provider.DocumentFile.fromTreeUri(context, it)
@@ -633,7 +633,7 @@ class ConvertViewModel(container: AppContainer) : ViewModel() {
             val format = "PDF"
             val totalSize = results.sumOf { it.sizeBytes }
             val documentName = if (isFolder) {
-                batchFolder?.name ?: ExportNames.folderName("FairScan_Convert")
+                batchFolder?.name ?: ExportNames.folderName("NopalitoScan_Convert")
             } else {
                 results.first().fileName
             }

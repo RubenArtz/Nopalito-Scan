@@ -160,8 +160,13 @@ fun extractDocumentFromBitmap(
     val sourceSize = ImageSize(source.width, source.height)
     val metadata =
         PageMetadata(normalizedQuad, baseRotation, autoColorMode, sourceSize, opticalMeasures)
+    // The caller may recycle the bitmap (or close the ImageProxy backing it)
+    // as soon as this function returns, while the source JPEG is still being
+    // compressed on IO. Copy the pixels now (source is guaranteed valid here)
+    // so the async job never reads a recycled/invalidated bitmap.
+    val sourceCopy = source.copy(Bitmap.Config.ARGB_8888, false) ?: source
     val sourceJpegDeferred = viewModelScope.async(Dispatchers.IO) {
-        compressSource(source)
+        compressSource(sourceCopy)
     }
     return CapturedPage(pageJpeg, sourceJpegDeferred, metadata, colorMode)
 }

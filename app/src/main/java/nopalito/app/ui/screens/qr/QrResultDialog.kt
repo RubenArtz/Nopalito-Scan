@@ -64,6 +64,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import nopalito.app.R
+import nopalito.app.ui.components.rememberHapticManager
 
 @Composable
 fun QrResultDialog(
@@ -76,6 +77,8 @@ fun QrResultDialog(
     onClose: () -> Unit,
     onSaveImage: (() -> Unit)? = null,
 ) {
+    // Tactile confirmation for every QR action.
+    val haptics = rememberHapticManager()
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -210,7 +213,10 @@ fun QrResultDialog(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 ) {
                     Button(
-                        onClick = onCopy,
+                        onClick = {
+                            haptics.click()
+                            onCopy()
+                        },
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .weight(1f)
@@ -221,7 +227,10 @@ fun QrResultDialog(
                     val wifi = detected.type as? QrDetected.Type.Wifi
                     when {
                         wifi != null -> Button(
-                            onClick = { onConnect(wifi) },
+                            onClick = {
+                                haptics.click()
+                                onConnect(wifi)
+                            },
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -231,7 +240,10 @@ fun QrResultDialog(
                         }
 
                         detected.type is QrDetected.Type.Url -> OutlinedButton(
-                            onClick = onOpen,
+                            onClick = {
+                                haptics.click()
+                                onOpen()
+                            },
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -241,7 +253,10 @@ fun QrResultDialog(
                         }
 
                         detected.type is QrDetected.Type.Geo -> OutlinedButton(
-                            onClick = onOpenMap,
+                            onClick = {
+                                haptics.click()
+                                onOpenMap()
+                            },
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -254,11 +269,23 @@ fun QrResultDialog(
 
                 Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                     if (onSaveImage != null) {
-                        TextButton(onClick = onSaveImage, modifier = Modifier.weight(1f)) {
+                        TextButton(
+                            onClick = {
+                                haptics.click()
+                                onSaveImage()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text(stringResource(R.string.qr_save))
                         }
                     }
-                    TextButton(onClick = onShare, modifier = Modifier.weight(1f)) {
+                    TextButton(
+                        onClick = {
+                            haptics.click()
+                            onShare()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text(stringResource(R.string.qr_share))
                     }
                     TextButton(onClick = onClose, modifier = Modifier.weight(1f)) {

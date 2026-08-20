@@ -122,6 +122,9 @@ fun CameraScreen(
     val boundCameraInfo by cameraViewModel.boundCameraInfo.collectAsStateWithLifecycle()
     var torchReapplied by remember { mutableStateOf(false) }
 
+    // Tactile confirmation for capture, errors and the finalize action.
+    val haptics = rememberHapticManager()
+
     // Styled snackbar for import failures (password-protected / unsupported files).
     val importErrorHost = remember { SnackbarHostState() }
     val okLabel = stringResource(R.string.ok)
@@ -245,6 +248,7 @@ fun CameraScreen(
     var showDetectionError by remember { mutableStateOf(false) }
     LaunchedEffect(captureState) {
         if (captureState is CaptureState.CaptureError) {
+            haptics.error()
             showDetectionError = true
             delay(1000.milliseconds)
             showDetectionError = false
@@ -367,7 +371,8 @@ fun CameraScreen(
         // INE mode takes exactly two shots (front, then back).
         if (ineMode && ineCaptured >= 2) return
         previewView?.bitmap?.let {
-            Log.i("FairScan", "Pressed <Capture>")
+            Log.i("NopalitoScan", "Pressed <Capture>")
+            haptics.click()
             cameraViewModel.onCapturePressed(it)
             captureController.takePicture(
                 onImageCaptured = { imageProxy, opticalMeasures ->
@@ -1471,6 +1476,7 @@ private fun Bar(
     onFinalizePressed: () -> Unit,
     onNewSessionClicked: () -> Unit,
 ) {
+    val haptics = rememberHapticManager()
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -1491,7 +1497,10 @@ private fun Bar(
             )
         }
         MainActionButton(
-            onClick = onFinalizePressed,
+            onClick = {
+                haptics.success()
+                onFinalizePressed()
+            },
             enabled = pageCount > 0,
             text = pageCountText(pageCount),
             icon = Icons.Default.Done,

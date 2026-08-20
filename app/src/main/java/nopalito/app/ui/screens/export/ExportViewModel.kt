@@ -406,7 +406,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                             AppLocaleOverride.locale,
                             exportFormat.displayName
                         )
-                        logger.e("FairScan", message, e)
+                        logger.e("NopalitoScan", message, e)
                         _uiState.update {
                             it.copy(error = ExportError.OnPrepareOrShare(message, e))
                         }
