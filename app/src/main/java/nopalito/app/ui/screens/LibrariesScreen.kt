@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import nopalito.app.R
@@ -55,10 +54,6 @@ fun LibrariesScreen(onBack: () -> Unit) {
             val librariesState by produceLibraries(R.raw.aboutlibraries)
             LibrariesContainer(
                 libraries = librariesState,
-                textStyles = LibraryDefaults.libraryTextStyles(
-                    nameTextStyle = MaterialTheme.typography.titleMedium,
-                    licensesTextStyle = MaterialTheme.typography.labelSmall
-                ),
             )
         }
     }

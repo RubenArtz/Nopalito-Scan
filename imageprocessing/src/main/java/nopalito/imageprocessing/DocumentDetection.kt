@@ -39,6 +39,14 @@ enum class Mode {
     CAPTURE, IMPORT, LIVE_ANALYSIS
 }
 
+/**
+ * Minimum probmap score ([scoreQuadAgainstProbmap]) for a LIVE_ANALYSIS quad
+ * to be trusted and drawn. Garbage detections from noisy low-threshold masks
+ * score far below this; real documents score close to 1. Capture keeps the old
+ * un-gated behavior (its result is only used when the user actually shoots).
+ */
+private const val LIVE_ANALYSIS_MIN_QUAD_SCORE = 0.5
+
 fun detectDocumentQuad(mask: Mask, originalSize: ImageSize, mode: Mode): Quad? {
     val mat = mask.toMat()
     // Best thresholds on test dataset: {0.95=146, 0.85=39, 0.75=35, 0.90=8, 0.70=1, 0.35=1}
@@ -46,7 +54,8 @@ fun detectDocumentQuad(mask: Mask, originalSize: ImageSize, mode: Mode): Quad? {
     val thresholds =
         if (mode == Mode.CAPTURE) listOf(0.5, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95)
         else listOf(0.5, 0.7, 0.85, 0.9, 0.95)
-    var vertices = findQuadFromOrientationWithAdaptiveThreshold(mat, originalSize, thresholds)
+    val minQuadScore = if (mode == Mode.LIVE_ANALYSIS) LIVE_ANALYSIS_MIN_QUAD_SCORE else 0.0
+    var vertices = findQuadFromOrientationWithAdaptiveThreshold(mat, originalSize, thresholds, minQuadScore)
         ?.map { Point(it.x, it.y) }
 
     if (vertices == null && mode == Mode.CAPTURE) {
@@ -64,7 +73,10 @@ fun detectDocumentQuad(mask: Mask, originalSize: ImageSize, mode: Mode): Quad? {
 }
 
 fun findQuadFromOrientationWithAdaptiveThreshold(
-    maskMat: Mat, originalSize: ImageSize, thresholds: List<Double>
+    maskMat: Mat,
+    originalSize: ImageSize,
+    thresholds: List<Double>,
+    minScore: Double = 0.0,
 ): List<org.opencv.core.Point>? {
     val probmapU8 = Mat()
     val probmap = maskMat
@@ -84,7 +96,7 @@ fun findQuadFromOrientationWithAdaptiveThreshold(
             val probFloat = Mat()
             probmap.convertTo(probFloat, CvType.CV_32F)
             val score = scoreQuadAgainstProbmap(quad, probFloat, minQuadAreaRatio = 0.02)
-            if (score > bestScore) {
+            if (score > bestScore && score >= minScore) {
                 bestScore = score
                 bestQuad = quad
             }
@@ -133,13 +145,23 @@ fun biggestContour(mat: Mat): MatOfPoint? {
     var maxArea = 0.0
 
     for (contour in contours) {
-        val area = abs(Imgproc.contourArea(contour))
+        val area = polygonArea(contour.toList())
         if (area > maxArea) {
             maxArea = area
             biggest = contour
         }
     }
     return biggest
+}
+
+fun polygonArea(points: List<org.opencv.core.Point>): Double {
+    var area = 0.0
+    for (i in points.indices) {
+        val p = points[i]
+        val q = points[(i + 1) % points.size]
+        area += p.x * q.y - q.x * p.y
+    }
+    return abs(area / 2.0)
 }
 
 /**
@@ -178,19 +200,15 @@ fun extractDocument(
         opticalMeasures,
     ).snapToStandardFormat()
     val (targetWidth, targetHeight) = estimatedDimensions.toPixelDimensions(quad)
-    val srcPoints = MatOfPoint2f(
-        quad.topLeft.toCv(),
-        quad.topRight.toCv(),
-        quad.bottomRight.toCv(),
-        quad.bottomLeft.toCv(),
+    val transform = getPerspectiveTransform(
+        listOf(quad.topLeft, quad.topRight, quad.bottomRight, quad.bottomLeft),
+        listOf(
+            Point(0.0, 0.0),
+            Point(targetWidth, 0.0),
+            Point(targetWidth, targetHeight),
+            Point(0.0, targetHeight),
+        )
     )
-    val dstPoints = MatOfPoint2f(
-        org.opencv.core.Point(0.0, 0.0),
-        org.opencv.core.Point(targetWidth, 0.0),
-        org.opencv.core.Point(targetWidth, targetHeight),
-        org.opencv.core.Point(0.0, targetHeight)
-    )
-    val transform = Imgproc.getPerspectiveTransform(srcPoints, dstPoints)
 
     val warped = Mat()
     val outputSize = Size(targetWidth, targetHeight)
@@ -198,13 +216,88 @@ fun extractDocument(
 
     val resized = resizeForMaxPixels(warped, maxPixels.toDouble())
     val enhanced = enhanceCapturedImage(resized, colorMode)
-    val rotated = rotate(enhanced, rotationDegrees)
+    // Blur corrector: compensate out-of-focus / motion-blurred captures
+    // before finalizing the page (no-op on already sharp frames).
+    val corrected = correctBlur(enhanced)
+    val rotated = rotate(corrected, rotationDegrees)
 
     warped.release()
     resized.release()
     enhanced.release()
 
     return rotated
+}
+
+/**
+ * Computes the 3x3 perspective transform mapping `src` onto `dst` using the
+ * Direct Linear Transform (the same algorithm as OpenCV's
+ * `getPerspectiveTransform`), solved with Gaussian elimination with partial
+ * pivoting. Implemented in pure Kotlin because OpenCV 5.0 moved this API to
+ * `org.opencv.geometry.Geometry`, which is unavailable to the JVM module.
+ */
+fun getPerspectiveTransform(
+    src: List<Point>,
+    dst: List<Point>,
+): Mat {
+    require(src.size == 4 && dst.size == 4) { "Exactly 4 correspondences required" }
+
+    val a = Array(8) { DoubleArray(8) }
+    val b = DoubleArray(8)
+    for (i in 0 until 4) {
+        val x = src[i].x
+        val y = src[i].y
+        val u = dst[i].x
+        val v = dst[i].y
+        a[2 * i][0] = x
+        a[2 * i][1] = y
+        a[2 * i][2] = 1.0
+        a[2 * i][6] = -x * u
+        a[2 * i][7] = -y * u
+        b[2 * i] = u
+        a[2 * i + 1][3] = x
+        a[2 * i + 1][4] = y
+        a[2 * i + 1][5] = 1.0
+        a[2 * i + 1][6] = -x * v
+        a[2 * i + 1][7] = -y * v
+        b[2 * i + 1] = v
+    }
+
+    val n = 8
+    for (col in 0 until n) {
+        var pivot = col
+        for (row in col + 1 until n) {
+            if (abs(a[row][col]) > abs(a[pivot][col])) pivot = row
+        }
+        if (pivot != col) {
+            val tmp = a[pivot]
+            a[pivot] = a[col]
+            a[col] = tmp
+            val tb = b[pivot]
+            b[pivot] = b[col]
+            b[col] = tb
+        }
+        val scale = a[col][col]
+        if (abs(scale) < 1e-12) {
+            throw IllegalArgumentException("Degenerate quad: perspective transform is singular")
+        }
+        for (j in col until n) a[col][j] /= scale
+        b[col] /= scale
+        for (row in 0 until n) {
+            if (row != col && abs(a[row][col]) > 1e-14) {
+                val factor = a[row][col]
+                for (j in col until n) a[row][j] -= factor * a[col][j]
+                b[row] -= factor * b[col]
+            }
+        }
+    }
+
+    val h = DoubleArray(9)
+    for (i in 0 until 8) h[i] = b[i]
+    h[8] = 1.0
+
+    val m = Mat(3, 3, CvType.CV_64FC1)
+    m.put(0, 0, *h)
+    return m
 }
 
 fun EstimatedDimensions.toPixelDimensions(quad: Quad): Pair<Double, Double> {

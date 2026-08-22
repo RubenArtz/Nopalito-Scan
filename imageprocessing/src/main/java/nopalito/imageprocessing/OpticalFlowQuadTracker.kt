@@ -84,7 +84,7 @@ class OpticalFlowQuadTracker(
      * the published quad, which would reset the auto-capture stability
      * countdown every [fullDetectionEveryFrames] frames.
      */
-    private val refreshAdoptDistance: Double = 20.0,
+    private val refreshAdoptDistance: Double = 30.0,
 ) {
 
     private var prevGray: Mat? = null

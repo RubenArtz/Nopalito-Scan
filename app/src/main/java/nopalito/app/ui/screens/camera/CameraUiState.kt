@@ -24,6 +24,7 @@ package nopalito.app.ui.screens.camera
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import nopalito.imageprocessing.ImageSize
+import nopalito.imageprocessing.PartialShape
 import nopalito.imageprocessing.Quad
 import nopalito.imageprocessing.TrackMode
 
@@ -34,6 +35,11 @@ data class LiveAnalysisState(
     val binaryMaskProvider: () -> Bitmap? = { null },
     /** Raw tracked/detected quad in mask coordinates, sensor orientation. */
     val stableQuad: Quad? = null,
+    /**
+     * Progressive partial geometry (1-3 corners) in mask coordinates, published
+     * only while no full quad is available. Drawn in yellow by the overlay.
+     */
+    val partialShape: PartialShape? = null,
     /** Analysis frame dimensions in sensor orientation (e.g. 640x480). */
     val analysisFrameSize: ImageSize? = null,
     /** ImageProxy rotation (0, 90, 180 or 270). */

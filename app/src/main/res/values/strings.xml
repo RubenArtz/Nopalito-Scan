@@ -839,6 +839,10 @@
 
     <!-- Overlay layer zoom controls -->
     <string name="zoom_in">Increase size</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="move_left">Move left</string>
+    <string name="move_right">Move right</string>
     <string name="zoom_out">Decrease size</string>
 
     <!-- Camera preview -->

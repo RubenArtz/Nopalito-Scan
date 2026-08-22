@@ -347,9 +347,13 @@ fun AnalysisOverlay(
     val targetQuad = liveAnalysisState.stableQuad
     val rotationDegrees = liveAnalysisState.rotationDegrees
     val currentTarget by rememberUpdatedState(targetQuad)
+    // Progressive partial geometry (L-corners / edges) while no full quad.
+    val currentPartial by rememberUpdatedState(liveAnalysisState.partialShape)
     val spring = remember(rotationDegrees) { QuadSpring() }
     var displayedQuad by remember { mutableStateOf<Quad?>(null) }
+    var displayedPartial by remember { mutableStateOf<PartialShape?>(null) }
     var fade by remember { mutableFloatStateOf(0f) }
+    var partialFade by remember { mutableFloatStateOf(0f) }
     var lastFrameMillis by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
@@ -365,10 +369,19 @@ fun AnalysisOverlay(
                     displayedQuad =
                         spring.update(target, dtSeconds, maskSize.width, maskSize.height)
                     fade = (fade + (1f - fade) * (dtSeconds * 10f)).coerceAtMost(1f)
+                    displayedPartial = null
+                    partialFade = (partialFade - dtSeconds * 8f).coerceAtLeast(0f)
                 } else {
-                    displayedQuad =
-                        spring.update(null, dtSeconds, maskSize.width, maskSize.height)
+                    displayedQuad = spring.update(null, dtSeconds, maskSize.width, maskSize.height)
                     fade = (fade * (1f - dtSeconds * 8f)).coerceAtLeast(0f)
+                    val partial = currentPartial
+                    if (partial != null) displayedPartial = partial
+                    partialFade =
+                        if (displayedPartial != null && currentPartial != null) {
+                            (partialFade + dtSeconds * 10f).coerceAtMost(1f)
+                        } else {
+                            (partialFade - dtSeconds * 6f).coerceAtLeast(0f)
+                        }
                 }
             }
         }
@@ -445,6 +458,67 @@ fun AnalysisOverlay(
                 center = corner.toOffset(),
                 style = Stroke(width = strokeWidth * 0.45f)
             )
+        }
+
+        // --- Progressive partial shape (yellow) --------------------------------
+        // While fewer than four corners are recognized, draw whatever part of
+        // the document is already visible: an isolated L-corner with its arms,
+        // the edge between two corners, or the open lines of three corners.
+        val partial = displayedPartial
+        if (partial != null && partialFade > 0.01f) {
+            val yellow = Color(0xFFFFC107)
+            val outlineAlpha = 0.95f * partialFade
+            val mappedCorners = partial.corners.map { corner ->
+                mapAnalysisPointToPreview(
+                    point = corner,
+                    maskSize = maskSize,
+                    analysisSize = frameSize,
+                    previewSize = previewSize,
+                    rotationDegrees = rotationDegrees,
+                ).toOffset()
+            }
+            fun armOffset(p: nopalito.imageprocessing.Point) =
+                mapAnalysisPointToPreview(
+                    point = p,
+                    maskSize = maskSize,
+                    analysisSize = frameSize,
+                    previewSize = previewSize,
+                    rotationDegrees = rotationDegrees,
+                ).toOffset()
+
+            for ((i, j) in partial.linkedEdges) {
+                val start = mappedCorners.getOrNull(i) ?: continue
+                val end = mappedCorners.getOrNull(j) ?: continue
+                drawLine(
+                    color = yellow.copy(alpha = outlineAlpha),
+                    start = start,
+                    end = end,
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+            }
+            for ((start, end) in partial.openArms) {
+                drawLine(
+                    color = yellow.copy(alpha = 0.8f * partialFade),
+                    start = armOffset(start),
+                    end = armOffset(end),
+                    strokeWidth = strokeWidth * 0.85f,
+                    cap = StrokeCap.Round,
+                )
+            }
+            mappedCorners.forEach { corner ->
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.9f * partialFade),
+                    radius = dotRadius,
+                    center = corner,
+                )
+                drawCircle(
+                    color = yellow.copy(alpha = 0.95f * partialFade),
+                    radius = dotRadius + strokeWidth * 0.5f,
+                    center = corner,
+                    style = Stroke(width = strokeWidth * 0.45f)
+                )
+            }
         }
     }
 }

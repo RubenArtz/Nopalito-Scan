@@ -29,6 +29,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -93,6 +94,11 @@ fun DocumentScreen(
     var selectedOverlayType by remember { mutableStateOf<OverlayType?>(null) }
     val selectedPageId = remember { mutableStateOf<String?>(null) }
     val pendingPageId = remember { mutableStateOf<String?>(null) }
+
+    // Without this BackHandler the system back button/gesture would fall
+    // through to the Activity and close the app instead of returning to the
+    // camera home screen.
+    BackHandler { navigation.back() }
 
     val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
 
@@ -429,6 +435,35 @@ private fun DocumentPreview(
                     // ── Floating contextual toolbar ──
                     if (selectedOverlayType != null && pageId != null) {
                         val pid = pageId
+                        // Nudges the selected overlay by a small fraction of
+                        // the page, so it can be fine-tuned without dragging.
+                        val nudgeStep = 0.02f
+                        fun nudgeSelected(dx: Float, dy: Float) {
+                            val overlays = uiState.currentPage.overlays
+                            when (selectedOverlayType) {
+                                OverlayType.SIGNATURE -> {
+                                    val position = overlays.signaturePositionFraction ?: return
+                                    onSignatureMoved(
+                                        pid,
+                                        Offset(
+                                            (position.x + dx).coerceIn(0f, 0.98f),
+                                            (position.y + dy).coerceIn(0f, 0.98f),
+                                        )
+                                    )
+                                }
+                                OverlayType.DATE -> {
+                                    val position = overlays.datePositionFraction ?: return
+                                    onDateMoved(
+                                        pid,
+                                        Offset(
+                                            (position.x + dx).coerceIn(0f, 0.98f),
+                                            (position.y + dy).coerceIn(0f, 0.98f),
+                                        )
+                                    )
+                                }
+                                null -> return
+                            }
+                        }
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
@@ -480,6 +515,10 @@ private fun DocumentPreview(
                                         onDateScaleChanged(pid, overlays.dateScale - 0.1f)
                                     }
                                 },
+                                onMoveUp = { nudgeSelected(0f, -nudgeStep) },
+                                onMoveDown = { nudgeSelected(0f, nudgeStep) },
+                                onMoveLeft = { nudgeSelected(-nudgeStep, 0f) },
+                                onMoveRight = { nudgeSelected(nudgeStep, 0f) },
                                 onDone = { onOverlayDeselected() },
                             )
                         }

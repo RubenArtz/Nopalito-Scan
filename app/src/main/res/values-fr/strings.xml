@@ -590,6 +590,10 @@
     <string name="color_subtle">Discret</string>
 
     <string name="zoom_in">Agrandir</string>
+    <string name="move_up">Déplacer vers le haut</string>
+    <string name="move_down">Déplacer vers le bas</string>
+    <string name="move_left">Déplacer vers la gauche</string>
+    <string name="move_right">Déplacer vers la droite</string>
     <string name="zoom_out">Réduire</string>
 
     <string name="camera_unavailable">Caméra indisponible</string>

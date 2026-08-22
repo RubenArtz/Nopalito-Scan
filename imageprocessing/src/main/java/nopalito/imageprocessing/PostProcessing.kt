@@ -31,6 +31,69 @@ enum class ColorMode {
     GRAYSCALE,
 }
 
+// ── Blur correction ────────────────────────────────────────────────────────
+//
+// Camera captures can come out slightly out of focus or motion-blurred.
+// The corrector measures sharpness with the classic variance-of-Laplacian
+// focus metric and, only when the frame scores below threshold, compensates
+// with an unsharp mask whose strength grows the softer the capture is.
+
+/** Default sharpness floor: captures scoring under this get sharpened. */
+const val DEFAULT_BLUR_VARIANCE_THRESHOLD = 120.0
+
+private const val UNSHARP_SIGMA = 1.8
+private const val MIN_SHARPEN_AMOUNT = 0.45
+private const val MAX_SHARPEN_AMOUNT = 1.0
+
+/**
+ * Estimates image sharpness as the variance of the Laplacian (higher value =
+ * sharper content). Works on grayscale and color inputs alike.
+ */
+fun estimateBlurVariance(mat: Mat): Double {
+    val gray = if (mat.channels() == 1) mat else {
+        val converted = Mat()
+        Imgproc.cvtColor(mat, converted, Imgproc.COLOR_BGR2GRAY)
+        converted
+    }
+    val laplacian = Mat()
+    return try {
+        Imgproc.Laplacian(gray, laplacian, CvType.CV_64F)
+        val mean = MatOfDouble()
+        val stdDev = MatOfDouble()
+        Core.meanStdDev(laplacian, mean, stdDev)
+        val deviation = stdDev.get(0, 0)[0]
+        deviation * deviation
+    } finally {
+        laplacian.release()
+        if (gray !== mat) gray.release()
+    }
+}
+
+/**
+ * Corrects soft captures: returns [bgr] untouched when it is sharp enough
+ * (same instance, zero cost); otherwise applies an unsharp mask whose
+ * amount scales from [MIN_SHARPEN_AMOUNT] up to [MAX_SHARPEN_AMOUNT]
+ * depending on how far below [blurVarianceThreshold] the capture scored.
+ */
+fun correctBlur(
+    bgr: Mat,
+    blurVarianceThreshold: Double = DEFAULT_BLUR_VARIANCE_THRESHOLD,
+): Mat {
+    val score = estimateBlurVariance(bgr)
+    if (score >= blurVarianceThreshold) return bgr
+
+    val severity = ((blurVarianceThreshold - score) / blurVarianceThreshold)
+        .coerceIn(0.0, 1.0)
+    val amount = MIN_SHARPEN_AMOUNT + (MAX_SHARPEN_AMOUNT - MIN_SHARPEN_AMOUNT) * severity
+
+    val blurred = Mat()
+    Imgproc.GaussianBlur(bgr, blurred, Size(0.0, 0.0), UNSHARP_SIGMA)
+    val sharpened = Mat()
+    Core.addWeighted(bgr, 1.0 + amount, blurred, -amount, 0.0, sharpened)
+    blurred.release()
+    return sharpened
+}
+
 fun enhanceCapturedImage(img: Mat, colorMode: ColorMode): Mat {
     return when (colorMode) {
         ColorMode.COLOR -> multiScaleRetinexOnL(img)
@@ -178,26 +241,54 @@ fun multiScaleRetinexOnL(bgr: Mat): Mat {
 
 fun percentileL(l: Mat, p: Double): Double {
     val hist = Mat()
-    Imgproc.calcHist(
-        listOf(l),
-        MatOfInt(0),
-        Mat(),
-        hist,
-        MatOfInt(256),
-        MatOfFloat(0f, 256f)
-    )
+    try {
+        Imgproc.calcHist(
+            listOf(l),
+            MatOfInt(0),
+            Mat(),
+            hist,
+            MatOfInt(256),
+            MatOfFloat(0f, 256f)
+        )
 
-    val total = l.total()
-    var sum = 0.0
-    for (i in 0 until 256) {
-        sum += hist.get(i, 0)[0]
-        if (sum / total >= p) {
-            hist.release()
-            return i.toDouble()
+        val total = l.total().toDouble()
+        if (total <= 0.0 || hist.empty()) return 255.0
+
+        // Read all bins in a single bulk call. calcHist always produces a
+        // CV_32F histogram, so the float[] overload is safe. The per-element
+        // Mat.get(row, col) variant is avoided on purpose: its JNI binding
+        // silently returns null whenever OpenCV considers (row, col) out of
+        // bounds or the Mat carries no data (e.g. an empty histogram after a
+        // failed native allocation), which would throw an NPE here.
+        val bins = minOf(256, hist.rows() * hist.cols()).coerceAtLeast(1)
+        val counts = FloatArray(bins)
+        val readCount = hist.get(0, 0, counts)
+
+        var sum = 0.0
+        for (i in 0 until bins) {
+            if (readCount > 0) sum += counts[i].toDouble()
+            if (sum / total >= p) return i.toDouble()
         }
+        return 255.0
+    } finally {
+        hist.release()
     }
-    hist.release()
-    return 255.0
+}
+
+/**
+ * Safely reads a single CV_32F element of [mat]. Returns null when the value
+ * cannot be retrieved (empty Mat, out-of-bounds index or depth mismatch).
+ *
+ * Uses the bulk Mat.get(row, col, float[]) variant on purpose: the
+ * single-element Mat.get(row, col) binding silently returns a null array under
+ * exactly those conditions, which crashes with "Attempt to read from null
+ * array" at the [0] indexing site.
+ */
+private fun getFloat(mat: Mat, row: Int, col: Int): Double? {
+    return runCatching {
+        val buf = FloatArray(1)
+        if (mat.get(row, col, buf) > 0) buf[0].toDouble() else null
+    }.getOrNull()
 }
 
 fun enhanceGrayscaleImage(img: Mat): Mat {
@@ -254,8 +345,8 @@ fun enhanceGrayscaleImage(img: Mat): Mat {
     val sorted = Mat()
     Core.sort(flat, sorted, Core.SORT_ASCENDING)
     val n = sorted.cols()
-    val pLow = sorted.get(0, (n * 0.004).toInt())[0]
-    val pHigh = sorted.get(0, (n * 0.99).toInt())[0]
+    val pLow = getFloat(sorted, 0, (n * 0.004).toInt()) ?: 0.0
+    val pHigh = getFloat(sorted, 0, (n * 0.99).toInt()) ?: 255.0
     flat.release(); sorted.release()
 
     val normalized = Mat()
@@ -284,10 +375,19 @@ fun enhanceGrayscaleImage(img: Mat): Mat {
 
     var modeVal = 220
     var modeCount = 0.0
-    for (i in 180 until 256) {
-        val c = hist.get(i, 0)[0]
-        if (c > modeCount) {
-            modeCount = c; modeVal = i
+    if (!hist.empty()) {
+        // Bulk-read all bins in one call; per-element Mat.get(row, col) can
+        // return a null array and crash the loop (see getFloat doc).
+        val bins = minOf(256, hist.rows() * hist.cols())
+        val counts = FloatArray(bins.coerceAtLeast(1))
+        if (hist.get(0, 0, counts) > 0) {
+            for (i in minOf(180, bins - 1) until bins) {
+                val c = counts[i].toDouble()
+                if (c > modeCount) {
+                    modeCount = c
+                    modeVal = i
+                }
+            }
         }
     }
     hist.release()
@@ -302,8 +402,8 @@ fun enhanceGrayscaleImage(img: Mat): Mat {
         val graySorted = Mat()
         Core.sort(grayFlat, graySorted, Core.SORT_ASCENDING)
         val gN = graySorted.cols()
-        val gLow = graySorted.get(0, (gN * 0.01).toInt())[0]
-        val gHigh = graySorted.get(0, (gN * 0.99).toInt())[0]
+        val gLow = getFloat(graySorted, 0, (gN * 0.01).toInt()) ?: 0.0
+        val gHigh = getFloat(graySorted, 0, (gN * 0.99).toInt()) ?: 255.0
         grayFlat.release(); graySorted.release()
         Core.subtract(grayF, Scalar(gLow), grayF)
         Core.multiply(grayF, Scalar(255.0 / (gHigh - gLow + 1e-6)), grayF)

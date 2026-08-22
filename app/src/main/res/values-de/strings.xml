@@ -587,6 +587,10 @@
     <string name="color_subtle">Dezent</string>
 
     <string name="zoom_in">Vergrößern</string>
+    <string name="move_up">Nach oben bewegen</string>
+    <string name="move_down">Nach unten bewegen</string>
+    <string name="move_left">Nach links bewegen</string>
+    <string name="move_right">Nach rechts bewegen</string>
     <string name="zoom_out">Verkleinern</string>
 
     <string name="camera_unavailable">Kamera nicht verfügbar</string>

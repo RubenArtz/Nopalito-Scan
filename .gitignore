@@ -36,3 +36,7 @@ opencode.json
 *.jar
 **/google-services.json
 app/google-services.json
+*.apk
+*.dm
+output-metadata.json
+*.aab

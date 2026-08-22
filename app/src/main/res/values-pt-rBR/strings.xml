@@ -581,6 +581,10 @@
     <string name="color_subtle">Sutil</string>
 
     <string name="zoom_in">Aumentar tamanho</string>
+    <string name="move_up">Mover para cima</string>
+    <string name="move_down">Mover para baixo</string>
+    <string name="move_left">Mover para a esquerda</string>
+    <string name="move_right">Mover para a direita</string>
     <string name="zoom_out">Diminuir tamanho</string>
 
     <string name="camera_unavailable">Câmera indisponível</string>

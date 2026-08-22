@@ -23,12 +23,11 @@ import java.util.*
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.aboutLibrariesAndroid)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
 }
 
 val abiCodes = mapOf(
@@ -55,8 +54,8 @@ fun readApiBaseUrl(): String {
 
 android {
     namespace = "nopalito.app"
-    compileSdk = 36
-    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/assets"))
+    compileSdk = 37
+    // Assets from download-tflite are registered via androidComponents below
 
     defaultConfig {
         applicationId = "nopalito.app"
@@ -131,16 +130,6 @@ android {
             isUniversalApk = false
         }
     }
-    applicationVariants.all {
-        val variant = this
-        variant.outputs
-            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
-            .forEach { output ->
-                val abi = output.getFilter("ABI")
-                output.outputFileName = "Nopalito Scan-${variant.versionName}-${abi}.apk"
-            }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -208,6 +197,7 @@ dependencies {
     implementation(libs.icons.extended)
     implementation(libs.zoomable)
     implementation(libs.reorderable)
+    implementation(libs.kotlinx.collections.immutable)
     implementation(libs.aboutlibraries.compose.m3)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.tesseract4android)
@@ -216,10 +206,7 @@ dependencies {
     implementation(libs.mlkit.language.id)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    kapt(libs.room.compiler)
-    // Room's bundled kotlin-metadata-jvm (2.2.0) doesn't support Kotlin 2.3.0
-    // Force a compatible version for the annotation processor classpath
-    kapt(libs.kotlin.metadata.jvm)
+    ksp(libs.room.compiler)
 
     // Cloud module dependencies
     implementation(libs.retrofit)
@@ -266,6 +253,8 @@ aboutLibraries {
 // See https://developer.android.com/build/configure-apk-splits
 androidComponents {
     onVariants { variant ->
+        variant.sources.assets?.addStaticSourceDirectory("build/generated/assets")
+
         variant.outputs.forEach { output ->
             val name =
                 output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier

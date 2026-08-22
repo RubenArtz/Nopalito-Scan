@@ -94,6 +94,51 @@ fun mapAnalysisQuadToPreview(
 }
 
 /**
+ * Maps a single point detected in segmentation-mask coordinates to
+ * PreviewView coordinates, with the exact same un-squish -> rotate ->
+ * center-crop chain as [mapAnalysisQuadToPreview].
+ */
+fun mapAnalysisPointToPreview(
+    point: Point,
+    maskSize: ImageSize,
+    analysisSize: ImageSize,
+    previewSize: ImageSize,
+    rotationDegrees: Int,
+    scaleType: PreviewScaleType = PreviewScaleType.FILL_CENTER,
+): Point {
+    // 1) Un-squish: mask -> analysis frame (independent per-axis scales).
+    val inFrame = Point(
+        point.x * analysisSize.width / maskSize.width,
+        point.y * analysisSize.height / maskSize.height,
+    )
+
+    // 2) Rotate to display orientation (same math as Quad.rotate90).
+    val iterations = rotationDegrees / 90
+    val rotated = when (iterations % 4) {
+        1 -> Point(analysisSize.height - inFrame.y, inFrame.x)
+        2 -> Point(analysisSize.width - inFrame.x, analysisSize.height - inFrame.y)
+        3 -> Point(inFrame.y, analysisSize.width - inFrame.x)
+        else -> inFrame
+    }
+
+    val rotatedFrameSize =
+        if ((rotationDegrees / 90) % 2 != 0) ImageSize(analysisSize.height, analysisSize.width)
+        else analysisSize
+
+    return when (scaleType) {
+        PreviewScaleType.FILL_CENTER -> {
+            val scale = max(
+                previewSize.width / rotatedFrameSize.width,
+                previewSize.height / rotatedFrameSize.height,
+            )
+            val offsetX = (previewSize.width - rotatedFrameSize.width * scale) / 2.0
+            val offsetY = (previewSize.height - rotatedFrameSize.height * scale) / 2.0
+            Point(rotated.x * scale + offsetX, rotated.y * scale + offsetY)
+        }
+    }
+}
+
+/**
  * Returns `true` when [quad] (mask coordinates) maps onto a rectangle inside
  * the frame defined by [frameLeft]/[frameTop]/[frameRight]/[frameBottom] with
  * its center inside the frame and an on-screen area of at least

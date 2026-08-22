@@ -115,6 +115,35 @@ class QuadValidationTest {
         assertEqualsTol(200.0 * 160.0, QuadValidator.quadArea(validQuad), 0.001)
     }
 
+    @Test
+    fun `a thin sliver strip fails even with enough area`() {
+        // ~290x7 px strip: its area is above the 2% floor, but the corners are
+        // only a few pixels apart — a detection/tracking artifact, not a doc.
+        val sliver = Quad(
+            Point(20.0, 116.0),
+            Point(310.0, 117.0),
+            Point(310.0, 123.0),
+            Point(20.0, 124.0),
+        )
+        assertFalse(QuadValidator.isValid(sliver, frameWidth, frameHeight))
+    }
+
+    @Test
+    fun `degenerate corner geometry reports zero interior angle`() {
+        val collapsed = Quad(
+            Point(60.0, 40.0),
+            Point(260.0, 40.0),
+            Point(260.0, 40.0),
+            Point(60.0, 200.0),
+        )
+        assertEqualsTol(0.0, QuadValidator.minInteriorAngleDeg(collapsed), 0.001)
+    }
+
+    @Test
+    fun `a rectangle reports right angles everywhere`() {
+        assertEqualsTol(90.0, QuadValidator.minInteriorAngleDeg(validQuad), 0.001)
+    }
+
     private fun assertEqualsTol(expected: Double, actual: Double, tolerance: Double) {
         assertTrue(
             kotlin.math.abs(expected - actual) <= tolerance,

@@ -716,6 +716,7 @@ private fun CameraScreenScaffold(
                         onTorchSwitched,
                         onImportClicked,
                         onQrClicked,
+                        qrScanMode,
                         ineMode,
                         onIneSwitched,
                         Modifier.pointerInput(Unit) {
@@ -793,6 +794,7 @@ private fun CameraPreviewBox(
     onTorchSwitched: () -> Unit,
     onImportClicked: () -> Unit,
     onQrClicked: () -> Unit = {},
+    qrScanMode: Boolean = false,
     ineMode: Boolean = false,
     onIneSwitched: () -> Unit = {},
     modifier: Modifier,
@@ -820,11 +822,13 @@ private fun CameraPreviewBox(
                 onCapture = onCapture,
                 onImportClicked = onImportClicked,
                 onQrClicked = onQrClicked,
+                qrScanMode = qrScanMode,
                 ineMode = ineMode,
                 onIneSwitched = onIneSwitched,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 12.dp)
             )
         }
     }
@@ -1476,37 +1480,63 @@ private fun Bar(
     onFinalizePressed: () -> Unit,
     onNewSessionClicked: () -> Unit,
 ) {
-    val haptics = rememberHapticManager()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-    ) {
-        TextButton(
-            onClick = onNewSessionClicked,
-            shape = MaterialTheme.shapes.large,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+    // In landscape the bar lives inside the narrow side panel (1/3 of the
+    // width): stacking the actions vertically keeps them from being squeezed
+    // or cut off, matching the side-rail layout.
+    if (isLandscape(LocalConfiguration.current)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(Icons.Default.Refresh, contentDescription = null, Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                stringResource(R.string.new_session),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
-            )
+            NewSessionAction(onClick = onNewSessionClicked)
+            FinalizeAction(pageCount = pageCount, onClick = onFinalizePressed)
         }
-        MainActionButton(
-            onClick = {
-                haptics.success()
-                onFinalizePressed()
-            },
-            enabled = pageCount > 0,
-            text = pageCountText(pageCount),
-            icon = Icons.Default.Done,
-            modifier = Modifier.heightIn(min = 48.dp),
+    } else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        ) {
+            NewSessionAction(onClick = onNewSessionClicked)
+            FinalizeAction(pageCount = pageCount, onClick = onFinalizePressed)
+        }
+    }
+}
+
+@Composable
+private fun NewSessionAction(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Icon(Icons.Default.Refresh, contentDescription = null, Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            stringResource(R.string.new_session),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelLarge,
         )
     }
+}
+
+@Composable
+private fun FinalizeAction(pageCount: Int, onClick: () -> Unit) {
+    val haptics = rememberHapticManager()
+    MainActionButton(
+        onClick = {
+            haptics.success()
+            onClick()
+        },
+        enabled = pageCount > 0,
+        text = pageCountText(pageCount),
+        icon = Icons.Default.Done,
+        modifier = Modifier.heightIn(min = 48.dp),
+    )
 }
 
 @Composable

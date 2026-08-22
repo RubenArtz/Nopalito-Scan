@@ -252,6 +252,8 @@ private fun HandleDot(
     size: Dp = 10.dp,
     corner: HandleCorner? = null,
     onCornerDrag: ((Float) -> Unit)? = null,
+    /** Invoked once when a corner drag ends/cancels (the moment to persist). */
+    onCornerDragEnd: (() -> Unit)? = null,
     displayWidthPx: Float = 1f,
     displayHeightPx: Float = 1f,
 ) {
@@ -266,7 +268,10 @@ private fun HandleDot(
 
     val finalModifier = if (corner != null && onCornerDrag != null) {
         boxModifier.pointerInput(corner) {
-            detectDragGestures { change, dragAmount ->
+            detectDragGestures(
+                onDragEnd = { onCornerDragEnd?.invoke() },
+                onDragCancel = { onCornerDragEnd?.invoke() },
+            ) { change, dragAmount ->
                 change.consume()
                 val isOutward = when (corner) {
                     HandleCorner.TopStart -> dragAmount.x < 0f || dragAmount.y < 0f
@@ -517,6 +522,9 @@ private fun SelectableOverlayBitmap(
                         displayWidthPx = displayWidth,
                         displayHeightPx = displayHeight,
                         onCornerDrag = { scaleDelta ->
+                            // Update the local scale immediately for a fluid
+                            // resize; persisting waits until the drag ends so
+                            // the ViewModel round-trip can't stutter it.
                             val newScale = (
                                     currentScale + scaleDelta
                                     ).coerceIn(
@@ -525,7 +533,9 @@ private fun SelectableOverlayBitmap(
                                 )
                             currentScale = newScale
                             clampPosition()
-                            onScaleChanged(newScale)
+                        },
+                        onCornerDragEnd = {
+                            onScaleChanged(currentScale)
                         }
                     )
                 }
@@ -828,8 +838,10 @@ private fun SelectableOverlayDate(
                                     0f,
                                     (1f - resVisH / fittedHeight).coerceAtLeast(0f),
                                 )
-                                onScaleChanged(newScale)
                             },
+                            // Persist once per gesture — per-move callbacks
+                            // round-trip through the ViewModel and stutter.
+                            onCornerDragEnd = { onScaleChanged(currentScale) },
                         )
                     }
                 }
@@ -984,6 +996,10 @@ fun FloatingOverlayToolbar(
     onEditSignature: () -> Unit = {},
     onZoomIn: () -> Unit = {},
     onZoomOut: () -> Unit = {},
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
+    onMoveLeft: () -> Unit = {},
+    onMoveRight: () -> Unit = {},
 ) {
     val haptic = LocalHapticFeedback.current
     Surface(
@@ -1027,6 +1043,40 @@ fun FloatingOverlayToolbar(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp),
                     )
+                }
+            }
+
+            // Directional nudge cross: compact fine-positioning pad.
+            if (overlayType != null) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
+                    tonalElevation = 1.dp,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        NudgeArrowButton(
+                            icon = Icons.Default.KeyboardArrowUp,
+                            contentDescription = stringResource(R.string.move_up),
+                            onClick = onMoveUp,
+                        )
+                        Row {
+                            NudgeArrowButton(
+                                icon = Icons.Default.KeyboardArrowLeft,
+                                contentDescription = stringResource(R.string.move_left),
+                                onClick = onMoveLeft,
+                            )
+                            NudgeArrowButton(
+                                icon = Icons.Default.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.move_down),
+                                onClick = onMoveDown,
+                            )
+                            NudgeArrowButton(
+                                icon = Icons.Default.KeyboardArrowRight,
+                                contentDescription = stringResource(R.string.move_right),
+                                onClick = onMoveRight,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -1099,5 +1149,36 @@ fun FloatingOverlayToolbar(
                 )
             }
         }
+    }
+}
+
+/**
+ * Compact arrow of the overlay nudge cross. Uses a plain clickable Box
+ * instead of IconButton so the 48dp minimum-touch-target inflation doesn't
+ * blow up the pad size.
+ */
+@Composable
+private fun NudgeArrowButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(CircleShape)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp),
+        )
     }
 }

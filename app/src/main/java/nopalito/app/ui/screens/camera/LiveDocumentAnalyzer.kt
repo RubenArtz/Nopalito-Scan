@@ -66,6 +66,9 @@ class LiveDocumentAnalyzer(
     private val tracker =
         OpticalFlowQuadTracker(fullDetectionEveryFrames = FULL_DETECTION_EVERY_FRAMES)
 
+    /** Progressive corner feedback while no full quad is available. */
+    private val partialShapeDetector = PartialShapeDetector()
+
     private var grayMat = Mat()
     private var grayRow = ByteArray(0)
 
@@ -159,6 +162,22 @@ class LiveDocumentAnalyzer(
             } else {
                 TrackUpdate(null, TrackMode.FULL_DETECTION, 0f, 0, FullDetectionReason.INITIAL)
             }
+
+            // Progressive feedback: while the tracker has no quadrilateral,
+            // look for partial structure (L-corners, edges) so the overlay can
+            // draw whatever part of the document is already visible.
+            val partialShape = if (update.quadInMask == null && maskSize != null) {
+                runCatching {
+                    partialShapeDetector.detect(frameGray)?.scaledTo(
+                        frameGray.cols().toDouble(),
+                        frameGray.rows().toDouble(),
+                        maskSize.width,
+                        maskSize.height,
+                    )
+                }.getOrNull()
+            } else {
+                null
+            }
             // Count real tracker restarts (optical-flow failure or an invalid
             // detection), not plain "no document in view" frames.
             if (update.fullDetectionReason == FullDetectionReason.INVALID_QUAD ||
@@ -177,6 +196,7 @@ class LiveDocumentAnalyzer(
                 maskSize = maskSize,
                 binaryMaskProvider = lastBinaryMaskProvider,
                 stableQuad = update.quadInMask,
+                partialShape = partialShape,
                 analysisFrameSize = ImageSize(imageProxy.width, imageProxy.height),
                 rotationDegrees = rotationDegrees,
                 analysisTimeMs = lastAnalysisTimeMs,

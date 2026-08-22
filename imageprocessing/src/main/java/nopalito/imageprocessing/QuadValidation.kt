@@ -22,6 +22,7 @@
 package nopalito.imageprocessing
 
 import kotlin.math.abs
+import kotlin.math.acos
 import kotlin.math.hypot
 
 /**
@@ -38,6 +39,18 @@ object QuadValidator {
 
     /** Max corner travel between two consecutive frames, relative to the frame diagonal. */
     const val DEFAULT_MAX_FRAME_SHIFT_RATIO = 0.2
+
+    /**
+     * Minimum interior angle (degrees) allowed at any corner before the quad
+     * looks like a needle/sliver artifact instead of a document.
+     */
+    const val DEFAULT_MIN_CORNER_ANGLE_DEG = 25.0
+
+    /**
+     * Minimum distance between any two corners, relative to the frame diagonal;
+     * catches collapsing corners (thin strips, slivers, optical-flow drift).
+     */
+    const val DEFAULT_MIN_CORNER_SEPARATION_RATIO = 0.02
 
     /** Corners may stick out of the frame by this many pixels and still be valid. */
     const val EDGE_MARGIN_PX = 10.0
@@ -64,6 +77,45 @@ object QuadValidator {
         )
     }
 
+    /**
+     * Smallest interior angle of [quad], in degrees. Returns 0 when any edge is
+     * degenerate (two corners at the same position).
+     */
+    fun minInteriorAngleDeg(quad: Quad): Double {
+        val points = listOf(quad.topLeft, quad.topRight, quad.bottomRight, quad.bottomLeft)
+        var minAngle = 180.0
+        for (i in points.indices) {
+            val prev = points[(i + 3) % 4]
+            val cur = points[i]
+            val next = points[(i + 1) % 4]
+            val toPrevX = prev.x - cur.x
+            val toPrevY = prev.y - cur.y
+            val toNextX = next.x - cur.x
+            val toNextY = next.y - cur.y
+            val lenPrev = hypot(toPrevX, toPrevY)
+            val lenNext = hypot(toNextX, toNextY)
+            if (lenPrev == 0.0 || lenNext == 0.0) return 0.0
+            val cosine = ((toPrevX * toNextX + toPrevY * toNextY) / (lenPrev * lenNext))
+                .coerceIn(-1.0, 1.0)
+            val angle = Math.toDegrees(acos(cosine))
+            if (angle < minAngle) minAngle = angle
+        }
+        return minAngle
+    }
+
+    /** Smallest distance between any two corners of [quad]. */
+    fun minCornerSeparation(quad: Quad): Double {
+        val points = listOf(quad.topLeft, quad.topRight, quad.bottomRight, quad.bottomLeft)
+        var minDistance = Double.MAX_VALUE
+        for (i in points.indices) {
+            for (j in i + 1 until points.size) {
+                val distance = norm(points[i], points[j])
+                if (distance < minDistance) minDistance = distance
+            }
+        }
+        return minDistance
+    }
+
     private fun isInsideFrame(quad: Quad, frameWidth: Double, frameHeight: Double): Boolean {
         val points = listOf(quad.topLeft, quad.topRight, quad.bottomRight, quad.bottomLeft)
         return points.all {
@@ -78,6 +130,10 @@ object QuadValidator {
      *
      * - corners ordered consistently and inside (or almost inside) the frame;
      * - strictly convex polygon (this also rules out self-crossing sides);
+     * - no degenerate geometry: interior angles of at least
+     *   [minCornerAngleDeg] and corners separated by at least
+     *   [minCornerSeparationRatio] of the frame diagonal (rules out slivers,
+     *   thin strips and collapsing-corner artifacts);
      * - area within [minAreaRatio]..[maxAreaRatio] of the frame area;
      * - no corner moved further than [maxFrameShiftRatio] of the frame diagonal
      *   since [previousQuad], when given.
@@ -90,16 +146,24 @@ object QuadValidator {
         minAreaRatio: Double = DEFAULT_MIN_AREA_RATIO,
         maxAreaRatio: Double = DEFAULT_MAX_AREA_RATIO,
         maxFrameShiftRatio: Double = DEFAULT_MAX_FRAME_SHIFT_RATIO,
+        minCornerAngleDeg: Double = DEFAULT_MIN_CORNER_ANGLE_DEG,
+        minCornerSeparationRatio: Double = DEFAULT_MIN_CORNER_SEPARATION_RATIO,
     ): Boolean {
         if (!isInsideFrame(quad, frameWidth, frameHeight)) return false
         if (!quad.isConvex()) return false
+
+        // Shape sanity: needle-like corners or collapsing corners are
+        // detection/tracking artifacts, not documents.
+        if (minInteriorAngleDeg(quad) < minCornerAngleDeg) return false
+
+        val diagonal = hypot(frameWidth, frameHeight)
+        if (minCornerSeparation(quad) < minCornerSeparationRatio * diagonal) return false
 
         val frameArea = frameWidth * frameHeight
         val area = quadArea(quad)
         if (area < minAreaRatio * frameArea || area > maxAreaRatio * frameArea) return false
 
         if (previousQuad != null) {
-            val diagonal = hypot(frameWidth, frameHeight)
             if (maxCornerDistance(previousQuad, quad) > maxFrameShiftRatio * diagonal) return false
         }
         return true

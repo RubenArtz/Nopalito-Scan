@@ -91,21 +91,27 @@ fun MyScaffold(
                     ) {
                         content(Modifier.fillMaxSize())
                     }
-                    // Thumbnails + bottom actions float over the camera.
+                    // Floating stack over the camera (top→bottom): captured-page
+                    // previews, capture deck in the middle, then the session
+                    // actions — taking a photo grows the block upward without
+                    // moving the deck.
                     Column(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        cameraControls?.let {
-                            it()
-                            Spacer(Modifier.height(16.dp))
-                        }
                         if (pageListState == null) {
                             bottomBar()
+                            cameraControls?.let { it() }
                         } else {
-                            DocumentBar(pageListState, bottomBar, Modifier.fillMaxWidth(), cameraMode)
+                            DocumentBar(
+                                pageListState = pageListState,
+                                buttonBar = bottomBar,
+                                modifier = Modifier.fillMaxWidth(),
+                                cameraMode = cameraMode,
+                                middleContent = cameraControls,
+                            )
                         }
                     }
                 } else {
@@ -222,6 +228,8 @@ fun DocumentBar(
     buttonBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     cameraMode: Boolean = false,
+    /** Optional content rendered between the previews and the action row. */
+    middleContent: (@Composable () -> Unit)? = null,
 ) {
     val isLandscape = isLandscape(LocalConfiguration.current)
     Surface(
@@ -256,6 +264,11 @@ fun DocumentBar(
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     )
                 }
+            }
+            middleContent?.let {
+                Spacer(Modifier.height(10.dp))
+                it()
+                Spacer(Modifier.height(6.dp))
             }
             BottomAppBar(
                 containerColor = Color.Transparent,

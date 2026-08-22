@@ -37,8 +37,11 @@ import kotlin.math.hypot
  * to, so the overlay re-acquires the document quickly after losing it.
  */
 class QuadSpring(
+    // Slightly over-damped (critical damping for stiffness=180 is ~26.8): the
+    // overlay settles onto the document without the corner wobble an
+    // under-damped spring shows every time a refresh nudges the target.
     private val stiffness: Float = 180f,
-    private val damping: Float = 25f,
+    private val damping: Float = 30f,
     private val snapDistanceRatio: Float = 0.25f,
     private val maxDtSeconds: Float = 1f / 30f,
 ) {

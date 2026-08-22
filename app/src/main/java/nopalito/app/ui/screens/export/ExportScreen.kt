@@ -266,6 +266,18 @@ fun ExportScreen(
                     }
                 }
             }
+
+            // Preparation indicator pinned to the bottom-right corner of the
+            // export window; it only shows while the export is being prepared.
+            if (uiState.isGenerating) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(20.dp)
+                        .size(44.dp),
+                    strokeWidth = 4.dp,
+                )
+            }
         }
     }
 }
