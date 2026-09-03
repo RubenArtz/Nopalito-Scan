@@ -1,0 +1,1487 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<resources>
+    <!-- About screen: title. It's also an item of the ⋮ menu -->
+    <string name="about">About the app</string>
+    <!-- Button in the Document screen -->
+    <string name="add_page">Add page</string>
+    <!-- Header in the About screen -->
+    <string name="app_name" translatable="false">Nopalito Scan</string>
+    <!--
+    Appears in the About screen.
+    "Simple" means easy to use, with no unnecessary complexity. You can scan a document and get a PDF in just a few seconds.
+    "Respectful" is not only about privacy, but also: no ads, no tracking, no artificial limitations (e.g. watermark), minimal permissions...
+    Please preserve the broad meaning of "respectful". It is a key part of Nopalito Scan's philosophy and should not be translated as "privacy-friendly" only.
+    -->
+    <string name="app_tagline">A simple, respectful app to scan your documents.</string>
+    <!-- Button in the Crop screen -->
+    <string name="apply">Apply</string>
+    <!-- Icon description for ← at the top-left -->
+    <string name="back">Back</string>
+    <!-- Error message (as a toast) -->
+    <string name="camera_permission_denied">Camera permission denied</string>
+    <!-- Camera screen: capture mode chip labels -->
+    <string name="capture_mode_individual">Individual</string>
+    <string name="capture_mode_batch">Batch</string>
+    <!-- Camera screen: auto-detect toggle label -->
+    <string name="auto_detect">Auto detect</string>
+    <!-- Appears on the Camera screen -->
+    <string name="camera_permission_rationale">The app needs access to the camera to scan documents. The
+        captured images are stored only on this device and will be deleted when you close the current scan.
+    </string>
+    <!-- Button in dialogs -->
+    <string name="cancel">Cancel</string>
+    <!-- Icon description 🗁 -->
+    <string name="change_directory">Change folder</string>
+    <!-- Icon description ✖ in the filename field of the Export screen -->
+    <string name="clear_text">Clear text</string>
+    <!-- Button in OCR download dialog -->
+    <string name="close">Close</string>
+    <!-- Icon description in the Document screen -->
+    <string name="color_mode">Filter</string>
+    <!-- Settings screen -->
+    <string name="color_mode_auto">Automatic</string>
+    <!-- Settings screen: value for "default filter". Document screen: dropdown menu for filter -->
+    <string name="color_mode_color">Color</string>
+    <!-- Settings screen -->
+    <string name="color_mode_default">Default filter</string>
+    <!-- Settings screen: value for "default filter". Document screen: dropdown menu for filter -->
+    <string name="color_mode_grayscale">Grayscale</string>
+    <!-- About screen -->
+    <string name="contact">Contact</string>
+    <!-- About screen: appears as a toast -->
+    <string name="copied_logs">Logs copied to the clipboard</string>
+    <!-- About screen -->
+    <string name="copy_logs">Copy logs</string>
+    <!-- Export screen: progress message -->
+    <string name="creating_export">Preparing export…</string>
+    <!-- Icon description in the Document screen -->
+    <string name="crop">Crop</string>
+    <!-- Icon description in the OCR languages screen -->
+    <string name="delete">Delete</string>
+    <!-- Document screen: icon description and title of a confirmation dialog -->
+    <string name="delete_page">Delete page</string>
+    <!-- Document screen: confirmation dialog -->
+    <string name="delete_page_warning">Delete this page?</string>
+    <!-- About screen -->
+    <string name="developer">Developer</string>
+    <string name="developer_name">Fork modified by Artz Studio</string>
+    <!-- Localized name of the Android Download folder as it appears in the Files app (it ends with an "s" in English...)-->
+    <string name="download_dirname">Downloads</string>
+    <!-- Cloud storage: download destination folder -->
+    <string name="download_dir_title">Download folder</string>
+    <string name="download_dir_default">Downloads/Nopalito Scan</string>
+    <string name="download_dir_reset">Reset folder</string>
+    <!-- Export screen -->
+    <string name="error_context_folder">Export folder: %1$s</string>
+    <!-- Export screen, %1$s is the provider name -->
+    <string name="error_context_provider">Provider: %1$s</string>
+    <!-- Export screen -->
+    <string name="error_export_dir_permission_lost">The selected export folder is no longer accessible. Choose
+        another folder.
+    </string>
+    <!-- Rare file-picker errors; translated in all locale catalogs -->
+    <string name="error_file_picker_launch">Failed to launch system file picker on this device
+    </string>
+    <string name="error_file_picker_result">Failed to set export directory</string>
+    <!-- Export screen: appears as a toast -->
+    <string name="error_no_app">No app was found to open this file</string>
+    <!-- Generic message for unexpected errors in various screens: appears as a toast -->
+    <string name="error_occurred">An error occurred</string>
+    <!-- Cloud screens: generic unknown error -->
+    <string name="error_unknown">Unknown error</string>
+    <!-- Export screen -->
+    <string name="error_save">Could not save the file</string>
+    <!-- Document screen: button -->
+    <string name="export">Export</string>
+    <!-- Export screen: title (%1$s is the export format: PDF, JPEG...) -->
+    <string name="export_as">Export as %1$s</string>
+    <!-- Export screen: subtitle in the gradient header -->
+    <string name="export_subtitle">Review and choose where to save your document</string>
+    <!-- Settings screen -->
+    <string name="export_directory">Export folder</string>
+    <!-- Settings screen -->
+    <string name="export_format">Export format</string>
+    <!-- Settings screen -->
+    <string name="export_quality">Export quality</string>
+    <!-- Export screen: compression level options -->
+    <string name="export_quality_original">Uncompressed</string>
+    <string name="export_quality_balanced">Balanced</string>
+    <string name="export_quality_high">High</string>
+    <string name="export_quality_compressed">Compressed</string>
+    <string name="export_quality_max_compression">Maximum compression</string>
+    <!-- Export screen: optional password protection for PDF / Word exports -->
+    <string name="export_protect_document">Protect with password</string>
+    <string name="export_password">Password</string>
+    <string name="export_password_hint">Leave empty to keep the file unprotected</string>
+    <string name="export_generate_password">Generate a strong password</string>
+    <string name="export_show_password">Show password</string>
+    <string name="export_hide_password">Hide password</string>
+    <!-- Export screen when exporting 1 file-->
+    <string name="file_size">Size: %1$s</string>
+    <!-- Export screen when exporting more than 1 file -->
+    <string name="file_size_total">Total size: %1$s</string>
+    <!-- Export screen: field label -->
+    <string name="filename">File name</string>
+    <!-- Camera screen: button -->
+    <string name="grant_permission">Grant permission</string>
+    <!-- Camera screen: button -->
+    <string name="import_photos">Import</string>
+    <!-- Camera screen: QR / barcode scanner button -->
+    <string name="qr_code">QR</string>
+    <!-- QR scanner mode: hint at the bottom of the frame -->
+    <string name="qr_detect_hint">Point at the code</string>
+    <!-- QR result dialog: copy button -->
+    <string name="qr_copy">Copy</string>
+    <!-- QR result dialog: open link button -->
+    <string name="qr_open">Open</string>
+    <!-- QR result dialog: close button -->
+    <string name="qr_close">Close</string>
+    <!-- QR result dialog: share content button -->
+    <string name="qr_share">Share</string>
+    <!-- QR result dialog: toast after copying -->
+    <string name="qr_copied">Content copied</string>
+    <!-- QR result dialog: barcode format label -->
+    <string name="qr_format">Format</string>
+    <!-- QR result dialog: content label for plain text codes -->
+    <string name="qr_content">Content</string>
+    <!-- QR result dialog: type titles -->
+    <string name="qr_type_text">Text</string>
+    <string name="qr_type_url">Link</string>
+    <string name="qr_type_wifi">Wi-Fi network</string>
+    <string name="qr_type_email">Email</string>
+    <string name="qr_type_phone">Phone</string>
+    <string name="qr_type_sms">SMS</string>
+    <string name="qr_type_geo">Location</string>
+    <!-- QR result dialog: WiFi fields -->
+    <string name="qr_wifi_ssid">Network</string>
+    <string name="qr_wifi_password">Password</string>
+    <string name="qr_wifi_security">Security</string>
+    <string name="qr_connect">Connect</string>
+    <!-- QR result dialog: WiFi connection feedback -->
+    <string name="qr_wifi_prompt">Check the system notification to connect to the network</string>
+    <string name="qr_wifi_error">Could not connect to the network</string>
+    <!-- QR result dialog: email fields -->
+    <string name="qr_email_address">Email</string>
+    <string name="qr_email_subject">Subject</string>
+    <string name="qr_email_body">Message</string>
+    <!-- QR result dialog: phone field -->
+    <string name="qr_phone_number">Phone</string>
+    <!-- QR result dialog: SMS fields -->
+    <string name="qr_sms_number">Number</string>
+    <string name="qr_sms_message">Message</string>
+    <!-- QR result dialog: geo fields -->
+    <string name="qr_geo_lat">Latitude</string>
+    <string name="qr_geo_lng">Longitude</string>
+    <string name="qr_open_map">View on map</string>
+    <!-- QR history screen: title -->
+    <string name="qr_history">Code history</string>
+    <!-- QR history screen: empty state -->
+    <string name="qr_empty">You haven\'t scanned any codes yet.</string>
+    <!-- QR history screen: enter selection mode -->
+    <string name="qr_select">Select</string>
+    <!-- QR history screen: selection mode title, %d selected -->
+    <string name="qr_n_selected">%d selected</string>
+    <!-- QR history screen: select all -->
+    <string name="qr_select_all">Select all</string>
+    <!-- QR history screen: deselect all -->
+    <string name="qr_deselect_all">Deselect</string>
+    <!-- QR history screen: batch delete dialog -->
+    <string name="qr_delete_batch_message">Delete %d scans?</string>
+    <!-- QR history screen: delete dialog -->
+    <string name="qr_delete_title">Delete scan</string>
+    <string name="qr_delete_message">Delete this scan from the history?</string>
+    <!-- Camera screen: INE (ID credential) capture mode button -->
+    <string name="ine">ID</string>
+    <!-- Camera screen: INE guide text while scanning the front of the credential -->
+    <string name="ine_scan_front">Scan front</string>
+    <!-- Camera screen: INE guide text while scanning the back of the credential -->
+    <string name="ine_scan_back">Scan back</string>
+    <!-- Camera screen: INE guide hint to place the credential inside the frame -->
+    <string name="ine_place_hint">Place your ID inside the frame</string>
+    <!-- Camera screen: INE import dialog title -->
+    <string name="ine_import_title">Import ID</string>
+    <!-- Camera screen: INE import dialog prompt -->
+    <string name="ine_import_which_side">Which side is this photo?</string>
+    <!-- Camera screen: front side of the INE credential -->
+    <string name="ine_front">Front</string>
+    <!-- Camera screen: back side of the INE credential -->
+    <string name="ine_back">Back</string>
+    <!-- Export screen: INE composed-credential size selector -->
+    <string name="ine_export_scale">ID size</string>
+    <!-- Export screen: INE at ~200% (fills most of the sheet) -->
+    <string name="ine_export_scale_200">200%</string>
+    <!-- Export screen: INE at a normal, smaller size -->
+    <string name="ine_export_scale_normal">Normal</string>
+    <!-- About screen -->
+    <string name="libraries">Libraries</string>
+    <!-- Libraries screen title (reachable from the About screen) -->
+    <string name="libraries_open_source">Open source libraries</string>
+    <!-- About screen -->
+    <string name="license">License</string>
+    <!-- About screen -->
+    <string name="licensed_under">This app is licensed under the GNU General Public License v3.0.</string>
+    <!-- Icon description for ⋮ -->
+    <string name="menu">Menu</string>
+    <!-- Export screen: dialog -->
+    <string name="new_document_warning">The current scan will be lost. Do you want to continue?</string>
+    <!-- Export screen: button -->
+    <string name="open">Open</string>
+    <!-- Export screen: button, opens the container folder of a multi-image export -->
+    <string name="open_folder">Open folder</string>
+    <!-- Export screen: text passed to the Android system when opening a file -->
+    <string name="open_file">Open file</string>
+    <!-- Settings screen: when a non-default export folder is chosen -->
+    <string name="reset_to_default">Reset to default</string>
+    <!-- Document screen: icon description -->
+    <string name="rotate_left">Rotate left</string>
+    <!-- Document screen: icon description -->
+    <string name="rotate_right">Rotate right</string>
+    <!-- Export screen: button -->
+    <string name="save">Save</string>
+    <!-- Export screen: button. Resume scan screen: button -->
+    <string name="scan_new">New scan</string>
+    <!-- Resume scan screen -->
+    <string name="scan_current">Current scan</string>
+    <!-- Resume scan screen -->
+    <string name="scan_discard_current">Discard current scan</string>
+    <!-- Resume scan screen: button -->
+    <string name="scan_resume">Resume scan</string>
+    <!-- Settings screen: title. It's also an item of the ⋮ menu -->
+    <string name="settings">Settings</string>
+    <string name="settings_subtitle">Set up the scan and where your files are saved</string>
+    <!-- Push notifications (FCM) -->
+    <string name="push_channel_name">Notifications</string>
+    <string name="push_channel_description">Updates and alerts from Nopalito Scan Cloud</string>
+    <!-- Android 13+ notification permission (onboarding) -->
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_description">Receive updates and alerts about your cloud account on this
+        device
+    </string>
+    <!-- OCR Languages screen -->
+    <string name="settings_ocr_download_error">The download failed. Check your internet connection and that the
+        app has access to the network.
+    </string>
+    <!-- OCR Languages screen -->
+    <string name="settings_ocr_download_intro">Language files are downloaded from the official Tesseract project.
+        Text recognition stays completely offline.
+    </string>
+    <!-- OCR Languages screen -->
+    <string name="settings_ocr_downloading">Downloading language file</string>
+    <!-- OCR Languages screen: title -->
+    <string name="settings_ocr_languages">Languages</string>
+    <string name="settings_ocr_languages_subtitle">Install or enable the text recognition languages</string>
+    <!-- OCR Languages screen -->
+    <string name="settings_ocr_languages_available">Available languages</string>
+    <!-- Settings screen -->
+    <string name="settings_ocr_languages_disabled">Disabled</string>
+    <!-- OCR Languages screen -->
+    <string name="settings_ocr_languages_installed">Installed</string>
+    <!-- OCR Languages screen. Marks the language matching the user's display language. At most one language is suggested. -->
+    <string name="settings_ocr_suggested">Suggested</string>
+    <!-- Settings screen: section title -->
+    <string name="settings_section_ocr">Text recognition</string>
+    <!-- Settings screen: section title -->
+    <string name="settings_section_scan">Scan</string>
+    <!-- Settings screen: section title -->
+    <string name="settings_section_export">Export</string>
+    <!-- Export screen: button -->
+    <string name="share">Share</string>
+    <!-- Export screen: text passed to the Android system when sharing a file -->
+    <string name="share_document">Share document</string>
+    <!-- Export screen -->
+    <string name="storage_permission_denied">Could not save the file: permission denied</string>
+    <!-- About screen -->
+    <string name="support">Support</string>
+    <!-- About screen -->
+    <string name="support_last_image">Report an issue with the last captured image</string>
+    <!-- Export screen -->
+    <string name="text_recognition_disabled">Text recognition: off</string>
+    <!-- Export screen -->
+    <string name="text_recognition_enabled">Text recognition: on</string>
+    <!-- Camera screen -->
+    <string name="turn_off_torch">Turn off flashlight</string>
+    <!-- Camera screen -->
+    <string name="turn_on_torch">Turn on flashlight</string>
+    <string name="torch">Flashlight</string>
+    <!-- Export screen -->
+    <string name="unknown_size">Unknown size</string>
+    <!-- About screen -->
+    <string name="version">Version</string>
+    <!-- About screen -->
+    <string name="view_full_list">View full list</string>
+    <!-- About screen -->
+    <string name="view_the_full_license">View the full license</string>
+    <!-- Dialogs: button -->
+    <string name="yes">Yes</string>
+    <!-- Export screen. %1$d: number of files; %2$s: file name; %3$s: folder name -->
+    <plurals name="files_saved_to">
+        <item quantity="one">%2$s saved to %3$s</item>
+        <item quantity="other">%1$d files saved to %3$s</item>
+    </plurals>
+    <!-- Camera screen. %d: number of photos -->
+    <plurals name="importing_photos">
+        <item quantity="one">Importing 1 photo</item>
+        <item quantity="other">Importing %d photos</item>
+    </plurals>
+    <!-- Camera screen, Export screen, Resume scan screen. %d: number of pages -->
+    <plurals name="page_count">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <!-- History screen: title -->
+    <string name="export_history">Export history</string>
+    <!-- History screen: search hint -->
+    <string name="history_search">Search history</string>
+    <!-- History screen: filter options -->
+    <string name="filter_all">All</string>
+    <string name="filter_pdf">PDF</string>
+    <string name="filter_image">Image</string>
+    <string name="filter_word">Word</string>
+    <!-- History screen: sort options -->
+    <string name="sort_by">Sort by</string>
+    <string name="sort_date">Date</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_size">Size</string>
+    <!-- History screen: status labels -->
+    <string name="status_available">Available</string>
+    <string name="status_deleted">Deleted</string>
+    <!-- History screen: detail text -->
+    <string name="history_pages">%1$d pages</string>
+    <!-- History screen: re-export -->
+    <string name="re_export">Re-export</string>
+    <!-- History screen: message when original document is gone -->
+    <!-- History screen: delete confirmation -->
+    <string name="delete_history_entry">Delete history entry</string>
+    <string name="delete_history_entry_warning">Delete this history entry?</string>
+    <!-- History screen: multi-select mode -->
+    <string name="history_select_all">Select all</string>
+    <string name="history_selected_count">%1$d selected</string>
+    <string name="history_delete_batch_warning">Delete %1$d history entries? This action cannot be
+        undone.
+    </string>
+    <!-- History screen: empty state -->
+    <string name="history_empty">No exports recorded</string>
+    <!-- History screen: compression labels -->
+    <string name="quality_original">Uncompressed</string>
+    <string name="quality_balanced">Balanced</string>
+    <string name="quality_high">High</string>
+    <string name="quality_compressed">Compressed</string>
+    <string name="quality_max_compression">Maximum compression</string>
+    <!-- History screen: filter icon description -->
+    <string name="history_filter">Filter</string>
+    <!-- History screen: re-export confirmation dialog -->
+    <!-- History: folder detail of a multi-image export -->
+    <string name="history_folder_info">%1$d images · %2$s</string>
+    <string name="history_folder_empty">This export has no images</string>
+    <string name="delete_history_folder">Delete folder</string>
+    <string name="delete_history_folder_warning">This export and its %1$d images will be deleted.
+        This action cannot be undone.
+    </string>
+    <!-- History: delete one image of a multi-image export -->
+    <string name="delete_image">Delete image</string>
+    <string name="delete_image_warning">Delete &quot;%1$s&quot; from this export? This action cannot be
+        undone.
+    </string>
+    <!-- History: re-download of an entry to the configured export folder -->
+    <string name="history_downloaded">Saved to the export folder</string>
+    <!-- New session button on Document screen, Camera screen -->
+    <string name="new_session">New session</string>
+    <!-- Crop screen: content description for the editable image -->
+    <string name="image_to_edit">Image to edit</string>
+    <!-- Camera screen: debug segmentation time (shown to user for now) -->
+    <string name="segmentation_time">Segmentation time: %d ms</string>
+    <!-- MainActivity: toast shown when export fails -->
+    <string name="export_failed">The export failed</string>
+    <!-- Export screen: cloud upload no session message -->
+    <string name="cloud_no_session">No active cloud session</string>
+    <!-- Export screen: unknown cloud upload error -->
+    <string name="error_unknown_upload">Unknown upload error</string>
+    <!-- Cloud: email login screen -->
+    <string name="cloud_email_title">Sign in with email</string>
+    <string name="cloud_brand">Nopalito Scan Cloud</string>
+    <string name="cloud_name_label">Full name</string>
+    <string name="cloud_name_placeholder">e.g. Ana López</string>
+    <string name="cloud_name_too_short">The name must be at least 2 characters</string>
+    <string name="cloud_dialog_ok">Got it</string>
+    <string name="cloud_dialog_account_not_found_title">Account not found</string>
+    <string name="cloud_dialog_account_not_found_body">There is no account registered with this email address. Check it
+        is spelled correctly or create a new account.
+    </string>
+    <string name="cloud_dialog_secret_title">Configuration error</string>
+    <string name="cloud_dialog_secret_body">The app security configuration does not match the server. Update the app or
+        contact support.
+    </string>
+    <string name="cloud_email_label">Email address</string>
+    <string name="cloud_email_placeholder">you@example.com</string>
+    <string name="cloud_send_code">Send code</string>
+    <string name="cloud_invalid_email">Enter a valid email address</string>
+    <string name="cloud_error_sending_code">Could not send the code</string>
+    <!-- Cloud: OTP screen -->
+    <string name="cloud_verify_code">Verify code</string>
+    <string name="cloud_verify">Verify</string>
+    <string name="cloud_otp_instruction">We sent a 6-digit code to</string>
+    <string name="cloud_otp_label">Verification code</string>
+    <string name="cloud_otp_placeholder">000000</string>
+    <string name="cloud_resend_code">Resend code</string>
+    <string name="cloud_code_resent">Code resent successfully</string>
+    <string name="cloud_resend_in_seconds">Resend in %1$d s</string>
+    <string name="cloud_code_sent_to_email">A code was sent to your email</string>
+    <string name="cloud_otp_six_digits">The code must have 6 digits</string>
+    <string name="cloud_invalid_code">Invalid code</string>
+    <string name="cloud_error_resending">Could not resend the code</string>
+    <!-- Cloud: general title used in splash/loading -->
+    <string name="cloud_title">Nopalito Scan Cloud</string>
+    <!-- Cloud: splash screen -->
+    <string name="cloud_checking_session">Checking session…</string>
+    <string name="cloud_need_login">You need to sign in to use Nopalito Scan Cloud</string>
+    <string name="cloud_login">Sign in</string>
+    <string name="cloud_connection_timeout">The connection timed out. Check your internet connection.</string>
+    <string name="cloud_connection_error">Could not connect to Nopalito Scan Cloud. Check your connection.</string>
+    <string name="cloud_connection_generic_error">Connection error</string>
+    <string name="cloud_session_timeout">Session timed out. The server is not responding.</string>
+    <string name="cloud_connection_failed">Could not connect to Nopalito Scan Cloud</string>
+    <!-- Cloud home: stats card -->
+    <string name="cloud_files_label">Files</string>
+    <string name="cloud_storage_label">Storage</string>
+    <string name="cloud_logout">Sign out</string>
+    <string name="cloud_trash">Trash</string>
+    <!-- Cloud: file list -->
+    <string name="cloud_empty_files">Tap Upload to add your first file</string>
+    <string name="cloud_folder_info">%1$d files · %2$s</string>
+    <!-- Cloud: folder hierarchy -->
+    <string name="cloud_folders">Folders</string>
+    <string name="cloud_new_folder">New folder</string>
+    <string name="cloud_create_folder_title">Create folder</string>
+    <string name="cloud_folder_name_hint">Folder name</string>
+    <string name="cloud_folder_created">Folder created</string>
+    <string name="cloud_folder_items">%1$d items</string>
+    <string name="cloud_root_crumb">Root</string>
+    <string name="cloud_move_to">Move to…</string>
+    <string name="cloud_move_here">Move here</string>
+    <string name="cloud_moved_to_folder">Moved to %1$s</string>
+    <string name="cloud_error_folder_name_taken">An item with that name already exists here</string>
+    <string name="cloud_error_file_name_taken">An item with that name already exists here</string>
+    <string name="cloud_error_folder_not_found">Folder not found</string>
+    <string name="cloud_error_folder_move_cycle">A folder cannot be moved inside itself</string>
+    <string name="cloud_error_parent_not_a_folder">The destination is not a folder</string>
+    <string name="cloud_error_parent_in_trash">The destination folder is in the trash</string>
+    <string name="cloud_error_depth_limit">Maximum folder depth reached</string>
+    <string name="cloud_error_folder_no_content">A folder has no downloadable content</string>
+    <string name="cloud_error_restore_expired">Some items expired and cannot be restored anymore</string>
+    <string name="cloud_error_move">Could not move the item</string>
+    <string name="cloud_upload_destination">Destination: %1$s</string>
+    <string name="cloud_move_selected_dest">Selected destination: %1$s</string>
+    <string name="cloud_upload_partial_summary">%1$d of %2$d files were uploaded. The ones that failed stayed in the list.</string>
+    <string name="cloud_restore_whole_folder">Restore whole folder</string>
+    <string name="cloud_zip_preparing">Preparing ZIP…</string>
+    <string name="cloud_zip_downloading">Downloading ZIP…</string>
+    <string name="cloud_zip_saved">ZIP downloaded</string>
+    <string name="cloud_zip_error">Could not create or download the ZIP</string>
+    <string name="cloud_folder_download_zip">Download as ZIP</string>
+    <string name="cloud_move_to_trash_confirm">Move &quot;%1$s&quot; to the trash?</string>
+    <string name="cloud_move_to_trash">Move to trash</string>
+    <string name="cloud_move_to_trash_action">Move to trash</string>
+    <string name="cloud_downloading">Downloading…</string>
+    <string name="cloud_pdf_render_error">Could not render the PDF</string>
+    <string name="cloud_no_preview">No preview available</string>
+    <string name="cloud_download_to_view">You can download it to view it</string>
+    <string name="cloud_preview">Preview</string>
+    <string name="cloud_rename_file">Rename file</string>
+    <string name="cloud_name">Name</string>
+    <string name="cloud_size_unknown">Unknown</string>
+    <string name="cloud_no_files">No files</string>
+    <string name="cloud_retry">Retry</string>
+    <!-- Cloud: biometric unlock gate -->
+    <string name="cloud_biometric_unlock_title">Unlock your cloud</string>
+    <string name="cloud_biometric_unlock_message">Use your fingerprint or face to open Nopalito Scan Cloud</string>
+    <string name="cloud_biometric_unlock_button">Unlock</string>
+    <string name="cloud_biometric_unlock_use_another_account">Use another account</string>
+    <string name="cloud_biometric_unlock_locked_out">Too many attempts. Try again later.</string>
+    <string name="cloud_biometric_unlock_unavailable">Biometrics are unavailable on this device.</string>
+    <string name="cloud_biometric_unlock_no_screen_lock">Set a PIN, pattern or password on the device to enable
+        biometric unlock.
+    </string>
+    <string name="cloud_biometric_unlock_failed">Could not unlock. Try again.</string>
+    <string name="cloud_biometric_prompt_title">Nopalito Scan Cloud</string>
+    <string name="cloud_biometric_prompt_subtitle">Use your fingerprint or face to continue</string>
+    <string name="cloud_biometric_prompt_negative">Cancel</string>
+    <string name="cloud_biometric_toggle_title">Biometric unlock</string>
+    <string name="cloud_biometric_toggle_subtitle">Require your fingerprint or face to open the Cloud</string>
+    <string name="cloud_biometric_toggle_failed">Could not change biometric unlock. Try again.</string>
+    <!-- Weak fallback warning (Class 2 face, only offered when STRONG unavailable) -->
+    <string name="cloud_biometric_weak_title">Use face unlock?</string>
+    <string name="cloud_biometric_weak_message">Your device only offers 2D face unlock (Class 2), which is less secure than fingerprint or 3D face (Class 3). It can be spoofed with a photo and will create a less secure key.\n\nYou can use your PIN, pattern or password instead, or accept the weaker face unlock.</string>
+    <string name="cloud_biometric_weak_use_face">Use face</string>
+    <string name="cloud_biometric_weak_use_pin">Use PIN only</string>
+    <string name="cloud_login_code_title">Email code on login</string>
+    <string name="cloud_login_code_subtitle">Require a code by email after password (extra security)</string>
+    <string name="cloud_login_code_enabled">Email code required — you will receive a code on next login</string>
+    <string name="cloud_login_code_disabled">Email code disabled — password alone is enough</string>
+    <!-- Cloud: password login -->
+    <string name="cloud_login_instruction">Sign in with your email and password</string>
+    <string name="cloud_password_label">Password</string>
+    <string name="cloud_password_placeholder">Your password</string>
+    <string name="cloud_password_show">Show password</string>
+    <string name="cloud_password_hide">Hide password</string>
+    <string name="cloud_invalid_credentials">Invalid email or password</string>
+    <string name="cloud_forgot_password">Forgot your password?</string>
+    <string name="cloud_create_account">No account? Create one</string>
+    <string name="cloud_or">or</string>
+    <string name="cloud_register_title">Create account</string>
+    <string name="cloud_register_instruction">Choose a password (at least 8 characters)</string>
+    <string name="cloud_register_next">Continue</string>
+    <string name="cloud_password_too_short">The password must be at least 8 characters</string>
+    <string name="cloud_passwords_mismatch">The passwords do not match</string>
+    <string name="cloud_email_already_registered">This email already has an account. Try signing in.</string>
+    <string name="cloud_confirm_password_label">Confirm password</string>
+    <string name="cloud_confirm_password_placeholder">Repeat your password</string>
+    <string name="cloud_new_password_label">New password</string>
+    <!-- Cloud: password recovery / migration -->
+    <string name="cloud_forgot_title">Reset password</string>
+    <string name="cloud_forgot_instruction">Enter your email to receive a reset code</string>
+    <string name="cloud_set_password_title">Set password</string>
+    <string name="cloud_set_password_instruction">Enter your email to receive a setup code</string>
+    <string name="cloud_recover_code_sent">If the email is valid, a code has been sent</string>
+    <string name="cloud_save_password">Save new password</string>
+    <string name="cloud_send_verification_code">Send verification code</string>
+    <string name="cloud_change_password">Change password</string>
+    <string name="cloud_change_password_desc">Requires a verification code by email</string>
+    <string name="cloud_change_password_instruction">We will email a verification code to your account. Enter it below
+        to set a new password.
+    </string>
+    <string name="cloud_password_changed_success">Password updated successfully.</string>
+    <!-- Cloud: change email -->
+    <string name="cloud_change_email">Change email</string>
+    <string name="cloud_change_email_desc">Requires verification to your new address</string>
+    <string name="cloud_change_email_instruction">We will send a 6-digit code to your new email</string>
+    <string name="cloud_new_email_label">New email address</string>
+    <string name="cloud_new_email_placeholder">you@example.com</string>
+    <string name="cloud_send_code_to_new_email">Send verification code</string>
+    <string name="cloud_email_change_code_sent">Code sent to your new email</string>
+    <string name="cloud_email_changed_success">Email updated successfully</string>
+    <string name="cloud_email_already_in_use">This email is already registered</string>
+    <string name="cloud_email_same_as_current">The new email is the same as your current email</string>
+    <string name="cloud_verify_and_change_email">Verify and change email</string>
+    <!-- Cloud: storage usage (server-authoritative) -->
+    <string name="cloud_storage_title">Storage</string>
+    <string name="cloud_storage_subtitle">Usage and plan</string>
+    <string name="cloud_storage_used_of">%1$s used of %2$s</string>
+    <string name="cloud_storage_percent_used">%1$d%% used</string>
+    <string name="cloud_storage_free">%1$s free</string>
+    <string name="cloud_plan_free">Free plan</string>
+    <string name="cloud_plan_personal">Personal plan</string>
+    <string name="cloud_plan_plus">Plus plan</string>
+    <string name="cloud_premium_active_personal">You are on the Personal plan (1 GB).</string>
+    <string name="cloud_premium_active_plus">You are on the Plus plan (5 GB).</string>
+    <string name="cloud_view_plans">View plans</string>
+    <string name="premium_current">Current</string>
+    <!-- Premium plans dialog (swipeable, capacity only, buttons disabled for now) -->
+    <string name="premium_nopalito_cloud">Nopalito Scan Cloud</string>
+    <string name="premium_more_storage">More storage,</string>
+    <string name="premium_more_power">more power</string>
+    <string name="premium_swipe">Swipe to compare plans</string>
+    <string name="premium_monthly">Monthly</string>
+    <string name="premium_annual">Annual</string>
+    <string name="premium_free">Free</string>
+    <string name="premium_personal">Personal</string>
+    <string name="premium_plus">Plus</string>
+    <string name="premium_free_storage">50 MB</string>
+    <string name="premium_personal_storage">1 GB</string>
+    <string name="premium_plus_storage">5 GB</string>
+    <string name="premium_free_subtitle">To try the app with no commitment</string>
+    <string name="premium_personal_subtitle">For everyday personal use</string>
+    <string name="premium_plus_subtitle">For professionals and teams</string>
+    <string name="premium_free_price">Free</string>
+    <string name="premium_free_subprice">No credit card required</string>
+    <string name="premium_cancela">Cancel anytime</string>
+    <string name="premium_most_popular">Most popular</string>
+    <string name="premium_pro">Pro</string>
+    <string name="premium_choose_personal">Choose Personal</string>
+    <string name="premium_choose_plus">Choose Plus</string>
+    <string name="premium_close">Close</string>
+    <string name="premium_previous">Previous</string>
+    <string name="premium_next">Next</string>
+    <string name="premium_per_month">/month</string>
+    <string name="premium_per_year">/year</string>
+    <string name="premium_current_plan">Current plan: %1$s</string>
+    <string name="premium_selected">Selected</string>
+    <!-- Cloud: quota exceeded (full-screen modal from upload) -->
+    <string name="cloud_quota_title">You have reached the free plan limit</string>
+    <string name="cloud_quota_body">The free plan includes 50 MB. To keep uploading files, you need the Premium plan.
+    </string>
+    <string name="cloud_quota_upgrade">See Premium options</string>
+    <string name="cloud_quota_got_it">Got it</string>
+    <!-- Cloud: trash -->
+    <string name="cloud_trash_empty">The trash is empty</string>
+    <string name="cloud_trash_title">Trash</string>
+    <string name="cloud_trash_subtitle">Deleted files</string>
+    <string name="cloud_trash_empty_hint">Files you delete will appear here</string>
+    <string name="cloud_trash_type_cloud">Cloud</string>
+    <string name="cloud_trash_type_qr">QR</string>
+    <string name="cloud_trash_deletes_in">Deletes in %1$s</string>
+    <string name="cloud_trash_awaiting_deletion">Pending permanent deletion</string>
+    <string name="cloud_trash_info">Trash timing info</string>
+    <string name="cloud_trash_info_title">Scheduled deletion</string>
+    <string name="cloud_trash_info_subtitle">This file is deleted automatically</string>
+    <string name="cloud_trash_info_remaining">Time remaining</string>
+    <string name="cloud_trash_info_scheduled">Deletion date</string>
+    <string name="cloud_trash_info_trashed">Trashed</string>
+    <string name="cloud_trash_info_origin">Origin</string>
+    <string name="cloud_trash_source_admin">Trashed from the Cloud panel</string>
+    <string name="cloud_trash_source_mobile">Trashed from this device</string>
+    <string name="cloud_trash_remaining_days_hours">%1$dd %2$dh</string>
+    <string name="cloud_trash_remaining_hours_minutes">%1$dh %2$dm</string>
+    <string name="cloud_trash_remaining_minutes_seconds">%1$dm %2$ds</string>
+    <string name="cloud_trash_remaining_less_minute">&lt;1m</string>
+    <string name="cloud_restore_n">Restore %d</string>
+    <string name="cloud_restore">Restore</string>
+    <string name="cloud_delete_permanent">Delete permanently</string>
+    <string name="cloud_delete_permanent_n">Delete %d</string>
+    <!-- Cloud: upload -->
+    <string name="cloud_upload">Upload</string>
+    <string name="cloud_upload_file">Upload file</string>
+    <string name="cloud_upload_subtitle">Upload your documents to the cloud</string>
+    <!-- Cloud upload: fallback file name when it cannot be read from the picker -->
+    <string name="cloud_unknown_filename">unknown</string>
+    <string name="cloud_upload_to_cloud">Upload to cloud</string>
+    <string name="cloud_uploading">Uploading file to the cloud…</string>
+    <string name="cloud_upload_success">File uploaded successfully</string>
+    <string name="cloud_upload_now">Upload now</string>
+    <string name="cloud_login_hint">Sign in to Cloud to upload files</string>
+    <!-- Export screen: opt-in cloud upload toggle (same policy as the tools) -->
+    <string name="export_cloud_upload_desc">Also upload this document to Nopalito Scan Cloud when you save</string>
+    <string name="cloud_upload_file_types">Any file: images, PDF, Office (Word/Excel/PowerPoint), ZIP, TXT and more</string>
+    <string name="cloud_uploading_file">Uploading file…</string>
+    <string name="cloud_tap_to_select">Tap to select files</string>
+    <!-- Cloud upload: multi-file -->
+    <string name="cloud_add_more">Add more files</string>
+    <string name="cloud_remove_file">Remove file</string>
+    <plurals name="cloud_n_files_selected">
+        <item quantity="one">%d file selected</item>
+        <item quantity="other">%d files selected</item>
+    </plurals>
+    <plurals name="cloud_upload_n_files">
+        <item quantity="one">Upload %d file</item>
+        <item quantity="other">Upload %d files</item>
+    </plurals>
+    <string name="cloud_n_selected">%d selected</string>
+    <string name="cloud_more_actions">More options</string>
+    <string name="cloud_select_all">Select all</string>
+    <string name="cloud_refresh">Refresh</string>
+    <string name="cloud_delete_n">Delete %d</string>
+    <string name="cloud_rename">Rename</string>
+    <string name="cloud_download">Download</string>
+    <!-- Cloud: repository error messages -->
+    <string name="cloud_error_400">Invalid request. Check the data you entered.</string>
+    <string name="cloud_error_401">Unauthorized. Your session expired.</string>
+    <string name="cloud_error_403">Access denied (403).</string>
+    <string name="cloud_error_404">Resource not found.</string>
+    <string name="cloud_error_413">The file is too large.</string>
+    <string name="cloud_error_415">Unsupported file type.</string>
+    <string name="cloud_error_429">Too many requests. Try again later.</string>
+    <string name="cloud_error_500">Internal server error.</string>
+    <string name="cloud_error_503">Service temporarily unavailable.</string>
+    <string name="cloud_error_unexpected">Unexpected error (%1$d)</string>
+    <string name="cloud_error_load_more">Error loading more files</string>
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">Sign-in failed. Please try again.</string>
+    <string name="cloud_error_auth_account_suspended">Your account is suspended. Several attempts were detected to
+        access the account from different locations. To unlock it, contact contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">The account status could not be verified. Please try again
+        later.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">The account could not be created. The limit of accounts for this
+        device or network was reached.
+    </string>
+    <string name="cloud_error_auth_register_vpn">You cannot create an account while using a VPN. Turn it off and try
+        again.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Your account is suspended. To manage it, contact
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">This account was deleted and can no longer be used.</string>
+    <string name="cloud_error_auth_account_deleted">This account has been deleted and can no longer be used.</string>
+    <string name="cloud_error_auth_account_deleted_inactive">This account was deleted due to inactivity and can no longer be used.</string>
+    <string name="cloud_error_anonymous_protected">This account cannot be managed.</string>
+    <string name="cloud_dialog_account_suspended_title">Account suspended</string>
+    <string name="cloud_dialog_account_suspended_body">Your account is suspended. To unlock it, contact
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_dialog_account_deleted_title">Account deleted</string>
+    <string name="cloud_dialog_account_deleted_body">This account has been deleted and can no longer be used.</string>
+    <!-- Google Sign-In -->
+    <string name="cloud_continue_with_google">Continue with Google</string>
+    <string name="cloud_error_google_token_invalid">Invalid Google token. Please try again.</string>
+    <string name="cloud_error_google_token_expired">Google token expired. Please sign in again.</string>
+    <string name="cloud_error_google_email_not_verified">Your Google email is not verified.</string>
+    <string name="cloud_error_google_id_mismatch">This Google account is already linked to another user.</string>
+    <string name="cloud_error_google_not_configured">Google Sign-In is not configured. Please try again later.</string>
+    <string name="cloud_error_google_network">Network error during Google sign-in.</string>
+    <string name="cloud_error_google_no_account">No Google account found on this device. Please add a Google account and try again.</string>
+    <string name="cloud_error_google_unavailable">Google Sign-In is currently unavailable. Please try again later.</string>
+    <string name="cloud_error_google_generic">Google Sign-In failed. Please try again.</string>
+    <!-- Account: Link Google (authenticated linking, no session change) -->
+    <string name="account_link_google_title">Link Google account</string>
+    <string name="account_link_google_button">Link Google account</string>
+    <string name="account_google_linked_label">Google account linked</string>
+    <string name="account_error_link_google">Failed to link Google account. Please try again.</string>
+    <string name="account_error_google_email_mismatch">The Google account email does not match your account email.</string>
+    <string name="account_error_google_id_mismatch">This Google account is already linked to another user.</string>
+    <string name="account_google_linked_success">Your Google account has been linked successfully.</string>
+    <string name="cloud_error_too_many_devices">You have reached the maximum number of devices (%1$s). Revoke a device to sign in on a new one.</string>
+    <string name="cloud_dialog_too_many_devices_title">Too many devices</string>
+    <string name="cloud_dialog_too_many_devices_body">You have reached the limit of %1$s active devices. Revoke a device to continue, or manage your sessions.</string>
+    <string name="cloud_sessions_title">Active sessions</string>
+    <string name="cloud_sessions_subtitle">Manage devices signed in to your account</string>
+    <string name="cloud_sessions_current">Current device</string>
+    <string name="cloud_sessions_revoke">Revoke</string>
+    <string name="cloud_sessions_revoke_confirm">Revoke this device? It will be signed out immediately.</string>
+    <string name="cloud_sessions_revoked">Device revoked</string>
+    <string name="cloud_sessions_current_revoked">Your current session was revoked. Please sign in again.</string>
+    <string name="cloud_sessions_empty">No active devices</string>
+    <string name="cloud_sessions_unknown_device">Unknown device</string>
+    <!-- Session recovery — release all active sessions via email OTP -->
+    <string name="cloud_recovery_title">Release active sessions</string>
+    <string name="cloud_recovery_subtitle">Prove ownership of your email to close all active sessions and sign in again</string>
+    <string name="cloud_recovery_email_hint">Enter your account email</string>
+    <string name="cloud_recovery_request">Send verification code</string>
+    <string name="cloud_recovery_code_subtitle">We sent a 6-digit code to your email</string>
+    <string name="cloud_recovery_verify">Verify and release sessions</string>
+    <string name="cloud_recovery_success_title">Sessions released</string>
+    <string name="cloud_recovery_success_body">All active sessions were closed. Please sign in again with your password or Google.</string>
+    <string name="cloud_cant_access_account">Can\'t access your account?</string>
+    <string name="cloud_release_sessions">Release active sessions</string>
+    <!-- Cloud: ViewModel messages -->
+    <string name="cloud_error_load_files">Error loading files</string>
+    <string name="cloud_error_load_folder">Error loading folder</string>
+    <string name="cloud_folder_moved_to_trash">Folder moved to the trash</string>
+    <string name="cloud_file_moved_to_trash">File moved to the trash</string>
+    <string name="cloud_files_moved_to_trash">%d files moved to the trash</string>
+    <string name="cloud_go_to_trash">Go to trash</string>
+    <string name="cloud_error_delete_file">Error deleting file</string>
+    <string name="cloud_error_load_preview">Error loading preview</string>
+    <string name="cloud_downloaded_to">Downloaded: %1$s&#10;Folder: %2$s</string>
+    <string name="cloud_download_error">Download error</string>
+    <string name="cloud_share_error">Could not share the file</string>
+    <string name="cloud_file_renamed">File renamed</string>
+    <string name="cloud_rename_error">Error renaming</string>
+    <string name="cloud_error_load_trash">Error loading the trash</string>
+    <string name="cloud_error_restore">Error restoring file</string>
+    <string name="cloud_error_restore_quota">Not enough free space to restore this file</string>
+    <string name="cloud_error_delete_permanent">Error deleting permanently</string>
+    <string name="cloud_restored_n">%1$d files restored</string>
+    <string name="cloud_restored_partial">Restored %1$d of %2$d files</string>
+    <string name="cloud_deleted_n">%1$d files permanently deleted</string>
+    <string name="cloud_error_upload">Error uploading file</string>
+    <string name="cloud_error_download">Download error</string>
+    <string name="cloud_error_timeout">The server took too long to respond.</string>
+    <string name="cloud_conversion_failed">Could not convert the document.</string>
+    <string name="cloud_document_encrypted">The document is password protected.</string>
+    <!-- Cloud: maintenance screen -->
+    <string name="cloud_maint_retry">Retry</string>
+    <!-- Cloud: footer -->
+    <string name="cloud_footer_support">Need help or support? Email us at contact@nopalitoscan.org</string>
+    <string name="cloud_maint_auto_refresh">Checks automatically every %1$d seconds</string>
+    <string name="cloud_maint_start">Start</string>
+    <string name="cloud_maint_end">Estimated end</string>
+    <string name="cloud_maint_time_remaining">Time remaining: %1$s</string>
+    <string name="cloud_maint_duration_hours_min">%1$d h %2$d min</string>
+    <string name="cloud_maint_duration_minutes">%1$d min</string>
+    <string name="cloud_maint_duration_seconds">%1$d s</string>
+    <string name="cloud_maint_scheduled_title">Scheduled maintenance</string>
+    <string name="cloud_maint_scheduled_message">We will be performing scheduled maintenance soon.</string>
+    <string name="cloud_maint_scheduled_reason">Scheduled maintenance in progress.</string>
+    <string name="cloud_maint_emergency_title">Emergency maintenance</string>
+    <string name="cloud_maint_emergency_message">The service is temporarily unavailable for emergency maintenance.
+    </string>
+    <string name="cloud_maint_emergency_reason">Emergency maintenance in progress.</string>
+    <string name="cloud_maint_upgrade_title">Service upgrade</string>
+    <string name="cloud_maint_upgrade_message">We are upgrading the service. Please check back shortly.</string>
+    <string name="cloud_maint_upgrade_reason">Upgrading the service.</string>
+    <string name="cloud_maint_generic_title">Maintenance in progress</string>
+    <string name="cloud_maint_generic_message">The service is temporarily unavailable.</string>
+    <string name="cloud_maint_generic_reason">We are working on it.</string>
+    <string name="cloud_notif_completed">Maintenance finished</string>
+    <string name="cloud_notif_cancelled">Maintenance cancelled</string>
+    <string name="cloud_notif_created">Maintenance scheduled</string>
+    <string name="cloud_notif_pre_notification">Upcoming maintenance</string>
+    <string name="cloud_notif_activated">Maintenance in progress</string>
+    <!-- Fallback body for maintenance pushes whose server text is missing or empty. -->
+    <string name="cloud_notif_generic_body">A scheduled maintenance affects the service.</string>
+    <!-- Proactive cloud notifications (data-only FCM; the backend sends no
+         text — the tray is rendered with these strings in the app locale).
+         %1$s = percent, %2$s = used bytes, %3$s = quota bytes, %4$s = file name -->
+    <string name="notif_storage_80_title">Storage almost full</string>
+    <string name="notif_storage_80_body">You are using %1$s of your storage (%2$s of %3$s). Consider freeing up space.</string>
+    <string name="notif_storage_95_title">Storage critical</string>
+    <string name="notif_storage_95_body">Your storage is at %1$s (%2$s of %3$s). Free up space soon to avoid blocks.</string>
+    <string name="notif_storage_100_title">Storage limit reached</string>
+    <string name="notif_storage_100_body">You have reached your storage limit (%2$s of %3$s). Free up space to keep uploading files.</string>
+    <string name="notif_storage_reminder_title">Storage reminder</string>
+    <string name="notif_storage_reminder_body">You are still using %1$s of your storage (%2$s of %3$s).</string>
+    <string name="notif_storage_rejected_title">File rejected</string>
+    <string name="notif_storage_rejected_body">The file “%1$s” was rejected by the security scan.</string>
+    <string name="notif_account_inactive_title">Your account is inactive</string>
+    <string name="notif_account_inactive_body">You have not signed in for %1$s days. Come back to Nopalito Scan to keep your account and files.</string>
+    <string name="notif_upload_error_title">Upload error</string>
+    <string name="notif_upload_error_body">An error occurred while uploading “%1$s”. Please try again.</string>
+    <string name="notif_test_title">Test notification</string>
+    <string name="notif_test_body">This is a test notification sent from the admin panel.</string>
+    <!-- Document screen (editor): gradient header -->
+    <string name="document_title">Document editor</string>
+    <string name="document_subtitle">Adjust, sign and organize your pages</string>
+    <!-- Document screen per-page actions -->
+    <string name="retake">Retake</string>
+    <string name="sign">Sign</string>
+    <string name="date_label">Date</string>
+    <!-- Date editor dialog: section header -->
+    <string name="date_style_title">Date style</string>
+    <!-- Signature pad -->
+    <string name="done">Done</string>
+    <string name="edit">Edit</string>
+    <string name="clear">Clear</string>
+    <string name="signature_undo">Undo</string>
+    <string name="signature_redo">Redo</string>
+    <!-- Signature editor -->
+    <string name="confirm_signature">Confirm signature</string>
+    <string name="edit_signature_existing_title">Edit signature</string>
+    <string name="reset">Reset</string>
+    <string name="signature_rotate_hint">Tap the Rotate button to rotate the image 90°.</string>
+    <string name="signature_tool_rotate">Rotate</string>
+    <string name="signature_tool_background">Background</string>
+    <string name="signature_tool_eraser">Eraser</string>
+    <string name="signature_tool_color">Color</string>
+    <string name="signature_tool_brightness">Brightness</string>
+    <string name="signature_tool_smooth">Smooth</string>
+    <string name="signature_tool_size">Size</string>
+    <string name="background_sensitivity">Background sensitivity</string>
+    <string name="remove_background">Remove background</string>
+    <string name="background_threshold">Threshold: %1$d — increase to remove more background</string>
+    <string name="clean_paper_noise">Clean paper noise</string>
+    <string name="clean_paper_noise_desc">Removes shadows, paper texture, notebook lines and light stains.
+    </string>
+    <string name="noise_light">Light</string>
+    <string name="noise_medium">Medium</string>
+    <string name="noise_strong">Strong</string>
+    <string name="auto_crop">Auto crop (remove empty space)</string>
+    <string name="manual_eraser">Manual eraser</string>
+    <string name="eraser_hint">Slide your finger over the area you want to erase. It applies in real time.</string>
+    <string name="signature_color_label">Signature color</string>
+    <string name="original_ink_hint">Keeps the original stroke; use &quot;Original&quot; to keep the ink of the
+        photo.
+    </string>
+    <string name="color_original">Original</string>
+    <string name="custom_color">Custom color</string>
+    <string name="custom">Custom</string>
+    <string name="brightness_contrast">Brightness and contrast</string>
+    <string name="brightness_contrast_hint">Adjust to improve the visibility of the signature. It applies in real time.
+    </string>
+    <string name="brightness_value">Brightness: %1$d</string>
+    <string name="contrast">Contrast</string>
+    <string name="smooth_clean">Smooth and clean</string>
+    <string name="smooth_hint">Smooths the edges of the stroke and removes light paper stains.</string>
+    <string name="smooth_edges">Smooth edges</string>
+    <string name="clean_noise">Clean noise</string>
+    <string name="signature_size">Signature size</string>
+    <string name="signature_size_hint">Drag to see the size change in real time.</string>
+    <string name="size_small">Small</string>
+    <string name="size_large">Large</string>
+    <string name="scale_value">Scale: %1$d%%</string>
+    <string name="stroke_thickness">Stroke thickness</string>
+    <string name="sign_here">Sign here</string>
+    <!-- Signature method sheet -->
+    <string name="add_signature">Add signature</string>
+    <string name="signature_method_subtitle">Choose how you want to add your signature to this document</string>
+    <string name="draw_signature">Draw signature</string>
+    <string name="draw_signature_subtitle">Draw your signature directly with your finger on the screen</string>
+    <string name="import_signature">Import signature</string>
+    <string name="import_signature_subtitle">Import a photo of your signature and edit it to remove the background
+    </string>
+    <string name="gallery">Gallery</string>
+    <string name="gallery_subtitle">Select an image of your signature</string>
+    <string name="camera">Camera</string>
+    <string name="camera_subtitle">Take a picture of your signature on paper</string>
+    <!-- Color picker -->
+    <string name="select_color">Select color</string>
+    <string name="brightness">Brightness</string>
+    <string name="accept">Accept</string>
+    <!-- Date editor -->
+    <string name="date_style_label">STYLE</string>
+    <string name="bg_none">None</string>
+    <string name="bg_capsule">Capsule</string>
+    <string name="bg_rectangle">Rect.</string>
+    <string name="bg_soft">Soft</string>
+    <!-- Shared color names -->
+    <string name="color_black">Black</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_red">Red</string>
+    <string name="color_green">Green</string>
+    <string name="color_brown">Brown</string>
+    <string name="color_gray">Gray</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_amber">Amber</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_white">White</string>
+    <string name="color_subtle">Subtle</string>
+    <!-- Overlay layer zoom controls -->
+    <string name="zoom_in">Increase size</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="move_left">Move left</string>
+    <string name="move_right">Move right</string>
+    <string name="zoom_out">Decrease size</string>
+    <!-- Camera preview -->
+    <string name="camera_unavailable">Camera unavailable</string>
+    <string name="retry">Retry</string>
+    <!-- Export screen: storage provider labels -->
+    <string name="provider_local_storage">Local storage</string>
+    <!-- Export ViewModel error messages -->
+    <string name="error_prepare_export">Could not prepare the export of %1$s</string>
+    <string name="error_prepare_share">Could not prepare for sharing</string>
+    <!-- History screen: fallback name for a multi-image child -->
+    <string name="image_default_name">Image</string>
+    <!-- Tools: section entry on the home screen -->
+    <string name="tools">Tools</string>
+    <string name="tools_subtitle">Compress, protect, convert and organize your documents</string>
+    <string name="tools_cat_files">Files</string>
+    <string name="tools_cat_pdf">PDF</string>
+    <string name="tools_cat_generate">Generate</string>
+    <string name="tools_compress_desc">Reduce the size of PDFs, images and Word documents</string>
+    <string name="tools_convert_desc">Convert Word documents to PDF</string>
+    <string name="tools_extract_pdf_desc">Copy only the pages you need</string>
+    <string name="tools_reorder_pdf_desc">Change the order of the pages</string>
+    <string name="qr_generate_desc">Create QR codes for links, text and more</string>
+    <string name="tools_wifi_requires_internet">Requires an internet connection to work</string>
+    <string name="history_subtitle">Your saved exports</string>
+    <string name="tools_pick_type">Choose the file type</string>
+    <string name="tools_preview_title">Preview</string>
+    <string name="tools_preview_hint">Preview of the selected file</string>
+    <string name="tools_preview_loading">Generating preview…</string>
+    <string name="tools_preview_unavailable">Could not generate the preview</string>
+    <string name="tools_preview_protected">The file is password protected and cannot be processed</string>
+    <!-- Tools: tool list -->
+    <string name="tools_short_pdf">PDF</string>
+    <string name="tools_short_images">Images</string>
+    <string name="tools_short_word">Word</string>
+    <string name="tools_compress_pdf">Compress PDF</string>
+    <string name="tools_compress_images">Compress Images</string>
+    <string name="tools_compress_word">Compress Word</string>
+    <!-- Tools: compress screen -->
+    <string name="tools_select_file">Select a file</string>
+    <string name="tools_select_files">Select files</string>
+    <!-- Tools: fallback display name when the picked file's name cannot be read -->
+    <string name="tools_default_filename">file</string>
+    <string name="tools_n_files_selected">%1$d files selected</string>
+    <string name="tools_file_types_hint">Choose the file you want to compress</string>
+    <string name="tools_invalid_file_type">The selected file is not compatible with %1$s</string>
+    <string name="tools_mode_individual">Individual</string>
+    <string name="tools_mode_batch">Batch</string>
+    <string name="tools_compression_level">Compression level</string>
+    <string name="tools_image_quality_note">Image compression lowers quality and removes transparency.
+    </string>
+    <string name="tools_password_label">Password (optional)</string>
+    <string name="tools_password_hint">Leave empty to keep the file unprotected</string>
+    <string name="tools_original_password_label">Password of the original file</string>
+    <string name="tools_new_password_label">New password for the result</string>
+    <string name="tools_generate_password">Generate a strong password</string>
+    <string name="tools_show_password">Show password</string>
+    <string name="tools_hide_password">Hide password</string>
+    <string name="tools_password_protected">Password protected</string>
+    <string name="tools_original_action">Original file</string>
+    <string name="tools_keep_original">Keep original file</string>
+    <string name="tools_keep_original_desc">The original file is not modified</string>
+    <string name="tools_replace_original">Replace original file</string>
+    <string name="tools_replace_original_desc">The compressed file replaces the original</string>
+    <string name="tools_save_copy">Save as a copy</string>
+    <string name="tools_save_copy_desc">Saves a separate compressed copy</string>
+    <string name="tools_save_location">Where to save</string>
+    <string name="tools_change_folder">Change folder</string>
+    <string name="tools_compress">Compress</string>
+    <string name="tools_compressing">Compressing…</string>
+    <string name="tools_success">File compressed successfully</string>
+    <string name="tools_batch_success">%1$d files compressed successfully</string>
+    <string name="tools_size_before">Before: %1$s</string>
+    <string name="tools_size_after">After: %1$s</string>
+    <string name="tools_saved_amount">You saved %1$s (%2$d%% less)</string>
+    <string name="tools_not_reduced">Couldn\'t reduce it further: the file was already optimized.</string>
+    <string name="tools_partial_reduced">%1$d compressed · %2$d already optimized</string>
+    <string name="tools_error">Could not compress the file</string>
+    <!-- Tools: cloud upload -->
+    <string name="tools_upload_cloud">Upload to cloud</string>
+    <string name="tools_cloud_upload_desc">Upload the compressed file to Nopalito Scan Cloud</string>
+    <string name="tools_cloud_premium_required">Sign in and activate Premium to upload files to the cloud</string>
+    <string name="tools_go_login">Sign in</string>
+    <string name="tools_cloud_uploaded">File uploaded to the cloud</string>
+    <!-- Tools: protect with password -->
+    <string name="tools_protect_password">Protect with password</string>
+    <string name="tools_protect_password_subtitle">Protect your files with a password</string>
+    <string name="pp_files_hint">Choose the file you want to protect</string>
+    <string name="pp_invalid_file_type">The selected file is not compatible with %1$s</string>
+    <string name="pp_password_label">Password</string>
+    <string name="pp_password_hint">Type the password to protect the file</string>
+    <string name="pp_password_required">A password is required to protect the file</string>
+    <string name="pp_file_pdf">PDF</string>
+    <string name="pp_file_word">Word</string>
+    <string name="pp_destination_unavailable">The download destination is not available. Choose another folder.</string>
+    <string name="pp_keep_original_desc">The original file is not modified</string>
+    <string name="pp_replace_original_desc">The protected file replaces the original</string>
+    <string name="pp_save_copy_desc">Saves a separate protected copy</string>
+    <string name="pp_save">Save</string>
+    <string name="pp_protecting">Protecting…</string>
+    <string name="pp_send_to_compressor">Go to the compression section</string>
+    <string name="pp_send_to_compressor_desc">Doesn\'t protect yet: sends the file to the compressor and keeps the
+        password you typed
+    </string>
+    <string name="pp_success">File protected successfully</string>
+    <string name="pp_batch_success">%1$d files protected successfully</string>
+    <string name="pp_size">Size: %1$s</string>
+    <string name="pp_error">Could not protect the file</string>
+    <string name="pp_error_protected">The file is already protected or could not be opened</string>
+    <string name="pp_generate_dialog_title">Strong password generated</string>
+    <string name="pp_generate_dialog_desc">Use this password to protect your files. Store it somewhere
+        safe.
+    </string>
+    <string name="pp_generate_dialog_use">Use password</string>
+    <!-- Tools: convert document -->
+    <string name="tools_convert">Convert to PDF</string>
+    <string name="cv_internet_required">This tool needs an internet connection and uses mobile data. We recommend
+        using Wi-Fi.
+    </string>
+    <string name="cv_supported_files_title">Supported files</string>
+    <string name="cv_cloud_upload_desc">Upload the converted PDF to Nopalito Scan Cloud</string>
+    <string name="cv_save_result">Save</string>
+    <string name="cv_saving">Saving…</string>
+    <string name="cv_protect_optional_title">Protect with password (optional)</string>
+    <string name="cv_phase_uploading">Uploading files…</string>
+    <string name="cv_phase_processing">Converting on the server…</string>
+    <string name="cv_phase_downloading">Downloading result…</string>
+    <string name="cv_phase_partial">Some files could not be converted</string>
+    <string name="cv_phase_failed">Could not complete the conversion</string>
+    <string name="cv_files_hint">Choose the file you want to convert</string>
+    <string name="cv_invalid_file_type">The selected file is not compatible. Check the supported files
+        section.
+    </string>
+    <string name="cv_keep_original_desc">The original file is not modified</string>
+    <string name="cv_replace_original_desc">The converted file replaces the original</string>
+    <string name="cv_save_copy_desc">Saves a separate converted copy</string>
+    <string name="cv_save">Convert</string>
+    <string name="cv_converting">Converting…</string>
+    <string name="cv_success">File converted successfully</string>
+    <string name="cv_batch_success">%1$d files converted successfully</string>
+    <string name="cv_size">Size: %1$s</string>
+    <string name="cv_destination_unavailable">The download destination is not available. Choose another folder.</string>
+    <string name="cv_error">Could not convert the file</string>
+    <string name="cv_name_keep">%1$s (converted).%2$s</string>
+    <string name="cv_name_copy">copy of %1$s.%2$s</string>
+    <!-- Extract PDF pages tool -->
+    <string name="tools_extract_pdf">Extract PDF pages</string>
+    <string name="ep_select_pdf">Select PDF</string>
+    <string name="ep_files_hint">Choose the PDF you want to extract pages from</string>
+    <string name="ep_loading">Opening PDF…</string>
+    <string name="ep_tap_to_change">Tap to choose another PDF</string>
+    <string name="ep_pages_total">%1$d pages</string>
+    <string name="ep_preview_title">Preview</string>
+    <string name="ep_page_number">Page %1$d</string>
+    <string name="ep_preview_failed">Could not render this page</string>
+    <string name="ep_signatures_note">Extracting pages creates a new PDF: the digital signature of the original
+        document may be invalidated.
+    </string>
+    <string name="ep_range_label">Pages to extract</string>
+    <string name="ep_range_placeholder">1-5, 8, 10/50</string>
+    <string name="ep_range_hint">Examples: 1-5 · 3,7 · 10/50, 20-25</string>
+    <string name="ep_range_required">Type the pages you want to extract</string>
+    <string name="ep_range_invalid">Incorrect format: &quot;%1$s&quot;</string>
+    <string name="ep_range_zero">Page numbers must be greater than zero</string>
+    <string name="ep_range_descending">The range %1$d-%2$d is not valid (use ascending order)</string>
+    <string name="ep_range_out_of_bounds">Page %1$d does not exist: the PDF has %2$d pages</string>
+    <string name="ep_range_explicit_mismatch">The PDF has %1$d pages, but the range says %2$d</string>
+    <string name="ep_range_pages_selected">%1$d pages selected</string>
+    <string name="ep_output_name_label">File name</string>
+    <string name="ep_export_format">Export format</string>
+    <string name="ep_password_toggle">Protect with password</string>
+    <string name="ep_password_hint">Protect the extracted PDF with a password</string>
+    <string name="ep_password_label">Password</string>
+    <string name="ep_password_required">Type a password or turn off the protection</string>
+    <string name="ep_export_pdf">Export as PDF</string>
+    <string name="ep_export_images">Export as images</string>
+    <string name="ep_progress_pdf">Creating PDF…</string>
+    <string name="ep_progress_images">Exporting images…</string>
+    <string name="ep_success_pdf">PDF extracted successfully</string>
+    <string name="ep_success_images">%1$d images exported successfully</string>
+    <string name="ep_error">Could not export</string>
+    <string name="ep_error_invalid">The file is not a valid PDF</string>
+    <string name="ep_error_protected">The PDF is password protected and could not be opened</string>
+    <string name="ep_destination_unavailable">The download destination is not available. Choose another folder.</string>
+    <!-- Reorder PDF pages tool -->
+    <string name="tools_reorder_pdf">Reorder PDF pages</string>
+    <string name="ror_select_pdf">Select PDF</string>
+    <string name="ror_files_hint">Choose the PDF whose pages you want to reorder</string>
+    <string name="ror_loading">Opening PDF…</string>
+    <string name="ror_tap_to_change">Tap to choose another PDF</string>
+    <string name="ror_pages_total">%1$d pages</string>
+    <string name="ror_preview_title">Preview</string>
+    <string name="ror_page_preview_label">Page %1$d of %2$d</string>
+    <string name="ror_thumbnails_title">Page order</string>
+    <string name="ror_thumbnails_hint">Hold a thumbnail and drag it to reorder</string>
+    <string name="ror_position">Pos. %1$d</string>
+    <string name="ror_preview_failed">Could not render this page</string>
+    <string name="ror_signatures_note">Reordering pages creates a new PDF: the digital signatures of the original
+        document may be invalidated.
+    </string>
+    <string name="ror_password_toggle">Protect with password</string>
+    <string name="ror_password_hint">Protect the reordered PDF with a password</string>
+    <string name="ror_password_label">Password</string>
+    <string name="ror_password_required">Type a password or turn off the protection</string>
+    <string name="ror_cloud_upload_desc">Upload the reordered PDF to Nopalito Scan Cloud</string>
+    <string name="ror_output_name_label">File name</string>
+    <string name="ror_export">Export PDF</string>
+    <string name="ror_progress">Creating reordered PDF…</string>
+    <string name="ror_success">PDF reordered successfully</string>
+    <string name="ror_error">Could not export</string>
+    <string name="ror_error_invalid">The file is not a valid PDF</string>
+    <string name="ror_error_protected">The PDF is password protected and could not be opened</string>
+    <string name="ror_destination_unavailable">The download destination is not available. Choose another folder.
+    </string>
+    <!-- Delete PDF pages tool -->
+    <string name="tools_delete_pages">Delete pages</string>
+    <string name="tools_delete_pages_desc">Delete single pages or detect and remove blank ones</string>
+    <string name="dpp_select_pdf">Select PDF</string>
+    <string name="dpp_files_hint">Choose the PDF whose pages you want to delete</string>
+    <string name="dpp_loading">Opening PDF…</string>
+    <string name="dpp_tap_to_change">Tap to choose another PDF</string>
+    <string name="dpp_pages_total">%1$d pages</string>
+    <string name="dpp_preview_title">Preview</string>
+    <string name="dpp_page_preview_label">Page %1$d of %2$d</string>
+    <string name="dpp_thumbnails_title">Pages</string>
+    <string name="dpp_thumbnails_hint">Tap a thumbnail to see it. Tap "Delete pages" to remove one or
+        several.
+    </string>
+    <string name="dpp_position">Pos. %1$d</string>
+    <string name="dpp_preview_failed">Could not render this page</string>
+    <string name="dpp_signatures_note">Deleting pages creates a new PDF: the digital signatures of the
+        original document may be invalidated.
+    </string>
+    <string name="dpp_delete_pages">Delete pages</string>
+    <string name="dpp_delete_page">Delete page</string>
+    <string name="dpp_delete_mode_hint">Tap the pages you want to delete (or "Select all") and confirm with the trash
+    </string>
+    <string name="dpp_select_all">Select all</string>
+    <string name="dpp_unselect_all">Clear selection</string>
+    <string name="dpp_marked_count">%1$d selected</string>
+    <string name="dpp_cannot_delete_all">You cannot delete all the pages. At least one page must remain.</string>
+    <string name="dpp_cancel_delete">Cancel</string>
+    <string name="dpp_confirm_delete_title">Delete pages</string>
+    <string name="dpp_confirm_delete_text">Delete %1$d page(s) from the resulting PDF? You can undo it later.
+    </string>
+    <string name="dpp_delete_confirm">Delete %1$d</string>
+    <string name="dpp_undo">Undo</string>
+    <string name="dpp_deleted_message">%1$d page(s) deleted</string>
+    <string name="dpp_blank_pages">Delete blank pages</string>
+    <string name="dpp_blank_analyzing">Analyzing page %1$d of %2$d…</string>
+    <string name="dpp_blank_cancel">Cancel analysis</string>
+    <string name="dpp_blank_analysis_failed">Could not analyze the document</string>
+    <string name="dpp_blank_result_title">Blank pages detected</string>
+    <string name="dpp_blank_result_hint">Unmark the pages you don\'t want to delete</string>
+    <string name="dpp_blank_status_blank">Blank</string>
+    <string name="dpp_blank_status_likely">Possibly blank</string>
+    <string name="dpp_blank_none">No blank pages detected</string>
+    <string name="dpp_blank_delete_selected">Delete selected</string>
+    <string name="dpp_blank_page_label">Page %1$d</string>
+    <string name="dpp_password_toggle">Protect with password</string>
+    <string name="dpp_password_hint">Protect the resulting PDF with a password</string>
+    <string name="dpp_password_label">Password</string>
+    <string name="dpp_password_required">Type a password or turn off the protection</string>
+    <string name="dpp_cloud_upload_desc">Upload the PDF to Nopalito Scan Cloud</string>
+    <string name="dpp_output_name_label">File name</string>
+    <string name="dpp_export">Export PDF</string>
+    <string name="dpp_progress">Creating PDF…</string>
+    <string name="dpp_success">PDF created successfully</string>
+    <string name="dpp_error">Could not export</string>
+    <string name="dpp_error_invalid">The file is not a valid PDF</string>
+    <string name="dpp_error_protected">The PDF is password protected and could not be opened</string>
+    <string name="dpp_destination_unavailable">The download destination is not available. Choose another folder.
+    </string>
+    <string name="dpp_nothing_to_export">No pages left to export</string>
+    <!-- Organize PDF pages tool (reorder + delete combined) -->
+    <string name="tools_organize_pages">Edit pages</string>
+    <string name="tools_organize_pages_desc">Reorder and delete pages, or remove blank ones</string>
+    <string name="org_select_pdf">Select PDF</string>
+    <string name="org_files_hint">Choose the PDF whose pages you want to organize</string>
+    <string name="org_loading">Opening PDF…</string>
+    <string name="org_tap_to_change">Tap to choose another PDF</string>
+    <string name="org_pages_total">%1$d pages</string>
+    <string name="org_preview_title">Preview</string>
+    <string name="org_page_preview_label">Page %1$d of %2$d</string>
+    <string name="org_thumbnails_title">Pages</string>
+    <string name="org_thumbnails_hint">Hold a thumbnail and drag it to reorder. Tap "Delete
+        pages" to remove one or several.
+    </string>
+    <string name="org_position">Pos. %1$d</string>
+    <string name="org_preview_failed">Could not render this page</string>
+    <string name="org_signatures_note">Organizing pages creates a new PDF: the digital signatures of the
+        original document may be invalidated.
+    </string>
+    <string name="org_delete_pages">Delete pages</string>
+    <string name="org_delete_page">Delete page</string>
+    <string name="org_delete_mode_hint">Tap the pages you want to delete (or "Select all") and confirm with the trash
+    </string>
+    <string name="org_select_all">Select all</string>
+    <string name="org_unselect_all">Clear selection</string>
+    <string name="org_marked_count">%1$d selected</string>
+    <string name="org_cannot_delete_all">You cannot delete all the pages. At least one page must remain.</string>
+    <string name="org_cancel_delete">Cancel</string>
+    <string name="org_confirm_delete_title">Delete pages</string>
+    <string name="org_confirm_delete_text">Delete %1$d page(s) from the resulting PDF? You can undo it later.
+    </string>
+    <string name="org_delete_confirm">Delete %1$d</string>
+    <string name="org_undo">Undo</string>
+    <string name="org_deleted_message">%1$d page(s) deleted</string>
+    <string name="org_blank_pages">Delete blank pages</string>
+    <string name="org_blank_analyzing">Analyzing page %1$d of %2$d…</string>
+    <string name="org_blank_cancel">Cancel analysis</string>
+    <string name="org_blank_analysis_failed">Could not analyze the document</string>
+    <string name="org_blank_result_title">Blank pages detected</string>
+    <string name="org_blank_result_hint">Unmark the pages you don\'t want to delete</string>
+    <string name="org_blank_status_blank">Blank</string>
+    <string name="org_blank_status_likely">Possibly blank</string>
+    <string name="org_blank_none">No blank pages detected</string>
+    <string name="org_blank_delete_selected">Delete selected</string>
+    <string name="org_blank_page_label">Page %1$d</string>
+    <string name="org_password_toggle">Protect with password</string>
+    <string name="org_password_hint">Protect the resulting PDF with a password</string>
+    <string name="org_password_label">Password</string>
+    <string name="org_password_required">Type a password or turn off the protection</string>
+    <string name="org_cloud_upload_desc">Upload the PDF to Nopalito Scan Cloud</string>
+    <string name="org_output_name_label">File name</string>
+    <string name="org_export">Export PDF</string>
+    <string name="org_progress">Creating PDF…</string>
+    <string name="org_success">PDF created successfully</string>
+    <string name="org_error">Could not export</string>
+    <string name="org_error_invalid">The file is not a valid PDF</string>
+    <string name="org_error_protected">The PDF is password protected and could not be opened</string>
+    <string name="org_destination_unavailable">The download destination is not available. Choose another folder.
+    </string>
+    <string name="org_nothing_to_export">No pages left to export</string>
+    <!-- QR generator tool -->
+    <string name="qr_generate">Generate QR</string>
+    <string name="qr_generating">Generating…</string>
+    <string name="qr_save">Save</string>
+    <string name="qr_saved">QR saved</string>
+    <string name="qr_saved_desc">The QR was saved to the Downloads/Nopalito Scan folder</string>
+    <string name="qr_save_error">Could not save the QR</string>
+    <string name="qr_share_error">Could not share the QR</string>
+    <string name="qr_redownload_title">Download QR</string>
+    <string name="qr_redownload_hint">Choose the format to download</string>
+    <string name="qr_saved_cloud_error">Could not save the QR to the cloud. Try again.</string>
+    <string name="qr_content_required">Enter some content</string>
+    <string name="qr_generate_error">Could not generate the QR</string>
+    <string name="qr_wifi_security_wpa">WPA</string>
+    <string name="qr_wifi_security_wep">WEP</string>
+    <string name="qr_wifi_security_open">Open</string>
+    <string name="qr_shape_square">Square</string>
+    <string name="qr_shape_rounded">Rounded</string>
+    <string name="qr_shape_circle">Circle</string>
+    <string name="qr_shape_diamond">Diamond</string>
+    <string name="qr_trash_title">QR trash</string>
+    <string name="qr_trash_subtitle">Your deleted QR codes</string>
+    <string name="qr_trash_empty">The QR trash is empty</string>
+    <string name="qr_permanent_delete_message">Delete this QR permanently? This action cannot be
+        undone.
+    </string>
+    <string name="qr_permanent_delete_batch">Delete %d QRs permanently? This action cannot be
+        undone.
+    </string>
+    <string name="qr_move_trash">Move to trash</string>
+    <string name="qr_move_trash_n">Move %d to the trash</string>
+    <string name="qr_move_trash_confirm">Move %d QRs to the trash?</string>
+    <string name="qr_styles">Styles</string>
+    <string name="qr_style_none">None</string>
+    <string name="qr_design">Design</string>
+    <string name="qr_foreground">Dot color</string>
+    <string name="qr_background">Background color</string>
+    <string name="qr_module_shape">Module shape</string>
+    <string name="qr_error_correction">Error correction</string>
+    <string name="qr_size">Size: %1$d px</string>
+    <string name="qr_frame_text">Frame text</string>
+    <string name="qr_scan_check">Check scanability</string>
+    <string name="qr_scan_check_desc">The server tries to read the QR and warns if the design makes scanning harder
+    </string>
+    <!-- Cloud QR history -->
+    <string name="qr_cloud_history">QR history</string>
+    <string name="qr_history_subtitle">Your scanned QR codes</string>
+    <string name="qr_cloud_history_subtitle">Your QR codes in the cloud</string>
+    <string name="qr_cloud_empty">No cloud scans yet.</string>
+    <string name="qr_cloud_delete_message">Delete this scan from the cloud?</string>
+    <!-- Onboarding / language selection -->
+    <string name="welcome_language_title">Welcome to Nopalito Scan</string>
+    <string name="welcome_language_question">Which language would you like to use?</string>
+    <!-- First-run permission onboarding -->
+    <string name="permissions_title">App permissions</string>
+    <string name="permissions_subtitle">Nopalito Scan needs a few permissions to work. You can change them later in
+        Settings.
+    </string>
+    <string name="permission_step_counter">%1$d of %2$d</string>
+    <string name="permission_allow">Allow</string>
+    <string name="permission_not_now">Not now</string>
+    <string name="permission_granted">Granted</string>
+    <string name="permission_denied_hint">You can enable it later in Settings.</string>
+    <string name="permission_camera_title">Camera</string>
+    <string name="permission_camera_description">Take photos of documents to scan, crop and digitize them.</string>
+    <string name="permission_wifi_title">Wi-Fi networks</string>
+    <string name="permission_wifi_description">Connect to Wi-Fi networks directly from QR codes.</string>
+    <!-- Legal acceptance (onboarding) -->
+    <string name="legal_accept_text">I accept the Terms and Conditions and the Privacy Policy.</string>
+    <string name="legal_terms_link">Terms and Conditions</string>
+    <string name="legal_privacy_link">Privacy Policy</string>
+    <string name="legal_accept_continue">Accept and continue</string>
+    <string name="legal_exit_dialog_message">To use Nopalito Scan you must accept the Terms and Conditions and the
+        Privacy
+        Policy.
+    </string>
+    <string name="legal_stay_here">Stay here</string>
+    <string name="legal_exit_app">Exit Nopalito Scan</string>
+    <string name="legal_document_error">Could not open the document.</string>
+    <!-- Settings: language option -->
+    <string name="language">Language</string>
+    <!-- Settings: cloud language sync hint -->
+    <string name="settings_language_sync_failed">Could not sync the language to your cloud account. The app keeps the selection locally.</string>
+    <string name="refresh">Refresh</string>
+    <string name="ok">OK</string>
+    <!-- ===== Backend error code / group strings (ErrorCodeMapper) ===== -->
+    <string name="cloud_error_quota_exceeded">You have reached your storage limit.</string>
+    <string name="cloud_error_resend_cooldown">Please wait %1$s seconds before requesting a new code.</string>
+    <string name="cloud_error_maintenance_active">The service is temporarily under maintenance. Try again later.
+    </string>
+    <string name="cloud_error_rate_limit">Too many requests. Please try again later.</string>
+    <string name="cloud_error_migration">The migration could not be completed. Try again later.</string>
+    <string name="cloud_error_qr">Could not generate the QR code. The data limit is %1$s characters.</string>
+    <string name="cloud_error_job">The requested job could not be found.</string>
+    <string name="cloud_error_quota">You do not have enough storage space.</string>
+    <string name="import_pdf_protected">This PDF is password-protected and cannot be imported.</string>
+    <string name="import_document_protected">This file is password-protected and cannot be imported.</string>
+    <string name="import_document_failed">This file could not be imported. It may be password-protected or use an
+        unsupported format.
+    </string>
+    <string name="import_error">This file could not be imported.</string>
+    <!-- Statistics -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_section_title">Statistics</string>
+    <string name="stats_view_usage">View usage statistics</string>
+    <string name="stats_documents">Documents</string>
+    <string name="stats_empty">No data yet. Scan to see your summary.</string>
+    <string name="stats_pages_count">%d pages</string>
+    <string name="stats_page_single">1 page</string>
+    <string name="stats_exported_count">%d exported</string>
+    <!-- Statistics periods -->
+    <string name="stats_period_day">Day</string>
+    <string name="stats_period_week">Week</string>
+    <string name="stats_period_month">Month</string>
+    <string name="stats_period_year">Year</string>
+    <!-- Statistics categories -->
+    <string name="stats_category_scans">Scans</string>
+    <string name="stats_category_exports">Exports</string>
+    <string name="stats_category_shares">Shares</string>
+    <string name="stats_category_tools">Tools</string>
+    <string name="stats_tool_breakdown">Tool breakdown</string>
+    <string name="stats_export_breakdown">Export breakdown</string>
+    <string name="stats_no_data_tools">No tools used yet</string>
+    <string name="stats_no_data_exports">No exports yet</string>
+    <string name="stats_no_data_shares">No shares yet</string>
+    <string name="stats_chart_today">Today</string>
+    <string name="stats_chart_last_7_days">Last 7 days</string>
+    <string name="stats_chart_last_30_days">Last 30 days</string>
+    <string name="stats_chart_last_12_months">Last 12 months</string>
+    <string name="stats_all_tools">All tools</string>
+    <string name="stats_deletes">Deleted</string>
+    <!-- Billing (Google Play, actual 2026-09: personal/personal-yearly, plus/plus-yearly, prices via formattedPrice only) -->
+    <string name="billing_loading">Loading plans...</string>
+    <string name="billing_plans_load_error">Could not load plans. Try again.</string>
+    <string name="billing_price_unavailable">Price unavailable</string>
+    <string name="billing_error_generic">Could not process the purchase. Try again.</string>
+    <string name="billing_purchase_success">Subscription activated</string>
+    <string name="billing_not_connected">Billing not connected. Try again.</string>
+    <string name="billing_retry_hint">Check your connection and retry.</string>
+    <string name="billing_product_details_unavailable">Product details unavailable. Try again.</string>
+    <string name="billing_offer_unavailable">Offer unavailable for this plan.</string>
+    <string name="billing_activity_unavailable">Activity unavailable. Try again.</string>
+    <string name="billing_unavailable">Unavailable</string>
+    <string name="billing_draft_unavailable">Currently unavailable (draft in Play Console).</string>
+    <string name="billing_error_user_canceled">Purchase canceled.</string>
+    <string name="billing_error_service_unavailable">Billing service unavailable. Try again.</string>
+    <string name="billing_error_billing_unavailable">Billing unavailable on this device.</string>
+    <string name="billing_error_item_unavailable">Product unavailable.</string>
+    <string name="billing_error_item_already_owned">Already subscribed.</string>
+    <string name="billing_error_item_not_owned">Not subscribed.</string>
+    <string name="billing_free_plan">Free plan</string>
+    <string name="billing_free_included">Included plan</string>
+    <string name="billing_free_manage_hint">Manage your subscription in Google Play to change or cancel</string>
+    <string name="billing_manage_subscription">Manage subscription</string>
+    <string name="billing_manage_subscription_desc">Open Google Play subscriptions</string>
+    <string name="billing_manage_unavailable">Could not open Google Play. Try opening Play Store manually.</string>
+    <string name="billing_restore_purchases">Restore purchases</string>
+    <string name="billing_restore_in_progress">Restoring purchases…</string>
+    <string name="billing_restore_success">Subscription restored</string>
+    <string name="billing_restore_already_current">Subscriptions are already up to date</string>
+    <string name="billing_restore_none_found">No active Google Play subscriptions found.</string>
+    <string name="billing_restore_failed">Could not restore purchases. Try again.</string>
+    <string name="billing_restore_retry">Retry</string>
+    <string name="billing_config_missing">Configuration error: no plans available. Contact support.</string>
+    <string name="billing_manage_subscription_description">Open Google Play subscriptions</string>
+    <string name="billing_manage_subscription_unavailable">Unable to open Google Play subscription management.</string>
+    <string name="billing_included_plan">Included plan</string>
+    <string name="billing_manage_subscription_hint">Manage your subscription in Google Play to change or cancel</string>
+    <string name="billing_feature_storage_free">50 MB secure storage</string>
+    <string name="billing_feature_storage_personal">1 GB secure cloud storage</string>
+    <string name="billing_feature_storage_plus">5 GB secure cloud storage</string>
+    <string name="billing_feature_scan">Unlimited document scanning</string>
+    <string name="billing_feature_sync">Automatic cloud sync &amp; backup</string>
+    <string name="billing_feature_devices_5">Up to 5 devices at the same time</string>
+    <string name="billing_feature_devices_1">1 device at a time (Free)</string>
+    <string name="billing_feature_no_ads">No ads, 100%% private</string>
+    <string name="billing_support_title">Support the app</string>
+    <string name="billing_support_body">Your subscription keeps Nopalito ad-free and helps us bring more free features for everyone in the future.</string>
+    <string name="billing_purchase_processing">Processing purchase…</string>
+    <string name="billing_purchase_processing_hint">Verifying with Google Play and applying your plan.</string>
+    <string name="billing_purchase_pending">Payment pending — will activate once Google Play confirms it.</string>
+    <string name="billing_purchase_success_hint">Your new plan is now active.</string>
+    <string name="billing_restore_retry_hint">Try again or use Restore purchases.</string>
+    <string name="cloud_error_google_reauth_required">Google account re-authentication required. Please sign in to your Google account again in device settings and try again.</string>
+    <!-- Avatar (profile picture) -->
+    <string name="avatar_title">Profile photo</string>
+    <string name="avatar_change_photo">Change photo</string>
+    <string name="avatar_remove_photo">Remove photo</string>
+    <string name="avatar_remove_confirm_title">Remove avatar</string>
+    <string name="avatar_remove_confirm_body">Remove your custom avatar and use the default one?</string>
+    <string name="avatar_google_sync_info">Your photo is synced with your Google account. Change it in Google to see it here.</string>
+    <string name="avatar_google_managed">Your photo is managed by Google</string>
+    <string name="avatar_google_managed_hint">Change it in your Google account to update it here.</string>
+    <string name="avatar_upload_success">Photo updated</string>
+    <string name="avatar_remove_success">Photo removed</string>
+    <string name="avatar_upload_error">Could not update the photo</string>
+    <string name="avatar_remove_error">Could not remove the photo</string>
+    <string name="avatar_invalid_file">Invalid image. Use JPEG, PNG or WebP up to 5 MB.</string>
+    <string name="avatar_google_managed_error">Your photo is managed by Google. Change it in your Google account.</string>
+    <string name="avatar_view_settings">View account settings</string>
+    <string name="avatar_preview_content_desc">Profile photo</string>
+</resources>

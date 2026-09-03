@@ -1,0 +1,1355 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- About screen: title. It's also an item of the ⋮ menu -->
+    <string name="about">Über die App</string>
+    <!-- Button in the Document screen -->
+    <string name="add_page">Seite hinzufügen</string>
+    <!-- Appears in the About screen -->
+    <string name="app_tagline">Eine einfache und respektvolle App zum Scannen Ihrer Dokumente.</string>
+    <!-- Button in the Crop screen -->
+    <string name="apply">Übernehmen</string>
+    <!-- Icon description for ← at the top-left -->
+    <string name="back">Zurück</string>
+    <!-- Error message (as a toast) -->
+    <string name="camera_permission_denied">Kamera-Berechtigung verweigert</string>
+    <!-- Camera screen: capture mode chip labels -->
+    <string name="capture_mode_individual">Einzeln</string>
+    <string name="capture_mode_batch">Stapel</string>
+    <!-- Camera screen: auto-detect toggle label -->
+    <string name="auto_detect">Automatische Erkennung</string>
+    <!-- Appears on the Camera screen -->
+    <string name="camera_permission_rationale">Die App benötigt Zugriff auf die Kamera, um Dokumente zu scannen. Die
+        aufgenommenen Bilder werden nur auf diesem Gerät gespeichert und gelöscht, sobald Sie den aktuellen Scan
+        schließen.
+    </string>
+    <!-- Button in dialogs -->
+    <string name="cancel">Abbrechen</string>
+    <!-- Icon description 🗁 -->
+    <string name="change_directory">Ordner ändern</string>
+    <!-- Icon description ✖ in the filename field of the Export screen -->
+    <string name="clear_text">Text löschen</string>
+    <!-- Button in OCR download dialog -->
+    <string name="close">Schließen</string>
+    <!-- Icon description in the Document screen -->
+    <string name="color_mode">Filter</string>
+    <!-- Settings screen -->
+    <string name="color_mode_auto">Automatisch</string>
+    <string name="color_mode_color">Farbe</string>
+    <string name="color_mode_default">Standardfilter</string>
+    <string name="color_mode_grayscale">Graustufen</string>
+    <!-- About screen -->
+    <string name="contact">Kontakt</string>
+    <!-- About screen: appears as a toast -->
+    <string name="copied_logs">Protokolle in die Zwischenablage kopiert</string>
+    <string name="copy_logs">Protokolle kopieren</string>
+    <!-- Export screen: progress message -->
+    <string name="creating_export">Export vorbereiten…</string>
+    <string name="crop">Zuschneiden</string>
+    <!-- Icon description in the OCR languages screen -->
+    <string name="delete">Löschen</string>
+    <string name="delete_page">Seite löschen</string>
+    <string name="delete_page_warning">Diese Seite löschen?</string>
+    <string name="developer">Entwickler</string>
+    <string name="developer_name">Fork modifiziert von Artz Studio</string>
+    <string name="download_dirname">Downloads</string>
+    <string name="download_dir_title">Download-Ordner</string>
+    <string name="download_dir_default">Downloads/Nopalito Scan</string>
+    <string name="download_dir_reset">Ordner zurücksetzen</string>
+    <string name="error_context_folder">Export-Ordner: %1$s</string>
+    <string name="error_context_provider">Anbieter: %1$s</string>
+    <string name="error_export_dir_permission_lost">Der ausgewählte Export-Ordner ist nicht mehr verfügbar. Wählen Sie
+        einen anderen Ordner.
+    </string>
+    <!-- Export screen: appears as a toast -->
+    <string name="error_no_app">Keine App zum Öffnen dieser Datei gefunden</string>
+    <!-- Generic message for unexpected errors in various screens: appears as a toast -->
+    <string name="error_occurred">Ein Fehler ist aufgetreten</string>
+    <!-- Cloud screens: generic unknown error -->
+    <string name="error_unknown">Unbekannter Fehler</string>
+    <string name="error_save">Die Datei konnte nicht gespeichert werden</string>
+    <!-- Document screen: button -->
+    <string name="export">Exportieren</string>
+    <string name="export_as">Als %1$s exportieren</string>
+    <string name="export_subtitle">Prüfen und wählen Sie das Ziel für Ihr Dokument</string>
+    <string name="export_directory">Export-Ordner</string>
+    <string name="export_format">Exportformat</string>
+    <string name="export_quality">Exportqualität</string>
+    <string name="export_quality_original">Ohne Komprimierung</string>
+    <string name="export_quality_balanced">Ausgewogen</string>
+    <string name="export_quality_high">Hoch</string>
+    <string name="export_quality_compressed">Komprimiert</string>
+    <string name="export_quality_max_compression">Maximale Komprimierung</string>
+    <string name="export_protect_document">Mit Passwort schützen</string>
+    <string name="export_password">Passwort</string>
+    <string name="export_password_hint">Leer lassen, um die Datei ungeschützt zu lassen</string>
+    <string name="export_generate_password">Sicheres Passwort generieren</string>
+    <string name="export_show_password">Passwort anzeigen</string>
+    <string name="export_hide_password">Passwort ausblenden</string>
+    <string name="file_size">Größe: %1$s</string>
+    <string name="file_size_total">Gesamtgröße: %1$s</string>
+    <string name="filename">Dateiname</string>
+    <!-- Camera screen: button -->
+    <string name="grant_permission">Berechtigung erteilen</string>
+    <string name="import_photos">Importieren</string>
+    <string name="qr_code">QR</string>
+    <string name="qr_detect_hint">Auf den Code richten</string>
+    <string name="qr_copy">Kopieren</string>
+    <string name="qr_open">Öffnen</string>
+    <string name="qr_close">Schließen</string>
+    <string name="qr_share">Teilen</string>
+    <string name="qr_copied">Inhalt kopiert</string>
+    <string name="qr_format">Format</string>
+    <string name="qr_content">Inhalt</string>
+    <string name="qr_type_text">Text</string>
+    <string name="qr_type_url">Link</string>
+    <string name="qr_type_wifi">WLAN-Netzwerk</string>
+    <string name="qr_type_email">E-Mail</string>
+    <string name="qr_type_phone">Telefon</string>
+    <string name="qr_type_sms">SMS</string>
+    <string name="qr_type_geo">Standort</string>
+    <string name="qr_wifi_ssid">Netzwerk</string>
+    <string name="qr_wifi_password">Passwort</string>
+    <string name="qr_wifi_security">Sicherheit</string>
+    <string name="qr_connect">Verbinden</string>
+    <string name="qr_wifi_prompt">Prüfen Sie die Systembenachrichtigung, um sich mit dem Netzwerk zu verbinden</string>
+    <string name="qr_wifi_error">Keine Verbindung zum Netzwerk möglich</string>
+    <string name="qr_email_address">E-Mail</string>
+    <string name="qr_email_subject">Betreff</string>
+    <string name="qr_email_body">Nachricht</string>
+    <string name="qr_phone_number">Telefon</string>
+    <string name="qr_sms_number">Nummer</string>
+    <string name="qr_sms_message">Nachricht</string>
+    <string name="qr_geo_lat">Breitengrad</string>
+    <string name="qr_geo_lng">Längengrad</string>
+    <string name="qr_open_map">Auf der Karte ansehen</string>
+    <string name="qr_history">Code-Verlauf</string>
+    <string name="qr_empty">Sie haben noch keine Codes gescannt.</string>
+    <string name="qr_select">Auswählen</string>
+    <string name="qr_n_selected">%d ausgewählt</string>
+    <string name="qr_select_all">Alle auswählen</string>
+    <string name="qr_deselect_all">Auswahl aufheben</string>
+    <string name="qr_delete_batch_message">%d Scans löschen?</string>
+    <string name="qr_delete_title">Scan löschen</string>
+    <string name="qr_delete_message">Diesen Scan aus dem Verlauf löschen?</string>
+    <!-- Camera screen: INE (ID credential) capture mode button -->
+    <string name="ine">ID</string>
+    <string name="ine_scan_front">Vorderseite scannen</string>
+    <string name="ine_scan_back">Rückseite scannen</string>
+    <string name="ine_place_hint">Legen Sie Ihre ID in den Rahmen</string>
+    <string name="ine_import_title">ID importieren</string>
+    <string name="ine_import_which_side">Welche Seite ist dieses Foto?</string>
+    <string name="ine_front">Vorderseite</string>
+    <string name="ine_back">Rückseite</string>
+    <string name="ine_export_scale">ID-Größe</string>
+    <string name="ine_export_scale_200">200%</string>
+    <string name="ine_export_scale_normal">Normal</string>
+    <!-- About screen -->
+    <string name="libraries">Bibliotheken</string>
+    <string name="libraries_open_source">Open-Source-Bibliotheken</string>
+    <string name="license">Lizenz</string>
+    <string name="licensed_under">Diese App steht unter der GNU General Public License v3.0.</string>
+    <!-- Icon description for ⋮ -->
+    <string name="menu">Menü</string>
+    <string name="new_document_warning">Der aktuelle Scan geht verloren. Möchten Sie fortfahren?</string>
+    <string name="open">Öffnen</string>
+    <string name="open_folder">Ordner öffnen</string>
+    <string name="open_file">Datei öffnen</string>
+    <string name="reset_to_default">Standardwert wiederherstellen</string>
+    <string name="rotate_left">Nach links drehen</string>
+    <string name="rotate_right">Nach rechts drehen</string>
+    <string name="save">Speichern</string>
+    <string name="scan_new">Neuer Scan</string>
+    <string name="scan_current">Aktueller Scan</string>
+    <string name="scan_discard_current">Aktuellen Scan verwerfen</string>
+    <string name="scan_resume">Scan fortsetzen</string>
+    <!-- Settings screen: title. It's also an item of the ⋮ menu -->
+    <string name="settings">Einstellungen</string>
+    <string name="settings_subtitle">Scan und Ziel Ihrer Dateien konfigurieren</string>
+    <string name="settings_ocr_download_error">Der Download ist fehlgeschlagen. Prüfen Sie Ihre Internetverbindung und
+        dass die App Netzwerkzugriff hat.
+    </string>
+    <string name="settings_ocr_download_intro">Die Sprachdateien werden vom offiziellen Tesseract-Projekt
+        heruntergeladen. Die Texterkennung bleibt vollständig offline.
+    </string>
+    <string name="settings_ocr_downloading">Sprachdatei wird heruntergeladen</string>
+    <string name="settings_ocr_languages">Sprachen</string>
+    <string name="settings_ocr_languages_subtitle">Sprachen der Texterkennung installieren oder aktivieren</string>
+    <string name="settings_ocr_languages_available">Verfügbare Sprachen</string>
+    <string name="settings_ocr_languages_disabled">Deaktiviert</string>
+    <string name="settings_ocr_languages_installed">Installiert</string>
+    <string name="settings_ocr_suggested">Empfohlen</string>
+    <string name="settings_section_ocr">Texterkennung</string>
+    <string name="settings_section_scan">Scan</string>
+    <string name="settings_section_export">Export</string>
+    <string name="share">Teilen</string>
+    <string name="share_document">Dokument teilen</string>
+    <string name="storage_permission_denied">Die Datei konnte nicht gespeichert werden: Berechtigung verweigert</string>
+    <string name="support">Support</string>
+    <string name="support_last_image">Problem mit dem zuletzt aufgenommenen Bild melden</string>
+    <string name="text_recognition_disabled">Texterkennung: aus</string>
+    <string name="text_recognition_enabled">Texterkennung: ein</string>
+    <string name="turn_off_torch">Taschenlampe ausschalten</string>
+    <string name="turn_on_torch">Taschenlampe einschalten</string>
+    <string name="torch">Taschenlampe</string>
+    <string name="unknown_size">Unbekannte Größe</string>
+    <string name="version">Version</string>
+    <string name="view_full_list">Vollständige Liste anzeigen</string>
+    <string name="view_the_full_license">Vollständige Lizenz anzeigen</string>
+    <string name="yes">Ja</string>
+    <!-- Export screen. %1$d: number of files; %2$s: file name; %3$s: folder name -->
+    <plurals name="files_saved_to">
+        <item quantity="one">%2$s in %3$s gespeichert</item>
+        <item quantity="other">%1$d Dateien in %3$s gespeichert</item>
+    </plurals>
+    <plurals name="importing_photos">
+        <item quantity="one">1 Foto wird importiert</item>
+        <item quantity="other">%d Fotos werden importiert</item>
+    </plurals>
+    <plurals name="page_count">
+        <item quantity="one">%d Seite</item>
+        <item quantity="other">%d Seiten</item>
+    </plurals>
+    <string name="export_history">Export-Verlauf</string>
+    <string name="history_search">Verlauf durchsuchen</string>
+    <string name="filter_all">Alle</string>
+    <string name="filter_pdf">PDF</string>
+    <string name="filter_image">Bild</string>
+    <string name="filter_word">Word</string>
+    <string name="sort_by">Sortieren nach</string>
+    <string name="sort_date">Datum</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_size">Größe</string>
+    <string name="status_available">Verfügbar</string>
+    <string name="status_deleted">Gelöscht</string>
+    <string name="history_pages">%1$d Seiten</string>
+    <string name="re_export">Erneut exportieren</string>
+    <string name="delete_history_entry">Verlaufseintrag löschen</string>
+    <string name="delete_history_entry_warning">Diesen Verlaufseintrag löschen?</string>
+    <string name="history_select_all">Alle auswählen</string>
+    <string name="history_selected_count">%1$d ausgewählt</string>
+    <string name="history_delete_batch_warning">%1$d Verlaufseinträge löschen? Diese Aktion kann nicht
+        rückgängig gemacht werden.
+    </string>
+    <string name="history_empty">Keine Exporte aufgezeichnet</string>
+    <string name="quality_original">Ohne Komprimierung</string>
+    <string name="quality_balanced">Ausgewogen</string>
+    <string name="quality_high">Hoch</string>
+    <string name="quality_compressed">Komprimiert</string>
+    <string name="quality_max_compression">Maximale Komprimierung</string>
+    <string name="history_filter">Filtern</string>
+    <string name="history_folder_info">%1$d Bilder · %2$s</string>
+    <string name="history_folder_empty">Dieser Export enthält keine Bilder</string>
+    <string name="delete_history_folder">Ordner löschen</string>
+    <string name="delete_history_folder_warning">Dieser Export und seine %1$d Bilder werden gelöscht. Diese Aktion
+        kann nicht rückgängig gemacht werden.
+    </string>
+    <string name="delete_image">Bild löschen</string>
+    <string name="delete_image_warning">„%1$s“ aus diesem Export löschen? Diese Aktion kann nicht rückgängig
+        gemacht werden.
+    </string>
+    <string name="history_downloaded">Im Export-Ordner gespeichert</string>
+    <string name="new_session">Neue Sitzung</string>
+    <string name="image_to_edit">Zu bearbeitendes Bild</string>
+    <string name="segmentation_time">Segmentierungszeit: %d ms</string>
+    <string name="export_failed">Der Export ist fehlgeschlagen</string>
+    <string name="cloud_no_session">Keine aktive Cloud-Sitzung</string>
+    <string name="error_unknown_upload">Unbekannter Upload-Fehler</string>
+    <string name="cloud_email_title">Mit E-Mail anmelden</string>
+    <string name="cloud_brand">Nopalito Scan Cloud</string>
+    <string name="cloud_name_label">Vollständiger Name</string>
+    <string name="cloud_name_placeholder">z. B. Ana López</string>
+    <string name="cloud_name_too_short">Der Name muss mindestens 2 Zeichen lang sein</string>
+    <string name="cloud_dialog_ok">Verstanden</string>
+    <string name="cloud_dialog_account_not_found_title">Konto nicht gefunden</string>
+    <string name="cloud_dialog_account_not_found_body">Für diese E-Mail-Adresse ist kein Konto registriert. Überprüfen
+        Sie die Schreibweise oder erstellen Sie ein neues Konto.
+    </string>
+    <string name="cloud_dialog_secret_title">Konfigurationsfehler</string>
+    <string name="cloud_dialog_secret_body">Die Sicherheitskonfiguration der App stimmt nicht mit dem Server überein.
+        Aktualisieren Sie die App oder wenden Sie sich an den Support.
+    </string>
+    <string name="cloud_email_label">E-Mail-Adresse</string>
+    <string name="cloud_email_placeholder">sie@beispiel.com</string>
+    <string name="cloud_send_code">Code senden</string>
+    <string name="cloud_invalid_email">Geben Sie eine gültige E-Mail-Adresse ein</string>
+    <string name="cloud_error_sending_code">Der Code konnte nicht gesendet werden</string>
+    <string name="cloud_verify_code">Code verifizieren</string>
+    <string name="cloud_verify">Verifizieren</string>
+    <string name="cloud_otp_instruction">Wir haben einen 6-stelligen Code an</string>
+    <string name="cloud_otp_label">Bestätigungscode</string>
+    <string name="cloud_otp_placeholder">000000</string>
+    <string name="cloud_resend_code">Code erneut senden</string>
+    <string name="cloud_code_resent">Code erfolgreich erneut gesendet</string>
+    <string name="cloud_resend_in_seconds">Erneut senden in %1$d s</string>
+    <string name="cloud_code_sent_to_email">Ein Code wurde an deine E-Mail gesendet</string>
+    <string name="cloud_otp_six_digits">Der Code muss 6 Ziffern haben</string>
+    <string name="cloud_invalid_code">Ungültiger Code</string>
+    <string name="cloud_error_resending">Der Code konnte nicht erneut gesendet werden</string>
+    <string name="cloud_title">Nopalito Scan Cloud</string>
+    <string name="cloud_checking_session">Sitzung wird geprüft…</string>
+    <string name="cloud_need_login">Sie müssen sich anmelden, um Nopalito Scan Cloud zu nutzen</string>
+    <string name="cloud_login">Anmelden</string>
+    <string name="cloud_connection_timeout">Zeitüberschreitung. Prüfen Sie Ihre Internetverbindung.</string>
+    <string name="cloud_connection_error">Verbindung zu Nopalito Scan Cloud fehlgeschlagen. Prüfen Sie Ihre Verbindung.
+    </string>
+    <string name="cloud_connection_generic_error">Verbindungsfehler</string>
+    <string name="cloud_session_timeout">Timeout. Der Server antwortet nicht.</string>
+    <string name="cloud_connection_failed">Verbindung zu Nopalito Scan Cloud fehlgeschlagen</string>
+    <string name="cloud_files_label">Dateien</string>
+    <string name="cloud_storage_label">Speicher</string>
+    <string name="cloud_logout">Abmelden</string>
+    <string name="cloud_trash">Papierkorb</string>
+    <string name="cloud_empty_files">Tippen Sie auf Hochladen, um Ihre erste Datei hinzuzufügen</string>
+    <string name="cloud_folder_info">%1$d Dateien · %2$s</string>
+    <!-- Cloud: folder hierarchy -->
+    <string name="cloud_folders">Ordner</string>
+    <string name="cloud_new_folder">Neuer Ordner</string>
+    <string name="cloud_create_folder_title">Ordner erstellen</string>
+    <string name="cloud_folder_name_hint">Ordnername</string>
+    <string name="cloud_folder_created">Ordner erstellt</string>
+    <string name="cloud_folder_items">%1$d Elemente</string>
+    <string name="cloud_root_crumb">Root</string>
+    <string name="cloud_move_to">Verschieben nach…</string>
+    <string name="cloud_move_here">Hierher verschieben</string>
+    <string name="cloud_moved_to_folder">Verschoben nach %1$s</string>
+    <string name="cloud_error_folder_name_taken">Ein Element mit diesem Namen existiert hier bereits</string>
+    <string name="cloud_error_file_name_taken">Ein Element mit diesem Namen existiert hier bereits</string>
+    <string name="cloud_error_folder_not_found">Ordner nicht gefunden</string>
+    <string name="cloud_error_folder_move_cycle">Ein Ordner kann nicht in sich selbst verschoben werden</string>
+    <string name="cloud_error_parent_not_a_folder">Das Ziel ist kein Ordner</string>
+    <string name="cloud_error_parent_in_trash">Der Zielordner befindet sich im Papierkorb</string>
+    <string name="cloud_error_depth_limit">Maximale Ordnertiefe erreicht</string>
+    <string name="cloud_error_folder_no_content">Ein Ordner hat keinen herunterladbaren Inhalt</string>
+    <string name="cloud_error_restore_expired">Einige Elemente sind abgelaufen und koennen nicht wiederhergestellt werden</string>
+    <string name="cloud_error_move">Element konnte nicht verschoben werden</string>
+    <string name="cloud_upload_destination">Ziel: %1$s</string>
+    <string name="cloud_move_selected_dest">Ausgewähltes Ziel: %1$s</string>
+    <string name="cloud_upload_partial_summary">%1$d von %2$d Dateien wurden hochgeladen. Fehlgeschlagene bleiben in der Liste.</string>
+    <string name="cloud_restore_whole_folder">Ganzen Ordner wiederherstellen</string>
+    <string name="cloud_zip_preparing">ZIP wird erstellt…</string>
+    <string name="cloud_zip_downloading">ZIP wird heruntergeladen…</string>
+    <string name="cloud_zip_saved">ZIP heruntergeladen</string>
+    <string name="cloud_zip_error">ZIP konnte nicht erstellt oder heruntergeladen werden</string>
+    <string name="cloud_folder_download_zip">Als ZIP herunterladen</string>
+    <string name="cloud_move_to_trash_confirm">„%1$s“ in den Papierkorb verschieben?</string>
+    <string name="cloud_move_to_trash">In den Papierkorb verschieben</string>
+    <string name="cloud_move_to_trash_action">In den Papierkorb verschieben</string>
+    <string name="cloud_downloading">Wird heruntergeladen…</string>
+    <string name="cloud_pdf_render_error">PDF konnte nicht gerendert werden</string>
+    <string name="cloud_no_preview">Keine Vorschau verfügbar</string>
+    <string name="cloud_download_to_view">Sie können es zum Ansehen herunterladen</string>
+    <string name="cloud_preview">Vorschau</string>
+    <string name="cloud_rename_file">Datei umbenennen</string>
+    <string name="cloud_name">Name</string>
+    <string name="cloud_size_unknown">Unbekannt</string>
+    <string name="cloud_no_files">Keine Dateien</string>
+    <string name="cloud_retry">Erneut versuchen</string>
+    <!-- Cloud: biometric unlock gate -->
+    <string name="cloud_biometric_unlock_title">Entsperre deine Cloud</string>
+    <string name="cloud_biometric_unlock_message">Verwende deinen Fingerabdruck oder dein Gesicht, um Nopalito Scan
+        Cloud zu öffnen
+    </string>
+    <string name="cloud_biometric_unlock_button">Entsperren</string>
+    <string name="cloud_biometric_unlock_use_another_account">Anderes Konto verwenden</string>
+    <string name="cloud_biometric_unlock_locked_out">Zu viele Versuche. Versuche es später erneut.</string>
+    <string name="cloud_biometric_unlock_unavailable">Biometrie ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="cloud_biometric_unlock_no_screen_lock">Lege eine PIN, ein Muster oder ein Passwort auf dem Gerät fest,
+        um die biometrische Entsperrung zu aktivieren.
+    </string>
+    <string name="cloud_biometric_unlock_failed">Entsperren fehlgeschlagen. Versuche es erneut.</string>
+    <string name="cloud_biometric_prompt_title">Nopalito Scan Cloud</string>
+    <string name="cloud_biometric_prompt_subtitle">Verwende deinen Fingerabdruck oder dein Gesicht zum Fortfahren</string>
+    <string name="cloud_biometric_prompt_negative">Abbrechen</string>
+    <string name="cloud_biometric_toggle_title">Biometrische Entsperrung</string>
+    <string name="cloud_biometric_toggle_subtitle">Verlange deinen Fingerabdruck oder dein Gesicht zum Öffnen der
+        Cloud
+    </string>
+    <string name="cloud_biometric_toggle_failed">Die biometrische Entsperrung konnte nicht geändert werden. Versuche es
+        erneut.
+    </string>
+    <string name="cloud_biometric_weak_title">Gesichtserkennung verwenden?</string>
+    <string name="cloud_biometric_weak_message">Dein Gerät bietet nur 2D-Gesichtserkennung (Klasse 2), die weniger sicher ist als Fingerabdruck oder 3D-Gesicht (Klasse 3). Sie kann mit einem Foto überlistet werden und erstellt einen weniger sicheren Schlüssel.\n\nDu kannst stattdessen nur PIN, Muster oder Passwort verwenden oder die schwächere Gesichtserkennung akzeptieren.</string>
+    <string name="cloud_biometric_weak_use_face">Gesicht verwenden</string>
+    <string name="cloud_biometric_weak_use_pin">Nur PIN</string>
+    <string name="cloud_login_code_title">E-Mail-Code bei Anmeldung</string>
+    <string name="cloud_login_code_subtitle">Code per E-Mail nach dem Passwort anfordern (mehr Sicherheit)</string>
+    <string name="cloud_login_code_enabled">E-Mail-Code aktiviert — Sie erhalten beim nächsten Login einen Code</string>
+    <string name="cloud_login_code_disabled">E-Mail-Code deaktiviert — Passwort genügt</string>
+    <string name="cloud_trash_empty">Der Papierkorb ist leer</string>
+    <string name="cloud_trash_title">Papierkorb</string>
+    <string name="cloud_trash_subtitle">Gelöschte Dateien</string>
+    <string name="cloud_trash_empty_hint">Gelöschte Dateien erscheinen hier</string>
+    <string name="cloud_trash_type_cloud">Cloud</string>
+    <string name="cloud_trash_type_qr">QR</string>
+    <string name="cloud_trash_deletes_in">Wird gelöscht in %1$s</string>
+    <string name="cloud_trash_awaiting_deletion">Endgültige Löschung ausstehend</string>
+    <string name="cloud_trash_info">Informationen zur Löschung</string>
+    <string name="cloud_trash_info_title">Geplante Löschung</string>
+    <string name="cloud_trash_info_subtitle">Diese Datei wird automatisch gelöscht</string>
+    <string name="cloud_trash_info_remaining">Verbleibende Zeit</string>
+    <string name="cloud_trash_info_scheduled">Löschdatum</string>
+    <string name="cloud_trash_info_trashed">Gelöscht</string>
+    <string name="cloud_trash_info_origin">Herkunft</string>
+    <string name="cloud_trash_source_admin">Über das Cloud-Panel gelöscht</string>
+    <string name="cloud_trash_source_mobile">Von diesem Gerät gelöscht</string>
+    <string name="cloud_trash_remaining_days_hours">%1$dT %2$dh</string>
+    <string name="cloud_trash_remaining_hours_minutes">%1$dh %2$dm</string>
+    <string name="cloud_trash_remaining_minutes_seconds">%1$dm %2$ds</string>
+    <string name="cloud_trash_remaining_less_minute">&lt;1 Min.</string>
+    <string name="cloud_restore_n">%d wiederherstellen</string>
+    <string name="cloud_restore">Wiederherstellen</string>
+    <string name="cloud_delete_permanent">Endgültig löschen</string>
+    <string name="cloud_delete_permanent_n">%d löschen</string>
+    <string name="cloud_upload">Hochladen</string>
+    <string name="cloud_upload_file">Datei hochladen</string>
+    <string name="cloud_upload_subtitle">Laden Sie Ihre Dokumente in die Cloud hoch</string>
+    <string name="cloud_unknown_filename">unbekannt</string>
+    <string name="cloud_upload_to_cloud">In die Cloud hochladen</string>
+    <string name="cloud_uploading">Datei wird in die Cloud hochgeladen…</string>
+    <string name="cloud_upload_success">Datei erfolgreich hochgeladen</string>
+    <string name="cloud_upload_now">Jetzt hochladen</string>
+    <string name="cloud_login_hint">Melden Sie sich in der Cloud an, um Dateien hochzuladen</string>
+    <!-- Export screen: opt-in cloud upload toggle (same policy as the tools) -->
+    <string name="export_cloud_upload_desc">Dieses Dokument beim Speichern auch in Nopalito Scan Cloud hochladen</string>
+    <string name="cloud_upload_file_types">Beliebige Datei: Bilder, PDF, Office (Word/Excel/PowerPoint), ZIP, TXT und mehr</string>
+    <string name="cloud_uploading_file">Datei wird hochgeladen…</string>
+    <string name="cloud_tap_to_select">Zum Auswählen von Dateien tippen</string>
+    <string name="cloud_add_more">Weitere Dateien hinzufügen</string>
+    <string name="cloud_remove_file">Datei entfernen</string>
+    <plurals name="cloud_n_files_selected">
+        <item quantity="one">%d Datei ausgewählt</item>
+        <item quantity="other">%d Dateien ausgewählt</item>
+    </plurals>
+    <plurals name="cloud_upload_n_files">
+        <item quantity="one">%d Datei hochladen</item>
+        <item quantity="other">%d Dateien hochladen</item>
+    </plurals>
+    <string name="cloud_n_selected">%d ausgewählt</string>
+    <string name="cloud_more_actions">Weitere Optionen</string>
+    <string name="cloud_select_all">Alle auswählen</string>
+    <string name="cloud_refresh">Aktualisieren</string>
+    <string name="cloud_delete_n">%d löschen</string>
+    <string name="cloud_rename">Umbenennen</string>
+    <string name="cloud_download">Herunterladen</string>
+    <string name="cloud_error_400">Ungültige Anfrage. Prüfen Sie die eingegebenen Daten.</string>
+    <string name="cloud_error_401">Nicht autorisiert. Ihre Sitzung ist abgelaufen.</string>
+    <string name="cloud_error_403">Zugriff verweigert (403).</string>
+    <string name="cloud_error_404">Ressource nicht gefunden.</string>
+    <string name="cloud_error_413">Die Datei ist zu groß.</string>
+    <string name="cloud_error_415">Nicht unterstützter Dateityp.</string>
+    <string name="cloud_error_429">Zu viele Anfragen. Versuchen Sie es später erneut.</string>
+    <string name="cloud_error_500">Interner Serverfehler.</string>
+    <string name="cloud_error_503">Dienst vorübergehend nicht verfügbar.</string>
+    <string name="cloud_error_unexpected">Unerwarteter Fehler (%1$d)</string>
+    <string name="cloud_error_load_more">Fehler beim Laden weiterer Dateien</string>
+    <!-- Cloud: account security (antifraud) errors -->
+    <string name="cloud_error_auth">Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.</string>
+    <string name="cloud_error_auth_account_suspended">Ihr Konto ist gesperrt. Es wurden mehrere Zugriffsversuche auf das
+        Konto von verschiedenen Standorten erkannt. Zum Entsperren wenden Sie sich an contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_auth_account_status_unknown">Der Kontostatus konnte nicht überprüft werden. Bitte
+        versuchen Sie es später erneut.
+    </string>
+    <string name="cloud_error_auth_register_ip_limit">Das Konto konnte nicht erstellt werden. Das Limit für Konten auf
+        diesem Gerät oder in diesem Netzwerk wurde erreicht.
+    </string>
+    <string name="cloud_error_auth_register_vpn">Sie können kein Konto erstellen, während Sie ein VPN verwenden. Schalten
+        Sie es aus und versuchen Sie es erneut.
+    </string>
+    <string name="cloud_error_auth_password_reset_blocked">Ihr Konto ist gesperrt. Zur Verwaltung wenden Sie sich an
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_error_account_already_deleted">Dieses Konto wurde gelöscht und kann nicht mehr verwendet werden.
+    </string>
+    <string name="cloud_error_auth_account_deleted">Dieses Konto wurde gelöscht und kann nicht mehr verwendet werden.
+    </string>
+    <string name="cloud_error_auth_account_deleted_inactive">Dieses Konto wurde aufgrund von Inaktivität gelöscht und kann nicht mehr verwendet werden.
+    </string>
+    <string name="cloud_error_anonymous_protected">Dieses Konto kann nicht verwaltet werden.</string>
+    <!-- Google Sign-In -->
+    <string name="cloud_continue_with_google">Mit Google fortfahren</string>
+    <string name="cloud_error_google_token_invalid">Ungültiges Google-Token. Bitte versuche es erneut.</string>
+    <string name="cloud_error_google_token_expired">Google-Token abgelaufen. Bitte erneut anmelden.</string>
+    <string name="cloud_error_google_email_not_verified">Deine Google-E-Mail ist nicht verifiziert.</string>
+    <string name="cloud_error_google_id_mismatch">Dieses Google-Konto ist bereits mit einem anderen Benutzer verknüpft.</string>
+    <string name="cloud_error_google_not_configured">Google-Anmeldung ist nicht konfiguriert. Bitte versuche es später erneut.</string>
+    <string name="cloud_error_google_network">Netzwerkfehler bei der Google-Anmeldung.</string>
+    <string name="cloud_error_google_no_account">Kein Google-Konto auf diesem Gerät gefunden. Bitte füge ein Google-Konto hinzu und versuche es erneut.</string>
+    <string name="cloud_error_google_unavailable">Google-Anmeldung ist derzeit nicht verfügbar. Bitte versuche es später erneut.</string>
+    <string name="cloud_error_google_generic">Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.</string>
+    <string name="cloud_error_google_reauth_required">Google-Konto muss erneut authentifiziert werden. Bitte melde dich erneut in den Geräteeinstellungen bei deinem Google-Konto an.</string>
+    <string name="account_link_google_title">Google-Konto verknüpfen</string>
+    <string name="account_link_google_button">Google-Konto verknüpfen</string>
+    <string name="account_google_linked_label">Google-Konto verknüpft</string>
+    <string name="account_error_link_google">Google-Konto konnte nicht verknüpft werden. Bitte erneut versuchen.</string>
+    <string name="account_error_google_email_mismatch">Die E-Mail des Google-Kontos stimmt nicht mit deiner Konto-E-Mail überein.</string>
+    <string name="account_error_google_id_mismatch">Dieses Google-Konto ist bereits mit einem anderen Benutzer verknüpft.</string>
+    <string name="account_google_linked_success">Dein Google-Konto wurde erfolgreich verknüpft.</string>
+    <string name="cloud_or">oder</string>
+    <string name="cloud_dialog_account_suspended_title">Konto gesperrt</string>
+    <string name="cloud_dialog_account_suspended_body">Ihr Konto ist gesperrt. Zum Entsperren wenden Sie sich an
+        contact@nopalitoscan.org.
+    </string>
+    <string name="cloud_dialog_account_deleted_title">Konto gelöscht</string>
+    <string name="cloud_dialog_account_deleted_body">Dieses Konto wurde gelöscht und kann nicht mehr verwendet werden.
+    </string>
+    <string name="cloud_error_load_files">Fehler beim Laden der Dateien</string>
+    <string name="cloud_error_load_folder">Fehler beim Laden des Ordners</string>
+    <string name="cloud_folder_moved_to_trash">Ordner in den Papierkorb verschoben</string>
+    <string name="cloud_file_moved_to_trash">Datei in den Papierkorb verschoben</string>
+    <string name="cloud_files_moved_to_trash">%d Dateien in den Papierkorb verschoben</string>
+    <string name="cloud_go_to_trash">Zum Papierkorb</string>
+    <string name="cloud_error_delete_file">Fehler beim Löschen der Datei</string>
+    <string name="cloud_error_load_preview">Fehler beim Laden der Vorschau</string>
+    <string name="cloud_downloaded_to">Heruntergeladen: %1$s&#10;Ordner: %2$s</string>
+    <string name="cloud_download_error">Download-Fehler</string>
+    <string name="cloud_share_error">Die Datei konnte nicht geteilt werden</string>
+    <string name="cloud_file_renamed">Datei umbenannt</string>
+    <string name="cloud_rename_error">Fehler beim Umbenennen</string>
+    <string name="cloud_error_load_trash">Fehler beim Laden des Papierkorbs</string>
+    <string name="cloud_error_restore">Fehler beim Wiederherstellen der Datei</string>
+    <string name="cloud_error_restore_quota">Nicht genügend Speicherplatz zum Wiederherstellen dieser Datei</string>
+    <string name="cloud_error_delete_permanent">Fehler beim endgültigen Löschen</string>
+    <string name="cloud_restored_n">%1$d Dateien wiederhergestellt</string>
+    <string name="cloud_restored_partial">%1$d von %2$d Dateien wiederhergestellt</string>
+    <string name="cloud_deleted_n">%1$d Dateien endgültig gelöscht</string>
+    <string name="cloud_error_upload">Fehler beim Hochladen der Datei</string>
+    <string name="cloud_error_download">Download-Fehler</string>
+    <string name="cloud_error_timeout">Der Server hat zu lange gebraucht, um zu antworten.</string>
+    <string name="cloud_conversion_failed">Das Dokument konnte nicht konvertiert werden.</string>
+    <string name="cloud_document_encrypted">Das Dokument ist passwortgeschützt.</string>
+    <string name="document_title">Dokument-Editor</string>
+    <string name="document_subtitle">Seiten anpassen, signieren und organisieren</string>
+    <string name="retake">Neu aufnehmen</string>
+    <string name="sign">Signieren</string>
+    <string name="date_label">Datum</string>
+    <string name="date_style_title">Datumsstil</string>
+    <string name="done">Fertig</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="clear">Löschen</string>
+    <string name="signature_undo">Rückgängig</string>
+    <string name="signature_redo">Wiederholen</string>
+    <string name="confirm_signature">Signatur bestätigen</string>
+    <string name="edit_signature_existing_title">Signatur bearbeiten</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="signature_rotate_hint">Tippen Sie auf „Drehen“, um das Bild um 90° zu drehen.</string>
+    <string name="signature_tool_rotate">Drehen</string>
+    <string name="signature_tool_background">Hintergrund</string>
+    <string name="signature_tool_eraser">Radierer</string>
+    <string name="signature_tool_color">Farbe</string>
+    <string name="signature_tool_brightness">Helligkeit</string>
+    <string name="signature_tool_smooth">Glätten</string>
+    <string name="signature_tool_size">Größe</string>
+    <string name="background_sensitivity">Hintergrund-Empfindlichkeit</string>
+    <string name="remove_background">Hintergrund entfernen</string>
+    <string name="background_threshold">Schwellenwert: %1$d — erhöhen, um mehr Hintergrund zu entfernen</string>
+    <string name="clean_paper_noise">Papierrauschen entfernen</string>
+    <string name="clean_paper_noise_desc">Entfernt Schatten, Papierstruktur, Notizbuchlinien und leichte Flecken.
+    </string>
+    <string name="noise_light">Leicht</string>
+    <string name="noise_medium">Mittel</string>
+    <string name="noise_strong">Stark</string>
+    <string name="auto_crop">Automatisches Beschneiden (leeren Platz entfernen)</string>
+    <string name="manual_eraser">Manueller Radierer</string>
+    <string name="eraser_hint">Fahren Sie mit dem Finger über den Bereich, den Sie löschen wollen. Wird in Echtzeit
+        angewandt.
+    </string>
+    <string name="signature_color_label">Signaturfarbe</string>
+    <string name="original_ink_hint">Belässt den ursprünglichen Strich; verwenden Sie „Original“, um die Tinte des
+        Fotos zu erhalten.
+    </string>
+    <string name="color_original">Original</string>
+    <string name="custom_color">Benutzerdefinierte Farbe</string>
+    <string name="custom">Benutzerdefiniert</string>
+    <string name="brightness_contrast">Helligkeit und Kontrast</string>
+    <string name="brightness_contrast_hint">Anpassen, um die Sichtbarkeit der Signatur zu verbessern. Echtzeit.
+    </string>
+    <string name="brightness_value">Helligkeit: %1$d</string>
+    <string name="contrast">Kontrast</string>
+    <string name="smooth_clean">Glätten und reinigen</string>
+    <string name="smooth_hint">Glättet die Striche und entfernt kleine Papierflecken.</string>
+    <string name="smooth_edges">Kanten glätten</string>
+    <string name="clean_noise">Rauschen entfernen</string>
+    <string name="signature_size">Signaturgröße</string>
+    <string name="signature_size_hint">Ziehen, um die Größenänderung in Echtzeit zu sehen.</string>
+    <string name="size_small">Klein</string>
+    <string name="size_large">Groß</string>
+    <string name="scale_value">Skalierung: %1$d%%</string>
+    <string name="stroke_thickness">Strichstärke</string>
+    <string name="sign_here">Hier unterschreiben</string>
+    <string name="add_signature">Signatur hinzufügen</string>
+    <string name="signature_method_subtitle">Wählen Sie, wie Sie Ihre Signatur zu diesem Dokument hinzufügen möchten
+    </string>
+    <string name="draw_signature">Signatur zeichnen</string>
+    <string name="draw_signature_subtitle">Zeichnen Sie Ihre Signatur direkt mit dem Finger auf dem Bildschirm</string>
+    <string name="import_signature">Signatur importieren</string>
+    <string name="import_signature_subtitle">Importieren Sie ein Foto Ihrer Signatur und bearbeiten Sie es, um den
+        Hintergrund zu entfernen
+    </string>
+    <string name="gallery">Galerie</string>
+    <string name="gallery_subtitle">Wählen Sie ein Bild Ihrer Signatur</string>
+    <string name="camera">Kamera</string>
+    <string name="camera_subtitle">Fotografieren Sie Ihre Signatur auf Papier</string>
+    <string name="select_color">Farbe auswählen</string>
+    <string name="brightness">Helligkeit</string>
+    <string name="accept">OK</string>
+    <string name="date_style_label">STIL</string>
+    <string name="bg_none">Ohne Hintergrund</string>
+    <string name="bg_capsule">Kapsel</string>
+    <string name="bg_rectangle">Rechteck</string>
+    <string name="bg_soft">Weich</string>
+    <string name="color_black">Schwarz</string>
+    <string name="color_blue">Blau</string>
+    <string name="color_red">Rot</string>
+    <string name="color_green">Grün</string>
+    <string name="color_brown">Braun</string>
+    <string name="color_gray">Grau</string>
+    <string name="color_purple">Lila</string>
+    <string name="color_amber">Bernstein</string>
+    <string name="color_yellow">Gelb</string>
+    <string name="color_white">Weiß</string>
+    <string name="color_subtle">Dezent</string>
+    <string name="zoom_in">Vergrößern</string>
+    <string name="move_up">Nach oben bewegen</string>
+    <string name="move_down">Nach unten bewegen</string>
+    <string name="move_left">Nach links bewegen</string>
+    <string name="move_right">Nach rechts bewegen</string>
+    <string name="zoom_out">Verkleinern</string>
+    <string name="camera_unavailable">Kamera nicht verfügbar</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="provider_local_storage">Lokaler Speicher</string>
+    <string name="error_prepare_export">Export von %1$s konnte nicht vorbereitet werden</string>
+    <string name="error_prepare_share">Teilen konnte nicht vorbereitet werden</string>
+    <string name="image_default_name">Bild</string>
+    <string name="tools">Werkzeuge</string>
+    <string name="tools_subtitle">Dokumente komprimieren, schützen, konvertieren und organisieren</string>
+    <string name="tools_cat_files">Dateien</string>
+    <string name="tools_cat_pdf">PDF</string>
+    <string name="tools_cat_generate">Erstellen</string>
+    <string name="tools_compress_desc">Gewicht von PDFs, Bildern und Word-Dokumenten reduzieren</string>
+    <string name="tools_convert_desc">Word-Dokumente in PDF konvertieren</string>
+    <string name="tools_extract_pdf_desc">Nur die benötigten Seiten kopieren</string>
+    <string name="tools_reorder_pdf_desc">Die Reihenfolge der Seiten ändern</string>
+    <string name="qr_generate_desc">QR-Codes für Links, Text und mehr erstellen</string>
+    <string name="tools_wifi_requires_internet">Erfordert Internet zum Funktionieren</string>
+    <string name="history_subtitle">Ihre gespeicherten Exporte</string>
+    <string name="tools_pick_type">Dateityp auswählen</string>
+    <string name="tools_preview_title">Vorschau</string>
+    <string name="tools_preview_hint">Vorschau der ausgewählten Datei</string>
+    <string name="tools_preview_loading">Vorschau wird erstellt…</string>
+    <string name="tools_preview_unavailable">Die Vorschau konnte nicht erstellt werden</string>
+    <string name="tools_preview_protected">Die Datei ist passwortgeschützt und kann nicht verarbeitet werden</string>
+    <string name="tools_short_pdf">PDF</string>
+    <string name="tools_short_images">Bilder</string>
+    <string name="tools_short_word">Word</string>
+    <string name="tools_compress_pdf">PDF komprimieren</string>
+    <string name="tools_compress_images">Bilder komprimieren</string>
+    <string name="tools_compress_word">Word komprimieren</string>
+    <string name="tools_select_file">Datei auswählen</string>
+    <string name="tools_select_files">Dateien auswählen</string>
+    <string name="tools_default_filename">Datei</string>
+    <string name="tools_n_files_selected">%1$d Dateien ausgewählt</string>
+    <string name="tools_file_types_hint">Wählen Sie die zu komprimierende Datei</string>
+    <string name="tools_invalid_file_type">Die ausgewählte Datei ist nicht mit %1$s kompatibel</string>
+    <string name="tools_mode_individual">Einzeln</string>
+    <string name="tools_mode_batch">Stapel</string>
+    <string name="tools_compression_level">Komprimierungsstufe</string>
+    <string name="tools_image_quality_note">Bildkomprimierung reduziert die Qualität und entfernt Transparenz.
+    </string>
+    <string name="tools_password_label">Passwort (optional)</string>
+    <string name="tools_password_hint">Leer lassen, um die Datei ungeschützt zu lassen</string>
+    <string name="tools_original_password_label">Passwort der Originaldatei</string>
+    <string name="tools_new_password_label">Neues Passwort für das Ergebnis</string>
+    <string name="tools_generate_password">Sicheres Passwort generieren</string>
+    <string name="tools_show_password">Passwort anzeigen</string>
+    <string name="tools_hide_password">Passwort ausblenden</string>
+    <string name="tools_password_protected">Passwortgeschützt</string>
+    <string name="tools_original_action">Originaldatei</string>
+    <string name="tools_keep_original">Originaldatei behalten</string>
+    <string name="tools_keep_original_desc">Die Originaldatei wird nicht verändert</string>
+    <string name="tools_replace_original">Originaldatei ersetzen</string>
+    <string name="tools_replace_original_desc">Die komprimierte Datei ersetzt das Original</string>
+    <string name="tools_save_copy">Als Kopie speichern</string>
+    <string name="tools_save_copy_desc">Speichert eine separate komprimierte Kopie</string>
+    <string name="tools_save_location">Wo speichern</string>
+    <string name="tools_change_folder">Ordner ändern</string>
+    <string name="tools_compress">Komprimieren</string>
+    <string name="tools_compressing">Komprimierung…</string>
+    <string name="tools_success">Datei erfolgreich komprimiert</string>
+    <string name="tools_batch_success">%1$d Dateien erfolgreich komprimiert</string>
+    <string name="tools_size_before">Vorher: %1$s</string>
+    <string name="tools_size_after">Nachher: %1$s</string>
+    <string name="tools_saved_amount">Sie haben %1$s gespart (%2$d%% weniger)</string>
+    <string name="tools_not_reduced">Weitere Reduktion nicht möglich: Die Datei war schon optimiert.</string>
+    <string name="tools_partial_reduced">%1$d komprimiert · %2$d bereits optimiert</string>
+    <string name="tools_error">Die Datei konnte nicht komprimiert werden</string>
+    <string name="tools_upload_cloud">In die Cloud hochladen</string>
+    <string name="tools_cloud_upload_desc">Die komprimierte Datei in Nopalito Scan Cloud hochladen</string>
+    <string name="tools_cloud_premium_required">Melden Sie sich an und aktivieren Sie Premium zum Hochladen in die
+        Cloud
+    </string>
+    <string name="tools_go_login">Anmelden</string>
+    <string name="tools_cloud_uploaded">Datei in die Cloud hochgeladen</string>
+    <string name="tools_protect_password">Mit Passwort schützen</string>
+    <string name="tools_protect_password_subtitle">Schützen Sie Ihre Dateien mit einem Passwort</string>
+    <string name="pp_files_hint">Wählen Sie die zu schützende Datei</string>
+    <string name="pp_invalid_file_type">Die ausgewählte Datei ist nicht mit %1$s kompatibel</string>
+    <string name="pp_password_label">Passwort</string>
+    <string name="pp_password_hint">Geben Sie das Passwort zum Schutz der Datei ein</string>
+    <string name="pp_password_required">Geben Sie ein Passwort zum Schützen der Datei ein</string>
+    <string name="pp_file_pdf">PDF</string>
+    <string name="pp_file_word">Word</string>
+    <string name="pp_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="pp_keep_original_desc">Die Originaldatei wird nicht verändert</string>
+    <string name="pp_replace_original_desc">Die geschützte Datei ersetzt das Original</string>
+    <string name="pp_save_copy_desc">Speichert eine separate geschützte Kopie</string>
+    <string name="pp_save">Speichern</string>
+    <string name="pp_protecting">Schutz wird angewandt…</string>
+    <string name="pp_send_to_compressor">Zur Komprimierungs-Sektion wechseln</string>
+    <string name="pp_send_to_compressor_desc">Schützt noch nicht: sendet die Datei an den Kompressor und behält das
+        eingegebene Passwort
+    </string>
+    <string name="pp_success">Datei erfolgreich geschützt</string>
+    <string name="pp_batch_success">%1$d Dateien erfolgreich geschützt</string>
+    <string name="pp_size">Größe: %1$s</string>
+    <string name="pp_error">Die Datei konnte nicht geschützt werden</string>
+    <string name="pp_error_protected">Die Datei ist bereits geschützt oder konnte nicht geöffnet werden</string>
+    <string name="pp_generate_dialog_title">Sicheres Passwort generiert</string>
+    <string name="pp_generate_dialog_desc">Verwenden Sie dieses Passwort zum Schützen Ihrer Dateien. Bewahren Sie es
+        sicher auf.
+    </string>
+    <string name="pp_generate_dialog_use">Passwort verwenden</string>
+    <string name="tools_convert">In PDF konvertieren</string>
+    <string name="cv_internet_required">Dieses Werkzeug benötigt eine Internetverbindung und verbraucht mobile Daten.
+        Wir empfehlen Wi-Fi.
+    </string>
+    <string name="cv_supported_files_title">Unterstützte Dateien</string>
+    <string name="cv_cloud_upload_desc">Das konvertierte PDF in Nopalito Scan Cloud hochladen</string>
+    <string name="cv_save_result">Speichern</string>
+    <string name="cv_saving">Wird gespeichert…</string>
+    <string name="cv_protect_optional_title">Mit Passwort schützen (optional)</string>
+    <string name="cv_phase_uploading">Dateien werden hochgeladen…</string>
+    <string name="cv_phase_processing">Konvertierung auf dem Server…</string>
+    <string name="cv_phase_downloading">Ergebnis wird heruntergeladen…</string>
+    <string name="cv_phase_partial">Einige Dateien konnten nicht konvertiert werden</string>
+    <string name="cv_phase_failed">Die Konvertierung konnte nicht abgeschlossen werden</string>
+    <string name="cv_files_hint">Wählen Sie die zu konvertierende Datei</string>
+    <string name="cv_invalid_file_type">Die ausgewählte Datei ist nicht kompatibel. Prüfen Sie den Abschnitt
+        unterstützter Dateien.
+    </string>
+    <string name="cv_keep_original_desc">Die Originaldatei wird nicht verändert</string>
+    <string name="cv_replace_original_desc">Die konvertierte Datei ersetzt das Original</string>
+    <string name="cv_save_copy_desc">Speichert eine separate konvertierte Kopie</string>
+    <string name="cv_save">Konvertieren</string>
+    <string name="cv_converting">Konvertierung…</string>
+    <string name="cv_success">Datei erfolgreich konvertiert</string>
+    <string name="cv_batch_success">%1$d Dateien erfolgreich konvertiert</string>
+    <string name="cv_size">Größe: %1$s</string>
+    <string name="cv_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="cv_error">Die Datei konnte nicht konvertiert werden</string>
+    <string name="cv_name_keep">%1$s (konvertiert).%2$s</string>
+    <string name="cv_name_copy">Kopie von %1$s.%2$s</string>
+    <string name="tools_extract_pdf">PDF-Seiten extrahieren</string>
+    <string name="ep_select_pdf">PDF auswählen</string>
+    <string name="ep_files_hint">Wählen Sie das PDF, aus dem Sie Seiten extrahieren möchten</string>
+    <string name="ep_loading">PDF wird geöffnet…</string>
+    <string name="ep_tap_to_change">Tippen Sie, um ein anderes PDF auszuwählen</string>
+    <string name="ep_pages_total">%1$d Seiten</string>
+    <string name="ep_preview_title">Vorschau</string>
+    <string name="ep_page_number">Seite %1$d</string>
+    <string name="ep_preview_failed">Diese Seite konnte nicht gerendert werden</string>
+    <string name="ep_signatures_note">Das Extrahieren von Seiten erstellt ein neues PDF: digitale Signaturen des
+        Originaldokuments können ungültig werden.
+    </string>
+    <string name="ep_range_label">Zu extrahierende Seiten</string>
+    <string name="ep_range_placeholder">1-5, 8, 10/50</string>
+    <string name="ep_range_hint">Beispiele: 1-5 · 3,7 · 10/50, 20-25</string>
+    <string name="ep_range_required">Geben Sie die zu extrahierenden Seiten ein</string>
+    <string name="ep_range_invalid">Falsches Format: %1$s</string>
+    <string name="ep_range_zero">Die Seitennummern müssen größer als null sein</string>
+    <string name="ep_range_descending">Der Bereich %1$d-%2$d ist ungültig (aufsteigend verwenden)</string>
+    <string name="ep_range_out_of_bounds">Seite %1$d existiert nicht: Das PDF hat %2$d Seiten</string>
+    <string name="ep_range_explicit_mismatch">Das PDF hat %1$d Seiten, aber die Angabe ist %2$d</string>
+    <string name="ep_range_pages_selected">%1$d Seiten ausgewählt</string>
+    <string name="ep_output_name_label">Dateiname</string>
+    <string name="ep_export_format">Exportformat</string>
+    <string name="ep_password_toggle">Mit Passwort schützen</string>
+    <string name="ep_password_hint">Das extrahierte PDF mit einem Passwort schützen</string>
+    <string name="ep_password_label">Passwort</string>
+    <string name="ep_password_required">Passwort eingeben oder Schutz deaktivieren</string>
+    <string name="ep_export_pdf">Als PDF exportieren</string>
+    <string name="ep_export_images">Als Bilder exportieren</string>
+    <string name="ep_progress_pdf">PDF wird erstellt…</string>
+    <string name="ep_progress_images">Bilder werden exportiert…</string>
+    <string name="ep_success_pdf">PDF erfolgreich extrahiert</string>
+    <string name="ep_success_images">%1$d Bilder erfolgreich exportiert</string>
+    <string name="ep_error">Export nicht möglich</string>
+    <string name="ep_error_invalid">Die Datei ist kein gültiges PDF</string>
+    <string name="ep_error_protected">Das PDF ist passwortgeschützt und konnte nicht geöffnet werden</string>
+    <string name="ep_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="tools_reorder_pdf">PDF-Seiten neu anordnen</string>
+    <string name="ror_select_pdf">PDF auswählen</string>
+    <string name="ror_files_hint">Wählen Sie das PDF, dessen Seiten Sie neu anordnen möchten</string>
+    <string name="ror_loading">PDF wird geöffnet…</string>
+    <string name="ror_tap_to_change">Tippen, um ein anderes PDF auszuwählen</string>
+    <string name="ror_pages_total">%1$d Seiten</string>
+    <string name="ror_preview_title">Vorschau</string>
+    <string name="ror_page_preview_label">Seite %1$d von %2$d</string>
+    <string name="ror_thumbnails_title">Seitenreihenfolge</string>
+    <string name="ror_thumbnails_hint">Miniatur gedrückt halten und ziehen, um zu sortieren</string>
+    <string name="ror_position">Pos. %1$d</string>
+    <string name="ror_preview_failed">Diese Seite konnte nicht gerendert werden</string>
+    <string name="ror_signatures_note">Das Neuanordnen erstellt ein neues PDF: elektronische Signaturen des
+        Originaldokuments können ungültig werden.
+    </string>
+    <string name="ror_password_toggle">Mit Passwort schützen</string>
+    <string name="ror_password_hint">Das neu angeordnete PDF mit einem Passwort schützen</string>
+    <string name="ror_password_label">Passwort</string>
+    <string name="ror_password_required">Passwort eingeben oder Schutz deaktivieren</string>
+    <string name="ror_cloud_upload_desc">Das neu angeordnete PDF in Nopalito Scan Cloud hochladen</string>
+    <string name="ror_output_name_label">Dateiname</string>
+    <string name="ror_export">PDF exportieren</string>
+    <string name="ror_progress">Neu angeordnetes PDF wird erstellt…</string>
+    <string name="ror_success">PDF erfolgreich neu angeordnet</string>
+    <string name="ror_error">Export nicht möglich</string>
+    <string name="ror_error_invalid">Die Datei ist kein gültiges PDF</string>
+    <string name="ror_error_protected">Das PDF ist passwortgeschützt und konnte nicht geöffnet werden</string>
+    <string name="ror_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="tools_delete_pages">Seiten löschen</string>
+    <string name="tools_delete_pages_desc">Einzelne Seiten löschen oder leere Seiten erkennen und entfernen</string>
+    <string name="dpp_select_pdf">PDF auswählen</string>
+    <string name="dpp_files_hint">Wählen Sie das PDF, aus dem Sie Seiten löschen möchten</string>
+    <string name="dpp_loading">PDF wird geöffnet…</string>
+    <string name="dpp_tap_to_change">Tippen, um ein anderes PDF auszuwählen</string>
+    <string name="dpp_pages_total">%1$d Seiten</string>
+    <string name="dpp_preview_title">Vorschau</string>
+    <string name="dpp_page_preview_label">Seite %1$d von %2$d</string>
+    <string name="dpp_thumbnails_title">Seiten</string>
+    <string name="dpp_thumbnails_hint">Tippen Sie auf eine Vorschau, um sie zu sehen. Tippen Sie auf „Seiten löschen“,
+        um eine oder
+        mehrere zu entfernen.
+    </string>
+    <string name="dpp_position">Pos. %1$d</string>
+    <string name="dpp_preview_failed">Diese Seite konnte nicht gerendert werden</string>
+    <string name="dpp_signatures_note">Das Löschen von Seiten erstellt ein neues PDF: elektronische Signaturen des
+        Originaldokuments können ungültig werden.
+    </string>
+    <string name="dpp_delete_pages">Seiten löschen</string>
+    <string name="dpp_delete_page">Seite löschen</string>
+    <string name="dpp_delete_mode_hint">Tippen Sie auf die zu löschenden Seiten (oder „Alle auswählen“) und bestätigen
+        Sie mit dem
+        Papierkorb
+    </string>
+    <string name="dpp_select_all">Alle auswählen</string>
+    <string name="dpp_unselect_all">Auswahl aufheben</string>
+    <string name="dpp_marked_count">%1$d ausgewählt</string>
+    <string name="dpp_cannot_delete_all">Sie können nicht alle Seiten löschen. Mindestens eine Seite muss übrig
+        bleiben.
+    </string>
+    <string name="dpp_cancel_delete">Abbrechen</string>
+    <string name="dpp_confirm_delete_title">Seiten löschen</string>
+    <string name="dpp_confirm_delete_text">%1$d Seite(n) aus dem Ergebnis-PDF löschen? Sie können dies später rückgängig
+        machen.
+    </string>
+    <string name="dpp_delete_confirm">%1$d löschen</string>
+    <string name="dpp_undo">Rückgängig</string>
+    <string name="dpp_deleted_message">%1$d Seite(n) gelöscht</string>
+    <string name="dpp_blank_pages">Leere Seiten löschen</string>
+    <string name="dpp_blank_analyzing">Analyse von Seite %1$d von %2$d…</string>
+    <string name="dpp_blank_cancel">Analyse abbrechen</string>
+    <string name="dpp_blank_analysis_failed">Das Dokument konnte nicht analysiert werden</string>
+    <string name="dpp_blank_result_title">Leere Seiten erkannt</string>
+    <string name="dpp_blank_result_hint">Deaktivieren Sie Seiten, die Sie nicht löschen möchten</string>
+    <string name="dpp_blank_status_blank">Leer</string>
+    <string name="dpp_blank_status_likely">Vielleicht leer</string>
+    <string name="dpp_blank_none">Keine leeren Seiten erkannt</string>
+    <string name="dpp_blank_delete_selected">Ausgewählte löschen</string>
+    <string name="dpp_blank_page_label">Seite %1$d</string>
+    <string name="dpp_password_toggle">Mit Passwort schützen</string>
+    <string name="dpp_password_hint">Das Ergebnis-PDF mit einem Passwort schützen</string>
+    <string name="dpp_password_label">Passwort</string>
+    <string name="dpp_password_required">Passwort eingeben oder Schutz deaktivieren</string>
+    <string name="dpp_cloud_upload_desc">Das PDF in Nopalito Scan Cloud hochladen</string>
+    <string name="dpp_output_name_label">Dateiname</string>
+    <string name="dpp_export">PDF exportieren</string>
+    <string name="dpp_progress">PDF wird erstellt…</string>
+    <string name="dpp_success">PDF erfolgreich erstellt</string>
+    <string name="dpp_error">Export nicht möglich</string>
+    <string name="dpp_error_invalid">Die Datei ist kein gültiges PDF</string>
+    <string name="dpp_error_protected">Das PDF ist passwortgeschützt und konnte nicht geöffnet werden</string>
+    <string name="dpp_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="dpp_nothing_to_export">Keine Seiten mehr für den Export</string>
+    <string name="tools_organize_pages">Seiten bearbeiten</string>
+    <string name="tools_organize_pages_desc">Seiten neu anordnen und löschen oder leere Seiten entfernen</string>
+    <string name="org_select_pdf">PDF auswählen</string>
+    <string name="org_files_hint">Wählen Sie das PDF, dessen Seiten Sie organisieren möchten</string>
+    <string name="org_loading">PDF wird geöffnet…</string>
+    <string name="org_tap_to_change">Tippen, um ein anderes PDF auszuwählen</string>
+    <string name="org_pages_total">%1$d Seiten</string>
+    <string name="org_preview_title">Vorschau</string>
+    <string name="org_page_preview_label">Seite %1$d von %2$d</string>
+    <string name="org_thumbnails_title">Seiten</string>
+    <string name="org_thumbnails_hint">Miniatur gedrückt halten und ziehen, um zu sortieren. Tippen Sie auf „Seiten
+        löschen“, um eine
+        oder mehrere zu entfernen.
+    </string>
+    <string name="org_position">Pos. %1$d</string>
+    <string name="org_preview_failed">Diese Seite konnte nicht gerendert werden</string>
+    <string name="org_signatures_note">Das Organisieren erstellt ein neues PDF: elektronische Signaturen des Original
+        Dokuments können ungültig werden.
+    </string>
+    <string name="org_delete_pages">Seiten löschen</string>
+    <string name="org_delete_page">Seite löschen</string>
+    <string name="org_delete_mode_hint">Tippen Sie auf die zu löschenden Seiten (oder „Alle auswählen“) und bestätigen
+        Sie mit dem
+        Papierkorb
+    </string>
+    <string name="org_select_all">Alle auswählen</string>
+    <string name="org_unselect_all">Auswahl aufheben</string>
+    <string name="org_marked_count">%1$d ausgewählt</string>
+    <string name="org_cannot_delete_all">Sie können nicht alle Seiten löschen. Mindestens eine Seite muss übrig
+        bleiben.
+    </string>
+    <string name="org_cancel_delete">Abbrechen</string>
+    <string name="org_confirm_delete_title">Seiten löschen</string>
+    <string name="org_confirm_delete_text">%1$d Seite(n) aus dem Ergebnis-PDF löschen? Sie können dies später rückgängig
+        machen.
+    </string>
+    <string name="org_delete_confirm">%1$d löschen</string>
+    <string name="org_undo">Rückgängig</string>
+    <string name="org_deleted_message">%1$d Seite(n) gelöscht</string>
+    <string name="org_blank_pages">Leere Seiten löschen</string>
+    <string name="org_blank_analyzing">Analyse von Seite %1$d von %2$d…</string>
+    <string name="org_blank_cancel">Analyse abbrechen</string>
+    <string name="org_blank_analysis_failed">Das Dokument konnte nicht analysiert werden</string>
+    <string name="org_blank_result_title">Leere Seiten erkannt</string>
+    <string name="org_blank_result_hint">Deaktivieren Sie Seiten, die Sie nicht löschen möchten</string>
+    <string name="org_blank_status_blank">Leer</string>
+    <string name="org_blank_status_likely">Vielleicht leer</string>
+    <string name="org_blank_none">Keine leeren Seiten erkannt</string>
+    <string name="org_blank_delete_selected">Ausgewählte löschen</string>
+    <string name="org_blank_page_label">Seite %1$d</string>
+    <string name="org_password_toggle">Mit Passwort schützen</string>
+    <string name="org_password_hint">Das Ergebnis-PDF mit einem Passwort schützen</string>
+    <string name="org_password_label">Passwort</string>
+    <string name="org_password_required">Passwort eingeben oder Schutz deaktivieren</string>
+    <string name="org_cloud_upload_desc">Das PDF in Nopalito Scan Cloud hochladen</string>
+    <string name="org_output_name_label">Dateiname</string>
+    <string name="org_export">PDF exportieren</string>
+    <string name="org_progress">PDF wird erstellt…</string>
+    <string name="org_success">PDF erfolgreich erstellt</string>
+    <string name="org_error">Export nicht möglich</string>
+    <string name="org_error_invalid">Die Datei ist kein gültiges PDF</string>
+    <string name="org_error_protected">Das PDF ist passwortgeschützt und konnte nicht geöffnet werden</string>
+    <string name="org_destination_unavailable">Downloadziel nicht verfügbar. Wählen Sie einen anderen Ordner.</string>
+    <string name="org_nothing_to_export">Keine Seiten mehr für den Export</string>
+    <string name="qr_generate">QR generieren</string>
+    <string name="qr_generating">Wird generiert…</string>
+    <string name="qr_save">Speichern</string>
+    <string name="qr_saved">QR gespeichert</string>
+    <string name="qr_saved_desc">Der QR wurde im Ordner Downloads/Nopalito Scan gespeichert</string>
+    <string name="qr_save_error">Der QR konnte nicht gespeichert werden</string>
+    <string name="qr_share_error">Der QR konnte nicht geteilt werden</string>
+    <string name="qr_redownload_title">QR herunterladen</string>
+    <string name="qr_redownload_hint">Wählen Sie das Format zum Herunterladen</string>
+    <string name="qr_saved_cloud_error">Der QR konnte nicht in der Cloud gespeichert werden. Erneut versuchen.</string>
+    <string name="qr_content_required">Inhalt eingeben</string>
+    <string name="qr_generate_error">QR konnte nicht erstellt werden</string>
+    <string name="qr_wifi_security_wpa">WPA</string>
+    <string name="qr_wifi_security_wep">WEP</string>
+    <string name="qr_wifi_security_open">Offen</string>
+    <string name="qr_shape_square">Quadrat</string>
+    <string name="qr_shape_rounded">Abgerundet</string>
+    <string name="qr_shape_circle">Kreis</string>
+    <string name="qr_shape_diamond">Raute</string>
+    <string name="qr_trash_title">QR-Papierkorb</string>
+    <string name="qr_trash_subtitle">Ihre gelöschten QR-Codes</string>
+    <string name="qr_trash_empty">Der QR-Papierkorb ist leer</string>
+    <string name="qr_permanent_delete_message">Diesen QR endgültig löschen? Diese Aktion kann nicht rückgängig gemacht
+        werden.
+    </string>
+    <string name="qr_permanent_delete_batch">%d QRs endgültig löschen? Diese Aktion kann nicht rückgängig gemacht
+        werden.
+    </string>
+    <string name="qr_move_trash">In den Papierkorb verschieben</string>
+    <string name="qr_move_trash_n">%d in den Papierkorb verschieben</string>
+    <string name="qr_move_trash_confirm">%d QRs in den Papierkorb verschieben?</string>
+    <string name="qr_styles">Stile</string>
+    <string name="qr_style_none">Keiner</string>
+    <string name="qr_design">Design</string>
+    <string name="qr_foreground">Punktfarbe</string>
+    <string name="qr_background">Hintergrundfarbe</string>
+    <string name="qr_module_shape">Form der Module</string>
+    <string name="qr_error_correction">Fehlerkorrektur</string>
+    <string name="qr_size">Größe: %1$d px</string>
+    <string name="qr_frame_text">Rahmentext</string>
+    <string name="qr_scan_check">Scan-Fähigkeit prüfen</string>
+    <string name="qr_scan_check_desc">Der Server versucht, den QR zu lesen, und warnt, wenn das Design das Scannen
+        erschwert
+    </string>
+    <string name="qr_cloud_history">QR-Verlauf</string>
+    <string name="qr_history_subtitle">Ihre gescannten QR-Codes</string>
+    <string name="qr_cloud_history_subtitle">Ihre QR-Codes in der Cloud</string>
+    <string name="qr_cloud_empty">Noch keine Scans in der Cloud.</string>
+    <string name="qr_cloud_delete_message">Diesen Scan aus der Cloud löschen?</string>
+    <!-- Onboarding / language selection -->
+    <string name="welcome_language_title">Willkommen bei Nopalito Scan</string>
+    <string name="welcome_language_question">Welche Sprache möchten Sie verwenden?</string>
+    <!-- First-run permission onboarding -->
+    <string name="permissions_title">App-Berechtigungen</string>
+    <string name="permissions_subtitle">Nopalito Scan benötigt einige Berechtigungen, um zu funktionieren. Du kannst sie
+        später in den Einstellungen ändern.
+    </string>
+    <string name="permission_step_counter">%1$d von %2$d</string>
+    <string name="permission_allow">Erlauben</string>
+    <string name="permission_not_now">Jetzt nicht</string>
+    <string name="permission_granted">Erteilt</string>
+    <string name="permission_denied_hint">Du kannst sie später in den Einstellungen aktivieren.</string>
+    <string name="permission_camera_title">Kamera</string>
+    <string name="permission_camera_description">Fotos von Dokumenten aufnehmen, um sie zu scannen, zuzuschneiden und zu
+        digitalisieren.
+    </string>
+    <string name="permission_wifi_title">WLAN-Netzwerke</string>
+    <string name="permission_wifi_description">Direkt über QR-Codes mit WLAN-Netzwerken verbinden.</string>
+    <!-- Legal acceptance (onboarding) -->
+    <string name="legal_accept_text">Ich akzeptiere die AGB und die Datenschutzerklärung.</string>
+    <string name="legal_terms_link">AGB</string>
+    <string name="legal_privacy_link">Datenschutzerklärung</string>
+    <string name="legal_accept_continue">Akzeptieren und fortfahren</string>
+    <string name="legal_exit_dialog_message">Um Nopalito Scan nutzen zu können, musst du die AGB und die
+        Datenschutzerklärung akzeptieren.
+    </string>
+    <string name="legal_stay_here">Hier bleiben</string>
+    <string name="legal_exit_app">Nopalito Scan beenden</string>
+    <string name="legal_document_error">Das Dokument konnte nicht geöffnet werden.</string>
+    <!-- Settings: language option -->
+    <string name="language">Sprache</string>
+    <!-- Settings: cloud language sync hint -->
+    <string name="settings_language_sync_failed">Die Sprache konnte nicht mit deinem Cloud-Konto synchronisiert werden. Die App behält die Auswahl lokal bei.</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="ok">OK</string>
+    <!-- Cloud: password login -->
+    <string name="cloud_login_instruction">Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an</string>
+    <string name="cloud_password_label">Passwort</string>
+    <string name="cloud_password_placeholder">Ihr Passwort</string>
+    <string name="cloud_password_show">Passwort anzeigen</string>
+    <string name="cloud_password_hide">Passwort ausblenden</string>
+    <string name="cloud_invalid_credentials">Ungültige E-Mail-Adresse oder ungültiges Passwort</string>
+    <string name="cloud_forgot_password">Passwort vergessen?</string>
+    <string name="cloud_create_account">Kein Konto? Jetzt erstellen</string>
+    <string name="cloud_register_title">Konto erstellen</string>
+    <string name="cloud_register_instruction">Wählen Sie ein Passwort (mindestens 8 Zeichen)</string>
+    <string name="cloud_register_next">Weiter</string>
+    <string name="cloud_password_too_short">Das Passwort muss mindestens 8 Zeichen lang sein</string>
+    <string name="cloud_passwords_mismatch">Die Passwörter stimmen nicht überein</string>
+    <string name="cloud_confirm_password_label">Passwort bestätigen</string>
+    <string name="cloud_confirm_password_placeholder">Geben Sie Ihr Passwort erneut ein</string>
+    <string name="cloud_new_password_label">Neues Passwort</string>
+    <string name="cloud_email_already_registered">Für diese E-Mail-Adresse existiert bereits ein Konto. Melden Sie sich
+        an.
+    </string>
+    <!-- Cloud: password recovery -->
+    <string name="cloud_forgot_title">Passwort zurücksetzen</string>
+    <string name="cloud_forgot_instruction">Geben Sie Ihre E-Mail-Adresse ein, um einen Zurücksetzungscode zu erhalten
+    </string>
+    <string name="cloud_set_password_title">Passwort festlegen</string>
+    <string name="cloud_set_password_instruction">Geben Sie Ihre E-Mail-Adresse ein, um einen Einrichtungscode zu
+        erhalten
+    </string>
+    <string name="cloud_recover_code_sent">Wenn die E-Mail gültig ist, wurde ein Code gesendet</string>
+    <string name="cloud_save_password">Neues Passwort speichern</string>
+    <string name="cloud_send_verification_code">Bestätigungscode senden</string>
+    <string name="cloud_change_password">Passwort ändern</string>
+    <string name="cloud_change_password_desc">Erfordert einen Bestätigungscode per E-Mail</string>
+    <string name="cloud_change_password_instruction">Wir senden einen Bestätigungscode an Ihr Konto. Geben Sie ihn unten
+        ein, um ein neues Passwort festzulegen.
+    </string>
+    <string name="cloud_password_changed_success">Passwort erfolgreich aktualisiert</string>
+    <!-- Cloud: storage -->
+    <string name="cloud_storage_title">Speicher</string>
+    <string name="cloud_storage_subtitle">Nutzung und Plan</string>
+    <string name="cloud_storage_used_of">%1$s von %2$s verwendet</string>
+    <string name="cloud_storage_percent_used">%1$d%% verwendet</string>
+    <string name="cloud_storage_free">%1$s frei</string>
+    <string name="cloud_plan_free">Kostenloser Plan</string>
+    <string name="cloud_plan_personal">Personal-Plan</string>
+    <string name="cloud_plan_plus">Plus-Plan</string>
+    <string name="cloud_premium_active_personal">Sie sind im Personal-Plan (1 GB).</string>
+    <string name="cloud_premium_active_plus">Sie sind im Plus-Plan (5 GB).</string>
+    <string name="cloud_view_plans">Pläne ansehen</string>
+    <string name="premium_current">Aktuell</string>
+    <!-- Premium-Pläne Dialog (swipeable, nur Kapazität, Buttons vorerst deaktiviert) -->
+    <string name="premium_nopalito_cloud">Nopalito Scan Cloud</string>
+    <string name="premium_more_storage">Mehr Speicher,</string>
+    <string name="premium_more_power">mehr Leistung</string>
+    <string name="premium_swipe">Wische zum Vergleichen</string>
+    <string name="premium_monthly">Monatlich</string>
+    <string name="premium_annual">Jährlich</string>
+    <string name="premium_free">Free</string>
+    <string name="premium_personal">Personal</string>
+    <string name="premium_plus">Plus</string>
+    <string name="premium_free_storage">50 MB</string>
+    <string name="premium_personal_storage">1 GB</string>
+    <string name="premium_plus_storage">5 GB</string>
+    <string name="premium_free_subtitle">Zum Testen ohne Verpflichtung</string>
+    <string name="premium_personal_subtitle">Für den täglichen persönlichen Gebrauch</string>
+    <string name="premium_plus_subtitle">Für Profis und Teams</string>
+    <string name="premium_free_price">Gratis</string>
+    <string name="premium_free_subprice">Keine Kreditkarte erforderlich</string>
+    <string name="premium_cancela">Jederzeit kündbar</string>
+    <string name="premium_most_popular">Am beliebtesten</string>
+    <string name="premium_pro">Pro</string>
+    <string name="premium_choose_personal">Personal wählen</string>
+    <string name="premium_choose_plus">Plus wählen</string>
+    <string name="premium_close">Schließen</string>
+    <string name="premium_previous">Zurück</string>
+    <string name="premium_next">Weiter</string>
+    <string name="premium_per_month">/Monat</string>
+    <string name="premium_per_year">/Jahr</string>
+    <string name="premium_current_plan">Aktueller Plan: %1$s</string>
+    <string name="premium_selected">Ausgewählt</string>
+    <!-- Cloud: quota exceeded -->
+    <string name="cloud_quota_title">Sie haben das Limit des kostenlosen Plans erreicht</string>
+    <string name="cloud_quota_body">Der kostenlose Plan umfasst 50 MB. Um weitere Dateien hochzuladen, benötigen Sie den
+        Premium-Plan.
+    </string>
+    <string name="cloud_quota_upgrade">Premium-Optionen anzeigen</string>
+    <string name="cloud_quota_got_it">Verstanden</string>
+    <!-- Cloud: maintenance screen -->
+    <string name="cloud_maint_retry">Erneut versuchen</string>
+    <!-- Cloud: footer -->
+    <string name="cloud_footer_support">Brauchen Sie Hilfe oder Support? Schreiben Sie uns an contact@nopalitoscan.org</string>
+    <string name="cloud_maint_auto_refresh">Prüfung erfolgt automatisch alle %1$d Sekunden</string>
+    <string name="cloud_maint_start">Start</string>
+    <string name="cloud_maint_end">Voraussichtliches Ende</string>
+    <string name="cloud_maint_time_remaining">Verbleibende Zeit: %1$s</string>
+    <string name="cloud_maint_duration_hours_min">%1$d Std. %2$d Min.</string>
+    <string name="cloud_maint_duration_minutes">%1$d Min.</string>
+    <string name="cloud_maint_duration_seconds">%1$d Sek.</string>
+    <string name="cloud_maint_scheduled_title">Geplante Wartung</string>
+    <string name="cloud_maint_scheduled_message">In Kürze führen wir eine geplante Wartung durch.</string>
+    <string name="cloud_maint_scheduled_reason">Geplante Wartung läuft.</string>
+    <string name="cloud_maint_emergency_title">Notfallwartung</string>
+    <string name="cloud_maint_emergency_message">Der Dienst ist wegen einer Notfallwartung vorübergehend nicht
+        verfügbar.
+    </string>
+    <string name="cloud_maint_emergency_reason">Notfallwartung läuft.</string>
+    <string name="cloud_maint_upgrade_title">Dienstaktualisierung</string>
+    <string name="cloud_maint_upgrade_message">Wir aktualisieren den Dienst. Bitte versuche es gleich erneut.</string>
+    <string name="cloud_maint_upgrade_reason">Der Dienst wird aktualisiert.</string>
+    <string name="cloud_maint_generic_title">Wartung läuft</string>
+    <string name="cloud_maint_generic_message">Der Dienst ist vorübergehend nicht verfügbar.</string>
+    <string name="cloud_maint_generic_reason">Wir arbeiten daran.</string>
+    <string name="cloud_notif_completed">Wartung abgeschlossen</string>
+    <string name="cloud_notif_cancelled">Wartung abgebrochen</string>
+    <string name="cloud_notif_created">Wartung geplant</string>
+    <string name="cloud_notif_pre_notification">Bevorstehende Wartung</string>
+    <string name="cloud_notif_activated">Wartung läuft</string>
+    <!-- Fallback-Text für Wartungs-Pushes ohne Servertext. -->
+    <string name="cloud_notif_generic_body">Eine geplante Wartung betrifft den Dienst.</string>
+    <!-- Proaktive Cloud-Benachrichtigungen (FCM data-only; der Backend sendet
+         keinen Text — die Benachrichtigung wird mit diesen Strings in der
+         App-Sprache gerendert). %1$s = Prozent, %2$s = belegt, %3$s = Kontingent -->
+    <string name="notif_storage_80_title">Speicher fast voll</string>
+    <string name="notif_storage_80_body">Du verbrauchst %1$s deines Speichers (%2$s von %3$s). Überlege, Speicherplatz freizugeben.</string>
+    <string name="notif_storage_95_title">Speicher kritisch</string>
+    <string name="notif_storage_95_body">Dein Speicher ist bei %1$s (%2$s von %3$s). Gib bald Speicherplatz frei, um Blockaden zu vermeiden.</string>
+    <string name="notif_storage_100_title">Speicherlimit erreicht</string>
+    <string name="notif_storage_100_body">Du hast dein Speicherlimit erreicht (%2$s von %3$s). Gib Speicherplatz frei, um weiter Dateien hochzuladen.</string>
+    <string name="notif_storage_reminder_title">Speicher-Erinnerung</string>
+    <string name="notif_storage_reminder_body">Du verbrauchst weiterhin %1$s deines Speichers (%2$s von %3$s).</string>
+    <string name="notif_storage_rejected_title">Datei abgelehnt</string>
+    <string name="notif_storage_rejected_body">Die Datei „%1$s“ wurde vom Sicherheitsscan abgelehnt.</string>
+    <string name="notif_account_inactive_title">Dein Konto ist inaktiv</string>
+    <string name="notif_account_inactive_body">Du hast dich seit %1$s Tagen nicht angemeldet. Kehre zu Nopalito Scan zurück, um dein Konto und deine Dateien zu behalten.</string>
+    <string name="notif_upload_error_title">Upload-Fehler</string>
+    <string name="notif_upload_error_body">Beim Hochladen von „%1$s“ ist ein Fehler aufgetreten. Bitte versuche es erneut.</string>
+    <string name="notif_test_title">Test-Benachrichtigung</string>
+    <string name="notif_test_body">Dies ist eine Test-Benachrichtigung aus dem Admin-Panel.</string>
+    <!-- Push notifications (FCM) -->
+    <string name="push_channel_name">Benachrichtigungen</string>
+    <string name="push_channel_description">Updates und Benachrichtigungen von Nopalito Scan Cloud</string>
+    <string name="permission_notifications_title">Benachrichtigungen</string>
+    <string name="permission_notifications_description">Erhalte Updates und Benachrichtigungen zu deinem Cloud-Konto auf
+        diesem Gerät
+    </string>
+    <!-- ===== Backend error code / group strings (ErrorCodeMapper) ===== -->
+    <string name="cloud_error_quota_exceeded">Sie haben Ihr Speicherlimit erreicht.</string>
+    <string name="cloud_error_resend_cooldown">Bitte warten Sie %1$s Sekunden, bevor Sie einen neuen Code anfordern.
+    </string>
+    <string name="cloud_error_maintenance_active">Der Dienst wird vorübergehend gewartet. Bitte versuchen Sie es später
+        erneut.
+    </string>
+    <string name="cloud_error_rate_limit">Zu viele Anfragen. Bitte versuchen Sie es später erneut.</string>
+    <string name="cloud_error_migration">Die Migration konnte nicht abgeschlossen werden. Bitte versuchen Sie es später
+        erneut.
+    </string>
+    <string name="cloud_error_qr">Der QR-Code konnte nicht erstellt werden. Das Datenlimit beträgt %1$s Zeichen.
+    </string>
+    <string name="cloud_error_job">Der angeforderte Auftrag konnte nicht gefunden werden.</string>
+    <string name="cloud_error_quota">Sie haben nicht genügend Speicherplatz.</string>
+    <!-- ===== Parity (names identical across locales; app_name must stay identical) ===== -->
+    <string name="app_name" translatable="false" tools:ignore="Untranslatable">Nopalito Scan</string>
+    <string name="error_file_picker_launch">Die Dateiauswahl konnte auf diesem Gerät nicht geöffnet werden
+    </string>
+    <string name="error_file_picker_result">Der Exportordner konnte nicht festgelegt werden</string>
+    <string name="import_pdf_protected">Dieses PDF ist passwortgeschützt und kann nicht importiert werden.</string>
+    <string name="import_document_protected">Diese Datei ist passwortgeschützt und kann nicht importiert werden.
+    </string>
+    <string name="import_document_failed">Diese Datei konnte nicht importiert werden. Sie ist möglicherweise
+        passwortgeschützt oder das Format wird nicht unterstützt.
+    </string>
+    <string name="import_error">Diese Datei konnte nicht importiert werden.</string>
+    <!-- Statistics -->
+    <string name="stats_title">Statistiken</string>
+    <string name="stats_section_title">Statistiken</string>
+    <string name="stats_view_usage">Nutzungsstatistiken ansehen</string>
+    <string name="stats_documents">Dokumente</string>
+    <string name="stats_empty">Noch keine Daten. Scannen Sie, um Ihre Zusammenfassung zu sehen.</string>
+    <string name="stats_pages_count">%d Seiten</string>
+    <string name="stats_page_single">1 Seite</string>
+    <string name="stats_exported_count">%d exportiert</string>
+    <string name="stats_period_day">Tag</string>
+    <string name="stats_period_week">Woche</string>
+    <string name="stats_period_month">Monat</string>
+    <string name="stats_period_year">Jahr</string>
+    <string name="stats_category_scans">Scans</string>
+    <string name="stats_category_exports">Exporte</string>
+    <string name="stats_category_shares">Geteilt</string>
+    <string name="stats_category_tools">Werkzeuge</string>
+    <string name="stats_tool_breakdown">Werkzeug-Aufschlüsselung</string>
+    <string name="stats_export_breakdown">Export-Aufschlüsselung</string>
+    <string name="stats_no_data_tools">Noch keine Werkzeuge verwendet</string>
+    <string name="stats_no_data_exports">Noch keine Exporte</string>
+    <string name="stats_no_data_shares">Noch keine Freigaben</string>
+    <string name="stats_chart_today">Heute</string>
+    <string name="stats_chart_last_7_days">Letzte 7 Tage</string>
+    <string name="stats_chart_last_30_days">Letzte 30 Tage</string>
+    <string name="stats_chart_last_12_months">Letzte 12 Monate</string>
+    <string name="stats_all_tools">Alle Werkzeuge</string>
+    <string name="stats_deletes">Gelöscht</string>
+    <!-- Cloud: change email -->
+    <string name="cloud_change_email">E-Mail ändern</string>
+    <string name="cloud_change_email_desc">Erfordert Bestätigung an deine neue Adresse</string>
+    <string name="cloud_change_email_instruction">Wir senden einen 6-stelligen Code an deine neue E-Mail</string>
+    <string name="cloud_new_email_label">Neue E-Mail-Adresse</string>
+    <string name="cloud_new_email_placeholder">du@beispiel.de</string>
+    <string name="cloud_send_code_to_new_email">Bestätigungscode senden</string>
+    <string name="cloud_email_change_code_sent">Code an deine neue E-Mail gesendet</string>
+    <string name="cloud_email_changed_success">E-Mail erfolgreich aktualisiert</string>
+    <string name="cloud_email_already_in_use">Diese E-Mail ist bereits registriert</string>
+    <string name="cloud_email_same_as_current">Die neue E-Mail ist identisch mit deiner aktuellen E-Mail</string>
+    <string name="cloud_verify_and_change_email">Bestätigen und E-Mail ändern</string>
+    <!-- Billing (Google Play, actual 2026-09: personal/personal-yearly, plus/plus-yearly, prices via formattedPrice only) -->
+    <string name="billing_loading">Loading plans...</string>
+    <string name="billing_plans_load_error">Could not load plans. Try again.</string>
+    <string name="billing_price_unavailable">Price unavailable</string>
+    <string name="billing_error_generic">Could not process the purchase. Try again.</string>
+    <string name="billing_purchase_success">Subscription activated</string>
+    <string name="billing_not_connected">Billing not connected. Try again.</string>
+    <string name="billing_retry_hint">Check your connection and retry.</string>
+    <string name="billing_product_details_unavailable">Product details unavailable. Try again.</string>
+    <string name="billing_offer_unavailable">Offer unavailable for this plan.</string>
+    <string name="billing_activity_unavailable">Activity unavailable. Try again.</string>
+    <string name="billing_unavailable">Unavailable</string>
+    <string name="billing_draft_unavailable">Currently unavailable (draft in Play Console).</string>
+    <string name="billing_error_user_canceled">Purchase canceled.</string>
+    <string name="billing_error_service_unavailable">Billing service unavailable. Try again.</string>
+    <string name="billing_error_billing_unavailable">Billing unavailable on this device.</string>
+    <string name="billing_error_item_unavailable">Product unavailable.</string>
+    <string name="billing_error_item_already_owned">Already subscribed.</string>
+    <string name="billing_error_item_not_owned">Not subscribed.</string>
+    <string name="billing_free_plan">Kostenloser Tarif</string>
+    <string name="billing_free_included">Inklusive Tarif</string>
+    <string name="billing_free_manage_hint">Verwalte dein Abonnement in Google Play, um zu wechseln oder zu kündigen</string>
+    <string name="billing_manage_subscription">Abonnement verwalten</string>
+    <string name="billing_manage_subscription_desc">Google Play-Abos öffnen</string>
+    <string name="billing_manage_unavailable">Google Play konnte nicht geöffnet werden. Öffne den Play Store manuell.</string>
+    <string name="billing_restore_purchases">Käufe wiederherstellen</string>
+    <string name="billing_restore_in_progress">Käufe werden wiederhergestellt…</string>
+    <string name="billing_restore_success">Abonnement wiederhergestellt</string>
+    <string name="billing_restore_already_current">Abos sind bereits auf dem neuesten Stand</string>
+    <string name="billing_restore_none_found">Keine aktiven Google Play-Abos gefunden.</string>
+    <string name="billing_restore_failed">Käufe konnten nicht wiederhergestellt werden. Versuch es erneut.</string>
+    <string name="billing_restore_retry">Erneut versuchen</string>
+    <string name="billing_config_missing">Konfigurationsfehler: keine Pläne verfügbar. Wende dich an den Support.</string>
+    <string name="billing_manage_subscription_description">Google Play-Abos öffnen</string>
+    <string name="billing_manage_subscription_unavailable">Google Play-Abo-Verwaltung konnte nicht geöffnet werden.</string>
+    <string name="billing_included_plan">Inklusive Tarif</string>
+    <string name="billing_manage_subscription_hint">Verwalte dein Abonnement in Google Play, um zu wechseln oder zu kündigen</string>
+    <string name="billing_feature_storage_free">50 MB sicherer Speicher</string>
+    <string name="billing_feature_storage_personal">1 GB sicherer Cloud-Speicher</string>
+    <string name="billing_feature_storage_plus">5 GB sicherer Cloud-Speicher</string>
+    <string name="billing_feature_scan">Unbegrenztes Dokumentenscannen</string>
+    <string name="billing_feature_sync">Automatische Cloud-Synchronisierung &amp; backup</string>
+    <string name="billing_feature_no_ads">No ads, 100%% private</string>
+    <string name="billing_support_title">Unterstütze die App</string>
+    <string name="billing_support_body">Dein Abo hält Nopalito werbefrei und hilft uns dabei, in Zukunft mehr kostenlose Funktionen für alle zu bringen.</string>
+    <string name="cloud_error_too_many_devices">Du hast das Geraete-Limit erreicht (%1$s). Widerrufe ein Geraet, um dich auf einem neuen anzumelden.</string>
+    <string name="cloud_dialog_too_many_devices_title">Zu viele Geraete</string>
+    <string name="cloud_dialog_too_many_devices_body">Du hast das Limit von %1$s aktiven Geraeten erreicht. Widerrufe ein Geraet, um fortzufahren, oder verwalte deine Sitzungen.</string>
+    <string name="cloud_sessions_title">Aktive Sitzungen</string>
+    <string name="cloud_sessions_subtitle">Verwalte die mit deinem Konto verbundenen Geraete</string>
+    <string name="cloud_sessions_current">Aktuelles Geraet</string>
+    <string name="cloud_sessions_revoke">Widerrufen</string>
+    <string name="cloud_sessions_revoke_confirm">Dieses Geraet widerrufen? Es wird sofort abgemeldet.</string>
+    <string name="cloud_sessions_revoked">Geraet widerrufen</string>
+    <string name="cloud_sessions_current_revoked">Deine aktuelle Sitzung wurde widerrufen. Bitte melde dich erneut an.</string>
+    <string name="cloud_sessions_empty">Keine aktiven Geraete</string>
+    <string name="billing_feature_devices_5">Bis zu 5 Geraete gleichzeitig</string>
+    <string name="billing_feature_devices_1">1 Geraet gleichzeitig (Kostenlos)</string>
+    <string name="cloud_sessions_unknown_device">Unbekanntes Gerät</string>
+    <string name="billing_purchase_processing">Kauf wird verarbeitet…</string>
+    <string name="billing_purchase_processing_hint">Wird mit Google Play verifiziert und dein Tarif angewendet.</string>
+    <string name="billing_purchase_pending">Zahlung ausstehend — wird aktiviert, sobald Google Play sie bestätigt.</string>
+    <string name="billing_purchase_success_hint">Dein neuer Tarif ist jetzt aktiv.</string>
+    <string name="billing_restore_retry_hint">Versuche es erneut oder nutze Käufe wiederherstellen.</string>
+    <!-- Session recovery — release all active sessions via email OTP -->
+    <string name="cloud_recovery_title">Aktive Sitzungen freigeben</string>
+    <string name="cloud_recovery_subtitle">Weisen Sie den Besitz Ihrer E-Mail nach, um alle aktiven Sitzungen zu schließen und sich erneut anzumelden</string>
+    <string name="cloud_recovery_email_hint">E-Mail Ihres Kontos eingeben</string>
+    <string name="cloud_recovery_request">Bestätigungscode senden</string>
+    <string name="cloud_recovery_code_subtitle">Wir haben einen 6-stelligen Code an Ihre E-Mail gesendet</string>
+    <string name="cloud_recovery_verify">Verifizieren und Sitzungen freigeben</string>
+    <string name="cloud_recovery_success_title">Sitzungen freigegeben</string>
+    <string name="cloud_recovery_success_body">Alle aktiven Sitzungen wurden geschlossen. Bitte melden Sie sich erneut mit Ihrem Passwort oder Google an.</string>
+    <string name="cloud_cant_access_account">Kein Zugriff auf Ihr Konto?</string>
+    <string name="cloud_release_sessions">Aktive Sitzungen freigeben</string>
+    <!-- Avatar (profile picture) -->
+    <string name="avatar_title">Profilfoto</string>
+    <string name="avatar_change_photo">Foto ändern</string>
+    <string name="avatar_remove_photo">Foto entfernen</string>
+    <string name="avatar_remove_confirm_title">Avatar entfernen</string>
+    <string name="avatar_remove_confirm_body">Eigenen Avatar entfernen und Standard verwenden?</string>
+    <string name="avatar_google_sync_info">Dein Foto wird mit deinem Google-Konto synchronisiert. Ändere es bei Google, um es hier zu sehen.</string>
+    <string name="avatar_google_managed">Dein Foto wird von Google verwaltet</string>
+    <string name="avatar_google_managed_hint">Ändere es in deinem Google-Konto, um es hier zu aktualisieren.</string>
+    <string name="avatar_upload_success">Foto aktualisiert</string>
+    <string name="avatar_remove_success">Foto entfernt</string>
+    <string name="avatar_upload_error">Foto konnte nicht aktualisiert werden</string>
+    <string name="avatar_remove_error">Foto konnte nicht entfernt werden</string>
+    <string name="avatar_invalid_file">Ungültiges Bild. Verwende JPEG, PNG oder WebP bis 5 MB.</string>
+    <string name="avatar_google_managed_error">Dein Foto wird von Google verwaltet. Ändere es in deinem Google-Konto.</string>
+    <string name="avatar_view_settings">Kontoeinstellungen ansehen</string>
+    <string name="avatar_preview_content_desc">Profilfoto</string>
+</resources>
