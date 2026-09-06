@@ -1,0 +1,200 @@
+/*
+ *
+ * Copyright 2025-2026 The FairScan authors
+ * Copyright 2026 Ruben Matias
+ *
+ * Modified by Ruben Matias in 2026.
+ * This file is part of the Nopalito Scan fork.
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package nopalito.app.platform
+
+import android.graphics.Bitmap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import nopalito.app.data.ImageTransformations
+import nopalito.app.domain.CapturedPage
+import nopalito.app.domain.ExportQuality
+import nopalito.app.domain.Jpeg
+import nopalito.app.domain.PageMetadata
+import nopalito.app.domain.Rotation
+import nopalito.app.ui.screens.settings.DefaultColorMode
+import nopalito.imageprocessing.ColorMode
+import nopalito.imageprocessing.ImageSize
+import nopalito.imageprocessing.Mask
+import nopalito.imageprocessing.OpticalMeasures
+import nopalito.imageprocessing.Point
+import nopalito.imageprocessing.Quad
+import nopalito.imageprocessing.autoColorMode
+import nopalito.imageprocessing.createQuad
+import nopalito.imageprocessing.extractDocument
+import nopalito.imageprocessing.resizeForMaxPixels
+import nopalito.imageprocessing.rotate
+import nopalito.imageprocessing.scaledTo
+import org.opencv.android.Utils
+import org.opencv.core.CvException
+import org.opencv.core.Mat
+import org.opencv.core.Size
+import org.opencv.imgproc.Imgproc
+import kotlin.math.min
+
+class ImageProcessor(private val thumbnailSizePx: Int) : ImageTransformations {
+
+    override fun rotate(input: Jpeg, rotationDegrees: Int): Jpeg {
+        return transform(input, ExportQuality.BALANCED.jpegQuality) {
+            rotate(it, rotationDegrees)
+        }
+    }
+
+    override fun resizeToThumbnail(input: Jpeg): Jpeg {
+        val maxSize = thumbnailSizePx.toFloat()
+        return transform(input, 85) { src ->
+            val ratio = min(maxSize / src.width(), maxSize / src.height())
+            val newW = (src.width() * ratio).toDouble()
+            val newH = (src.height() * ratio).toDouble()
+            val scaled = Mat()
+            try {
+                Imgproc.resize(src, scaled, Size(newW, newH))
+            } catch (e: CvException) {
+                val msg = "Resize failed. src=${src.width()}x${src.height()} dst=${newW}x${newH}"
+                throw IllegalStateException(msg, e)
+            }
+            scaled
+        }
+    }
+
+    private fun transform(
+        inJpeg: Jpeg,
+        jpegQuality: Int,
+        transform: (Mat) -> Mat,
+    ): Jpeg {
+        val input = inJpeg.toMat()
+        var output: Mat? = null
+        try {
+            output = transform.invoke(input)
+            return Jpeg.fromMat(output, jpegQuality)
+        } finally {
+            input.release()
+            output?.release()
+        }
+    }
+
+    override fun process(
+        source: Jpeg,
+        metadata: PageMetadata,
+        colorMode: ColorMode
+    ): Jpeg {
+        val baseRotation = metadata.baseRotation
+        return processedImage(source, metadata, baseRotation, colorMode, ExportQuality.BALANCED)
+    }
+}
+
+fun processedImage(
+    source: Jpeg,
+    metadata: PageMetadata,
+    rotation: Rotation,
+    colorMode: ColorMode,
+    exportQuality: ExportQuality,
+): Jpeg {
+    val rotationDegrees = rotation.degrees
+    var sourceMat: Mat? = null
+    var page: Mat? = null
+    try {
+        sourceMat = source.toMat()
+        val quad = metadata.normalizedQuad.scaledTo(1, 1, sourceMat.width(), sourceMat.height())
+        page = extractDocument(
+            sourceMat, quad, rotationDegrees, colorMode, exportQuality.maxPixels,
+            metadata.opticalMeasures
+        )
+        return Jpeg.fromMat(page, exportQuality.jpegQuality)
+    } finally {
+        sourceMat?.release()
+        page?.release()
+    }
+}
+
+fun extractDocumentFromBitmap(
+    source: Bitmap,
+    quadInMask: Quad?,
+    rotationDegrees: Int,
+    mask: Mask?,
+    viewModelScope: CoroutineScope,
+    defaultColorMode: DefaultColorMode = DefaultColorMode.AUTO,
+    opticalMeasures: OpticalMeasures?,
+): CapturedPage {
+    val exportQuality = ExportQuality.BALANCED
+    var colorMode = ColorMode.COLOR
+    var autoColorMode = colorMode
+    var normalizedQuad = createQuad(
+        listOf(
+            Point(0.0, 0.0), Point(0.0, 1.0), Point(1.0, 1.0), Point(1.0, 0.0)
+        )
+    )
+    var page: Mat
+
+    val rgba = Mat()
+    Utils.bitmapToMat(source, rgba)
+    val bgr = Mat()
+    Imgproc.cvtColor(rgba, bgr, Imgproc.COLOR_RGBA2BGR)
+    rgba.release()
+
+    if (mask == null || quadInMask == null) {
+        // No document detected
+        val resized = resizeForMaxPixels(bgr, exportQuality.maxPixels.toDouble())
+        page = rotate(resized, rotationDegrees)
+        resized.release()
+    } else {
+        val quad = quadInMask.scaledTo(mask.width, mask.height, source.width, source.height)
+        normalizedQuad = quad.scaledTo(source.width, source.height, 1, 1)
+        autoColorMode = autoColorMode(bgr, mask, quad)
+        colorMode = defaultColorMode.colorMode ?: autoColorMode
+        page = extractDocument(
+            bgr, quad, rotationDegrees, colorMode, exportQuality.maxPixels,
+            opticalMeasures
+        )
+    }
+
+    val pageJpeg = Jpeg.fromMat(page, exportQuality.jpegQuality)
+    bgr.release()
+    page.release()
+
+    val baseRotation = Rotation.fromDegrees(rotationDegrees)
+    val sourceSize = ImageSize(source.width, source.height)
+    val metadata =
+        PageMetadata(normalizedQuad, baseRotation, autoColorMode, sourceSize, opticalMeasures)
+    // The caller may recycle the bitmap (or close the ImageProxy backing it)
+    // as soon as this function returns, while the source JPEG is still being
+    // compressed on IO. Copy the pixels now (source is guaranteed valid here)
+    // so the async job never reads a recycled/invalidated bitmap.
+    val sourceCopy = source.copy(Bitmap.Config.ARGB_8888, false) ?: source
+    val sourceJpegDeferred = viewModelScope.async(Dispatchers.IO) {
+        compressSource(sourceCopy)
+    }
+    return CapturedPage(pageJpeg, sourceJpegDeferred, metadata, colorMode)
+}
+
+private fun compressSource(source: Bitmap): Jpeg {
+    val rgba = Mat()
+    Utils.bitmapToMat(source, rgba)
+    val bgr = Mat()
+    Imgproc.cvtColor(rgba, bgr, Imgproc.COLOR_RGBA2BGR)
+    rgba.release()
+    return try {
+        Jpeg.fromMat(bgr, 90)
+    } finally {
+        bgr.release()
+    }
+}
