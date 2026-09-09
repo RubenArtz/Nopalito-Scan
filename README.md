@@ -3,133 +3,131 @@
 
   <h1>Nopalito Scan</h1>
 
-  <p>An Android document-scanning app built on privacy, simplicity, and open source.</p>
+  <p>Android app that captures document pages and generates PDF, JPEG or Word files on the device, with optional cloud storage.</p>
 </div>
 
 ---
 
-Nopalito Scan is an Android document-scanning app and a fork
-of [FairScan](https://github.com/pynicolas/FairScan).
-
-It builds on FairScan's simple, privacy-respecting scanning experience while providing a separate
-project identity and a foundation for continued development.
+Nopalito Scan is an independent Android project based on
+[FairScan](https://github.com/pynicolas/FairScan).
+FairScan was developed by Pierre-Yves Nicolas.
+Nopalito Scan is not affiliated with or endorsed by FairScan or Pierre-Yves Nicolas.
 
 > **Upstream project:** [pynicolas/FairScan](https://github.com/pynicolas/FairScan)
 
-## About
+## What this repository contains
 
-Nopalito Scan helps users scan paper documents quickly from an Android device and produce clean,
-shareable PDF files.
+This repository publishes the Android app source. Source headers retain notices for
+The FairScan authors (2025-2026) and Ruben Matias (2026, modifications for this fork).
 
-The app focuses on an uncomplicated workflow:
+The cloud backend is separate proprietary software operated by Nopalito Scan. It is not
+published in this repository, is not open source, and is not self-hostable from this
+repository.
 
-1. Scan one or more pages.
-2. Review the result when needed.
-3. Save or share the generated PDF.
+## How a scan moves through the app
+
+1. **Capture.** Frame pages with the camera. Automatic detection proposes the document edges.
+2. **Prepare.** Perspective is corrected and the image is enhanced. OCR can add selectable text.
+3. **Organize.** Rotate, reorder, adjust edges, or remove pages before finishing the document.
+4. **Export.** Generate the output file, then save it locally or hand it to the system share sheet.
 
 | Scan                                                | Preview                                             | Save & Share                                        |
 |-----------------------------------------------------|-----------------------------------------------------|-----------------------------------------------------|
 | ![](metadata/images/screenshots/screenshot%201.png) | ![](metadata/images/screenshots/screenshot%202.png) | ![](metadata/images/screenshots/screenshot%203.png) |
 
-## Features
+## What the app generates
 
-- Automatic document detection
-- Automatic perspective correction
-- Automatic image enhancement
-- Fast multi-page PDF generation
-- Clean, distraction-free Android interface
-- On-device document processing
-- Minimal permissions
-- No ads and no tracking
-- No watermarks and no paywalled core features
-- Open-source software licensed under GPLv3
+Implemented export formats (`ExportFormat`: PDF, JPEG, Word):
 
-## Privacy
+- PDF (`.pdf`) via PDFBox-Android, with optional OCR text layer and optional password protection.
+- Images (JPEG), single file or multi-image set.
+- Word (`.docx`) via the local OOXML writer, with optional password protection (ECMA-376 agile
+  encryption readable by Microsoft Word).
 
-Nopalito Scan is designed around privacy. Document detection, image processing, and PDF creation run
-locally on the Android device. The app does not require cloud processing for its core scanning
-workflow.
+Included document utilities in the same app:
 
-## Optional Cloud Backend
+- Local history of generated files with re-download from the app backup.
+- QR scanning from images and QR generation from text or links.
+- Compression for PDF, image and Word files.
+- Password protection for PDF and Word files.
+- Page operations on PDF files: extract, reorder, delete.
 
-For an enhanced experience, Nopalito Scan offers an optional cloud backend that provides:
+## Device processing
 
-- **50 MB free storage** for documents and conversions
-- Cloud-based document processing and conversions (optional features)
-- Cross-device sync and backup when signed in
-- QR code generation with public, immutable URLs
-
-All cloud features are opt-in. Local scanning works fully without an account or internet connection.
-When cloud features are used, files are transmitted via HTTPS/TLS and temporary processing files are
-automatically deleted after the operation completes.
-
-### Cloud plans
-
-Cloud plans only affect the optional cloud features — scanning, exporting, and sharing never require
-an account or a subscription. Session limits are enforced server-side.
-
-| Plan     | Simultaneous active sessions |
-|----------|------------------------------|
-| FREE     | 1                            |
-| PERSONAL | Up to 5                      |
-| PLUS     | Up to 5                      |
-
-## Architecture & Security Model
-
-Nopalito Scan uses a **hybrid architecture**:
-
-| Component     | License     | Visibility                                    |
-|---------------|-------------|-----------------------------------------------|
-| Android App   | GPLv3+      | **Open source** (this repository)             |
-| Cloud Backend | Proprietary | **Closed source** (operated by Nopalito Scan) |
-
-### How file processing works
-
-**Local-first (default, no account needed):**
-
-- Document detection, perspective correction, image enhancement, PDF generation, OCR — all run *
-  *entirely on your device**
-- Zero data leaves your phone unless you explicitly use a cloud feature
-
-**Cloud features (opt-in, requires account):**
-
-1. You select a file and choose a cloud action (upload, convert, generate QR, etc.)
-2. File is sent via **HTTPS/TLS** (certificate validation enforced, cleartext blocked) to the
-   Nopalito Scan backend
-3. Backend processes the request (conversion, OCR, compression, etc.)
-4. Result is returned to the app / stored in your cloud storage
-5. **Temporary processing files are deleted automatically**: upload staging ≤1 hour, conversion
-   working dirs ≤24 hours
-6. Stored files remain until you delete them (then moved to trash for 30 days)
-
-## Based on FairScan
-
-This project is a fork of [FairScan](https://github.com/pynicolas/FairScan), an Android document
-scanner created to be simple and respectful.
-
-FairScan provides the upstream foundation for the scanning workflow and document-processing stack,
-including automatic document detection, perspective correction, image enhancement, and PDF
-generation. Please see the upstream repository for its history, contributors, documentation, and
-original work.
-
-## Technical Stack
-
-Nopalito Scan inherits and builds on an Android stack that includes:
+Document detection, perspective correction, image enhancement, PDF generation and OCR run on
+the device for the base capture-to-file flow:
 
 | Component                  | Purpose                                         |
 |----------------------------|-------------------------------------------------|
 | Kotlin and Jetpack Compose | Android application and user interface          |
 | CameraX                    | Camera capture                                  |
-| LiteRT                     | On-device document segmentation model inference |
+| LiteRT                     | On-device document segmentation model inference (`fairscan-segmentation-model.tflite`) |
 | OpenCV                     | Perspective correction and image enhancement    |
-| Tesseract                  | Optical character recognition (OCR)             |
+| Tesseract                  | Optical character recognition (OCR); language data is downloaded from the official Tesseract project |
 | PDFBox-Android             | PDF generation                                  |
+
+Network use on the device: cleartext traffic is blocked (`network_security_config.xml` sets
+`cleartextTrafficPermitted="false"`). `INTERNET` is declared for OCR language-data downloads
+and for the opt-in cloud actions below. Declared Android permissions are listed in
+`app/src/main/AndroidManifest.xml` (camera, storage/media, network state, notifications,
+billing, and Wi-Fi/location entries scoped to the optional QR Wi-Fi flow).
+
+## Optional cloud backend
+
+All cloud features are opt-in. Capture, review and file generation on the device do not use
+the cloud upload action; a signed-in account is only used when you choose cloud storage or
+cloud conversion actions (for example Word import conversion or Word/office previews, which
+are converted to a temporary PDF by the backend).
+
+When cloud features are used:
+
+- Files are transmitted with cleartext blocked at the app layer; stored files remain until you
+  delete them, then stay in trash for a limited window (server default 30 days, configurable).
+- Temporary upload staging is removed automatically (server default 24 hours, configurable).
+- A browser can be linked at `/app/cloud` with a QR code or PIN approved in the Android app.
+- QR codes can resolve to public URLs served by the backend.
+
+Cloud capacity is provided under plans. Local capture and export remain available without
+cloud use.
+
+| Plan     | Included storage | Simultaneous active sessions |
+|----------|------------------|------------------------------|
+| FREE     | 50 MB            | 1                            |
+| PERSONAL | 1 GB             | Up to 5                      |
+| PLUS     | 5 GB             | Up to 5                      |
+
+Storage defaults and session caps are enforced server-side
+(`storage_limit_bytes` default 52428800, plan constants FREE 50 MB / PERSONAL 1 GB /
+PLUS 5 GB, session cap FREE 1 and up to 5 otherwise). A legacy PREMIUM 10 GB plan label
+exists in backend constants.
+
+## Origin
+
+This project is a fork of [FairScan](https://github.com/pynicolas/FairScan). FairScan provides
+the upstream foundation for the scanning workflow and document-processing stack, including
+automatic document detection, perspective correction, image enhancement, and PDF generation.
+Please see the upstream repository for its history, contributors, documentation, and original
+work.
+
+Nopalito Scan keeps the upstream copyright notices and adds its own for the 2026
+modifications. It is an independent project and is not affiliated with or endorsed by
+FairScan or Pierre-Yves Nicolas.
+
+## Technical stack
+
+The app builds on an Android stack that includes CameraX, LiteRT, OpenCV, Tesseract and
+PDFBox-Android (see Device processing above), plus Room, Retrofit/OkHttp, Credential Manager
+/ Play Services Auth, Play Billing, Firebase Cloud Messaging and Coil for the surrounding
+app functions.
 
 ## Requirements
 
 - Android 8.0 (API level 26) or later
 - A device with a camera
 - Android Studio and a compatible Android SDK for development
+
+A backend URL is required at build time (`API_BASE_URL` via `-PAPI_BASE_URL`, `local.properties`
+or environment; never hardcoded). Release builds require HTTPS.
 
 ## Build
 
@@ -169,7 +167,7 @@ proposed work.
 
 Nopalito Scan is based on [FairScan](https://github.com/pynicolas/FairScan) by its authors and
 contributors. Thank you to the FairScan community for the open-source foundation that makes this
-fork possible.
+fork possible. This acknowledgment does not imply affiliation or endorsement.
 
 ## License
 
@@ -177,3 +175,5 @@ Nopalito Scan is distributed under the GNU General Public License v3.0 or later 
 See [LICENSE](LICENSE) for the complete license text.
 
 This fork retains the licensing obligations and relevant notices from its upstream project.
+The GPLv3+ terms above apply to the Android app source in this repository only; the
+separately operated cloud backend is proprietary and is not covered by this license.
