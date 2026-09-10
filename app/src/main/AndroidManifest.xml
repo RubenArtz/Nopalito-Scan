@@ -25,6 +25,31 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
+    <!-- CAMERA implies camera + autofocus (see <uses-feature> Table 2). The
+         camera entry alone still leaves autofocus as required, filtering
+         fixed-focus cameras, Chromebooks, TVs and similar devices. The app
+         works without autofocus (CameraX fixed-focus fallback). -->
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <!-- QR Wi-Fi connect is optional: location/wifi permissions are only used
+         by that flow. Their implied features (Table 2: ACCESS_FINE_LOCATION
+         -> location.gps, ACCESS_COARSE_LOCATION -> location.network,
+         ACCESS/CHANGE_WIFI_STATE -> wifi) must not filter Wi-Fi-only
+         tablets, Chromebooks or TVs. Runtime permission checks remain. -->
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.network"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Haptic feedback: normal permission, auto-granted; needed for the direct
          Vibrator fallback on API 26-29 (the system haptics path needs none). -->
