@@ -166,6 +166,10 @@ enum class PcLinkSyncStatus { IDLE, UPLOADING, SYNCED, ERROR }
  * lives in [nopalito.app.ui.screens.cloud.data.ErrorCodeMapper].
  *
  * Extends [Exception] so calls can surface failures as [Result.failure].
+ *
+ * Keep the parameterless entries as data object: the IDE "Convert to data
+ * class" refactoring breaks compilation and the singleton identity matched
+ * by exhaustive when in PcLinkRepository and the UI.
  */
 sealed class PcLinkError : Exception() {
     data object IntentNotFound : PcLinkError()

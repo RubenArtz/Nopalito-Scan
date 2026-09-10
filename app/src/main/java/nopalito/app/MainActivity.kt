@@ -28,7 +28,6 @@ import android.content.ClipData
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
@@ -81,6 +80,9 @@ import nopalito.app.i18n.AppLanguage
 import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.LanguageViewModel
 import nopalito.app.push.PushActions
+import nopalito.app.share.PendingSharedImport
+import nopalito.app.share.ShareDocument
+import nopalito.app.share.SharedImportParser
 import nopalito.app.ui.Navigation
 import nopalito.app.ui.Screen
 import nopalito.app.ui.Screen.Main.Camera
@@ -221,6 +223,8 @@ class MainActivity : FragmentActivity() {
             }
         }
         cameraViewModel = viewModels<CameraViewModel> { appContainer.cameraViewModelFactory }.value
+        PendingSharedImport.offer(SharedImportParser.extractUris(intent))
+        consumePendingSharedImport()
 
         val settingsViewModel: SettingsViewModel
                 by viewModels { appContainer.settingsViewModelFactory }
@@ -769,11 +773,25 @@ class MainActivity : FragmentActivity() {
      * Handles cold-start AND restored notifications (taps while the activity is
      * already running / in the background). The pushed action is stored and
      * consumed by the navigation LaunchedEffect once the UI is composed.
+     * singleTask delivers shared intents to an existing instance through this
+     * override instead of creating a second activity.
      */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         pushActionFromIntent(intent)?.let { pendingPush.value = it }
+        PendingSharedImport.offer(SharedImportParser.extractUris(intent))
+        consumePendingSharedImport()
+    }
+
+    // Routes staged share/view intents into CameraViewModel.importPhotos, which
+    // resolves each content URI through ContentResolver (see SharedImportCache).
+    private fun consumePendingSharedImport() {
+        if (!::cameraViewModel.isInitialized || !::viewModel.isInitialized) return
+        val uris = PendingSharedImport.take() ?: return
+        viewModel.navigateTo(Camera)
+        cameraViewModel.importPhotos(uris)
+        Log.d("Share", "Importing ${uris.size} shared file(s) into Camera")
     }
 
     /** Notification deep-link data carried by a tap. */
@@ -970,34 +988,15 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    @SuppressLint("QueryPermissionsNeeded")
     private fun share(result: ExportResult) {
         if (result.files.isEmpty()) return
-
-        val uris = result.files.map(::uriForFile)
-        val intent = Intent().apply {
-            action = if (uris.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE
-            type = result.format.mimeType
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
-            if (uris.size == 1) {
-                putExtra(Intent.EXTRA_STREAM, uris[0])
-            } else {
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-            }
-        }
-        val chooser = Intent.createChooser(intent, getString(R.string.share_document))
-
-        val resolveInfos =
-            packageManager.queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY)
-        for (info in resolveInfos) {
-            val pkg = info.activityInfo.packageName
-            for (uri in uris) {
-                grantUriPermission(pkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-        }
-
-        startActivity(chooser)
+        val shared = ShareDocument.shareFiles(
+            this,
+            result.files,
+            result.format.mimeType,
+            getString(R.string.share_document),
+        )
+        if (!shared) showToast(getString(R.string.error_no_app))
     }
 
     private fun sendActivityResult(result: ExportResult?) {
@@ -1105,21 +1104,10 @@ class MainActivity : FragmentActivity() {
     private fun shareCompressedResults(results: List<CompressedResult>) {
         val uris = results.mapNotNull { it.shareUri }
         if (uris.isEmpty()) return
-        val intent = if (uris.size == 1) {
-            Intent(Intent.ACTION_SEND).apply {
-                type = mimeForCompressed(results.first().fileName)
-                putExtra(Intent.EXTRA_STREAM, uris[0])
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
-            }
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "*/*"
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+        val mime = if (uris.size == 1) mimeForCompressed(results.first().fileName) else "*/*"
+        if (!ShareDocument.shareUris(this, uris, mime, getString(R.string.share_document))) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openCompressedResults(results: List<CompressedResult>) {
@@ -1151,21 +1139,10 @@ class MainActivity : FragmentActivity() {
     private fun shareProtectedResults(results: List<PasswordProtectResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = if (uris.size == 1) {
-            Intent(Intent.ACTION_SEND).apply {
-                type = mimeForCompressed(results.first().fileName)
-                putExtra(Intent.EXTRA_STREAM, uris[0])
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
-            }
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "*/*"
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+        val mime = if (uris.size == 1) mimeForCompressed(results.first().fileName) else "*/*"
+        if (!ShareDocument.shareUris(this, uris, mime, getString(R.string.share_document))) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openProtectedResults(results: List<PasswordProtectResult>) {
@@ -1188,21 +1165,10 @@ class MainActivity : FragmentActivity() {
     private fun shareConvertedResults(results: List<ConvertResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = if (uris.size == 1) {
-            Intent(Intent.ACTION_SEND).apply {
-                type = mimeForCompressed(results.first().fileName)
-                putExtra(Intent.EXTRA_STREAM, uris[0])
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
-            }
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "*/*"
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+        val mime = if (uris.size == 1) mimeForCompressed(results.first().fileName) else "*/*"
+        if (!ShareDocument.shareUris(this, uris, mime, getString(R.string.share_document))) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openConvertedResults(results: List<ConvertResult>) {
@@ -1225,21 +1191,10 @@ class MainActivity : FragmentActivity() {
     private fun shareExtractResults(results: List<ExtractResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = if (uris.size == 1) {
-            Intent(Intent.ACTION_SEND).apply {
-                type = mimeForCompressed(results.first().fileName)
-                putExtra(Intent.EXTRA_STREAM, uris[0])
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
-            }
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "*/*"
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+        val mime = if (uris.size == 1) mimeForCompressed(results.first().fileName) else "*/*"
+        if (!ShareDocument.shareUris(this, uris, mime, getString(R.string.share_document))) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openExtractResults(results: List<ExtractResult>) {
@@ -1262,13 +1217,15 @@ class MainActivity : FragmentActivity() {
     private fun shareReorderResults(results: List<ReorderResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeForCompressed(results.first().fileName)
-            putExtra(Intent.EXTRA_STREAM, uris[0])
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
+        if (!ShareDocument.shareUris(
+                this,
+                uris,
+                mimeForCompressed(results.first().fileName),
+                getString(R.string.share_document),
+            )
+        ) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openReorderResults(results: List<ReorderResult>) {
@@ -1280,13 +1237,15 @@ class MainActivity : FragmentActivity() {
     private fun shareDeletePagesResults(results: List<DeletePagesResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeForCompressed(results.first().fileName)
-            putExtra(Intent.EXTRA_STREAM, uris[0])
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
+        if (!ShareDocument.shareUris(
+                this,
+                uris,
+                mimeForCompressed(results.first().fileName),
+                getString(R.string.share_document),
+            )
+        ) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openDeletePagesResults(results: List<DeletePagesResult>) {
@@ -1298,13 +1257,15 @@ class MainActivity : FragmentActivity() {
     private fun shareOrganizerResults(results: List<OrganizerResult>) {
         val uris = results.mapNotNull { it.outputUri }
         if (uris.isEmpty()) return
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = mimeForCompressed(results.first().fileName)
-            putExtra(Intent.EXTRA_STREAM, uris[0])
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            clipData = ClipData.newUri(contentResolver, "NopalitoScan", uris[0])
+        if (!ShareDocument.shareUris(
+                this,
+                uris,
+                mimeForCompressed(results.first().fileName),
+                getString(R.string.share_document),
+            )
+        ) {
+            showToast(getString(R.string.error_no_app))
         }
-        startActivity(Intent.createChooser(intent, getString(R.string.share_document)))
     }
 
     private fun openOrganizerResults(results: List<OrganizerResult>) {

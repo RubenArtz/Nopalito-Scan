@@ -88,6 +88,10 @@ import javax.crypto.spec.GCMParameterSpec
 @Suppress("ExceptionObjectExceptionShouldNotBeObject")
 sealed class BiometricTokenError : Throwable() {
     /**
+     * Keep the parameterless entries as data object: the IDE "Convert to data
+     * class" refactoring breaks compilation and the singleton identity matched
+     * by exhaustive when in BiometricAuthManager and the tests.
+     *
      * Throwable is Serializable, so deserializing a data object would create a
      * fresh instance and break singleton identity (code matches these with
      * `when` and passes them through `Result`). They are never serialized in
