@@ -129,6 +129,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     private val settingsRepository = appContainer.settingsRepository
     private val imageLoader = appContainer.imageLoader
     private val logger = appContainer.logger
+    private val analyticsTracker = appContainer.analyticsTracker
     private val applicationContext = appContainer.applicationContext
     private val cloudConversionRepository = CloudConversionRepository(applicationContext)
     private val statsRepository = appContainer.statsRepository
@@ -517,6 +518,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
             viewModelScope.launch {
                 _events.emit(CameraEvent.ImageCaptured(current.capturedPage))
                 runCatching { statsRepository.logPhotoCaptured(source = "camera") }
+                analyticsTracker.scanCompleted(source = "camera", pages = 1)
             }
         }
         _captureState.value = CaptureState.Idle

@@ -22,16 +22,38 @@
 package nopalito.app.data
 
 import android.util.Log
+import nopalito.app.diagnostics.CrashReporter
+import nopalito.app.diagnostics.FirebaseCrashReporter
+import nopalito.app.diagnostics.TechnicalException
 
 fun interface Logger {
     fun e(tag: String, message: String, throwable: Throwable)
 }
 
+/**
+ * Reports a failure described only by text. Builds a technical exception so
+ * the issue still shows up grouped in Crashlytics.
+ */
+fun Logger.e(tag: String, message: String) {
+    e(tag, message, TechnicalException(message))
+}
+
 class FileLogger(
-    private val logRepository: LogRepository
+    private val logRepository: LogRepository,
+    private val crashReporter: CrashReporter = FirebaseCrashReporter
 ) : Logger {
     override fun e(tag: String, message: String, throwable: Throwable) {
         Log.e(tag, message, throwable)
         logRepository.log(tag, message, throwable)
+        // Best-effort non-fatal report: a Firebase failure must never break
+        // the operation that is already handling its own error.
+        try {
+            crashReporter.report(tag, message, throwable)
+        } catch (_: Exception) {
+        }
+    }
+
+    fun e(tag: String, message: String) {
+        e(tag, message, TechnicalException(message))
     }
 }

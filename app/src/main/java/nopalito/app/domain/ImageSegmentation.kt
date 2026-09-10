@@ -53,7 +53,16 @@ class ImageSegmentationService(private val context: Context, private val logger:
     private var interpreter: Interpreter? = null
     private val inferenceLock = Mutex()
 
+    /**
+     * Loads the LiteRT segmentation model. Never throws: on devices where the
+     * native runtime or the model asset is unavailable (ABI mismatch, old OS,
+     * corrupted install) the service stays uninitialized and every caller
+     * already treats a null interpreter as "no segmentation". Throwing here
+     * used to crash the app on every cold start for those devices, before any
+     * UI — and with Crashlytics gated on onboarding consent, without a trace.
+     */
     fun initialize() {
+        if (interpreter != null) return
         interpreter = try {
             val litertBuffer =
                 FileUtil.loadMappedFile(context, "fairscan-segmentation-model.tflite")
@@ -62,10 +71,9 @@ class ImageSegmentationService(private val context: Context, private val logger:
                 numThreads = 2
             }
             Interpreter(litertBuffer, options)
-        } catch (e: Error) {
-            // That should not happen: let the app crash so that we know about it
-            logger.e(TAG, "Failed to load LiteRT model", e)
-            throw IllegalStateException("Failed to load LiteRT model", e)
+        } catch (e: Throwable) {
+            logger.e(TAG, "LiteRT unavailable on this device; segmentation disabled", e)
+            null
         }
     }
 

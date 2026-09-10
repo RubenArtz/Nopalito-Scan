@@ -209,6 +209,7 @@ class MainActivity : FragmentActivity() {
                     sessionViewModel.overlayRepository,
                     appContainer.logger,
                     extractTextUseCase,
+                    appContainer.analyticsTracker,
                 )
             }
         }.value
@@ -844,6 +845,9 @@ class MainActivity : FragmentActivity() {
     private fun finishOnboarding(language: AppLanguage) {
         lifecycleScope.launch {
             appContainer.languageRepository.completeSelection(language)
+            // Single writer for the Firebase SDK state lives in AppContainer:
+            // persisting the acceptance here is enough, its consent collector
+            // derives and applies the same decision reactively.
             appContainer.legalConsentRepository.accept(Instant.now().toString())
             applyLocaleAndRecreate(language)
         }
@@ -1332,14 +1336,23 @@ class MainActivity : FragmentActivity() {
             else -> "application/octet-stream"
         }
 
+    /**
+     * Loads the native/document libraries. A missing or incompatible native
+     * lib on a specific device (ABI, OS version) throws [UnsatisfiedLinkError]
+     * — an [Error], not an [Exception] — so each init is guarded separately:
+     * the affected feature degrades instead of crash-looping on every open.
+     */
     private fun initLibraries() {
-        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
-
-        if (!OpenCVLoader.initLocal()) {
-            Log.e("OpenCV", "Initialization failed")
-        } else {
-            Log.d("OpenCV", "Initialization successful")
-        }
+        runCatching {
+            com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
+        }.onFailure { Log.w("MainActivity", "PDFBox init failed, degrading", it) }
+        runCatching {
+            if (!OpenCVLoader.initLocal()) {
+                Log.e("OpenCV", "Initialization failed")
+            } else {
+                Log.d("OpenCV", "Initialization successful")
+            }
+        }.onFailure { Log.w("MainActivity", "OpenCV init failed, degrading", it) }
     }
 
     private fun logTool(tool: String) {

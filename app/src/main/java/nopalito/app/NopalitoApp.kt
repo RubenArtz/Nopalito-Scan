@@ -32,7 +32,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import nopalito.app.data.FileLogger
@@ -43,12 +45,17 @@ import nopalito.app.data.OcrLanguageRepository
 import nopalito.app.data.PermissionsRepository
 import nopalito.app.data.PermissionsViewModel
 import nopalito.app.data.stats.StatsRepository
+import nopalito.app.diagnostics.AnalyticsTracker
+import nopalito.app.diagnostics.CrashReporter
+import nopalito.app.diagnostics.FirebaseConsentManager
+import nopalito.app.diagnostics.FirebaseCrashReporter
 import nopalito.app.domain.ImageSegmentationService
 import nopalito.app.domain.OcrService
 import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.LanguageRepository
 import nopalito.app.i18n.LanguageViewModel
 import nopalito.app.i18n.LegalConsentRepository
+import nopalito.app.i18n.isComplete
 import nopalito.app.i18n.LocaleNormalizer
 import nopalito.app.platform.AndroidDocxWriter
 import nopalito.app.platform.AndroidImageLoader
@@ -81,10 +88,17 @@ class NopalitoApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Fatal crash reports must be armed before anything else can fail:
+        // a startup crash with collection still OFF would never reach the
+        // console (the consent-gated toggle below is never reached).
+        FirebaseConsentManager.enableCrashReporting()
         appContainer = AppContainer(this)
-        appContainer.cleanOrphanSessions()
+        runCatching { appContainer.cleanOrphanSessions() }
+        // A corrupt DataStore must never brick the app: fall back to detection.
         // Rebase the locale for every Activity before any UI is drawn.
-        AppLocaleOverride.locale = appContainer.languageRepository.initialLanguage().locale
+        AppLocaleOverride.locale = runCatching {
+            appContainer.languageRepository.initialLanguage()
+        }.getOrElse { nopalito.app.i18n.AppLanguage.detect() }.locale
     }
 }
 
@@ -111,11 +125,26 @@ class AppContainer(private val context: Context) {
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             AndroidPdfWriter(ocrService, context.assets),
             AndroidDocxWriter(ocrService),
-            statsRepository = statsRepository
+            statsRepository = statsRepository,
+            analyticsTracker = analyticsTracker
         )
     }
     val logRepository = LogRepository(File(context.filesDir, "logs.txt"))
-    val logger = FileLogger(logRepository)
+
+    /**
+     * Crash-reporting backend shared by the central logger. Firebase-backed
+     * in production; replace with a fake in tests via
+     * `FileLogger(logRepository, fake)`.
+     */
+    val crashReporter: CrashReporter = FirebaseCrashReporter
+    val logger = FileLogger(logRepository, crashReporter)
+
+    /**
+     * Central Analytics gateway. All event methods are crash-safe no-ops when
+     * the SDK is unavailable; upload itself is gated by the legal consent
+     * below (collection defaults to OFF in the manifest).
+     */
+    val analyticsTracker: AnalyticsTracker by lazy { AnalyticsTracker(context) }
     val imageSegmentationService = ImageSegmentationService(context, logger)
     val imageLoader = AndroidImageLoader(context.contentResolver)
     val settingsRepository = SettingsRepository(context, dataStore)
@@ -160,9 +189,30 @@ class AppContainer(private val context: Context) {
     val toolTransfer = ToolTransfer()
 
     init {
-        scope.launch { imageSegmentationService.initialize() }
-        scope.launch { ocrService.initialize() }
-        scope.launch { installDefaultOcrLanguages() }
+        // Background warm-up: a failing native runtime, model asset or DataStore
+        // must degrade the feature, never crash the process. An uncaught
+        // exception in any of these coroutines kills the app on every start.
+        scope.launch { runCatching { imageSegmentationService.initialize() } }
+        scope.launch { runCatching { ocrService.initialize() } }
+        scope.launch { runCatching { installDefaultOcrLanguages() } }
+
+        // Firebase Analytics follows the legal consent (terms + privacy).
+        // The manifest disables Analytics upload by default, so no usage data
+        // leaves the device before the onboarding acceptance; a legal version
+        // bump invalidating the acceptance disables it again until the user
+        // re-accepts. Fatal crash reports stay always ON (see
+        // FirebaseConsentManager): gating them on consent made startup crashes
+        // invisible in the console — precisely when they matter most.
+        scope.launch {
+            runCatching {
+                legalConsentRepository.consent
+                    .map { it.isComplete() }
+                    .distinctUntilChanged()
+                    .collect { granted ->
+                        FirebaseConsentManager.apply(context, granted)
+                    }
+            }
+        }
 
         // Billing entitlement (Fase 4): single global coordinator
         // ProcessLifecycleOwner for foreground, CloudSessionManager for session restore/login/logout/account switch
@@ -294,6 +344,10 @@ class AppContainer(private val context: Context) {
                     val result = repo.updateUserLanguage(code)
                     if (result.isFailure) {
                         val err = result.exceptionOrNull()
+                        analyticsTracker.syncFailed(
+                            operation = "language_sync",
+                            errorKind = err?.javaClass?.simpleName ?: "unknown"
+                        )
                         if (err != null) {
                             logger.e("LanguageSync", "Startup language sync failed for $code", err)
                         } else {
@@ -308,6 +362,10 @@ class AppContainer(private val context: Context) {
                     true
                 }
                 if (completed == null) {
+                    analyticsTracker.syncFailed(
+                        operation = "language_sync",
+                        errorKind = "timeout"
+                    )
                     android.util.Log.w(
                         "LanguageSync",
                         "Startup sync timed out (domain not responding), skipping"
@@ -316,6 +374,10 @@ class AppContainer(private val context: Context) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                analyticsTracker.syncFailed(
+                    operation = "language_sync",
+                    errorKind = e.javaClass.simpleName
+                )
                 logger.e("LanguageSync", "Startup language sync error", e)
             }
         }

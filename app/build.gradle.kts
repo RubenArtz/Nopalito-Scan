@@ -27,6 +27,7 @@ plugins {
     alias(libs.plugins.aboutLibrariesAndroid)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.ksp)
 }
 
@@ -69,8 +70,8 @@ android {
         // https://ai.google.dev/edge/litert/android/index
         minSdk = 26
         targetSdk = 36
-        versionCode = 31 // increment by 3 because of ABI-specific APKs
-        versionName = "1.0.14"
+        versionCode = 37
+        versionName = "1.0.16"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -254,6 +255,8 @@ dependencies {
     // in this app: the server-side service account is backend-only.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
 
     // Profile avatar: Coil for remote avatar loading (memory + disk cache)
     implementation(libs.coil.compose)

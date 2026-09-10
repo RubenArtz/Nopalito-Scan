@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.data.stats.StatsRepository
+import nopalito.app.diagnostics.AnalyticsTracker
 import nopalito.app.domain.PageToExport
 import java.io.File
 import java.io.FileOutputStream
@@ -70,6 +71,7 @@ class FileManager(
     private val docxWriter: DocxWriter,
     private val statsRepository: StatsRepository? = null,
     private val statsScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) {
     companion object {
         fun addPdfExtensionIfMissing(fileName: String): String {
@@ -103,6 +105,11 @@ class FileManager(
         }
         val sizeBytes = file.length()
         logScanCreatedAsync(pages.size, sizeBytes, disableOcr)
+        analyticsTracker?.documentCreated(
+            pageCount = pages.size,
+            hasOcr = !disableOcr,
+            format = "pdf"
+        )
         return GeneratedPdf(file, sizeBytes, pages.size)
     }
 
@@ -122,6 +129,11 @@ class FileManager(
         }
         val sizeBytes = file.length()
         logScanCreatedAsync(pages.size, sizeBytes, disableOcr)
+        analyticsTracker?.documentCreated(
+            pageCount = pages.size,
+            hasOcr = !disableOcr,
+            format = "docx"
+        )
         return GeneratedDocx(file, sizeBytes, pages.size)
     }
 

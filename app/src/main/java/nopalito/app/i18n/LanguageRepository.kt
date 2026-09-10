@@ -77,11 +77,16 @@ class LanguageRepository(
     /**
      * Synchronous first read used only during app startup to rebase the Activity
      * locale before any UI is shown. Fallbacks: a persisted-but-unsupported code
-     * → English; no configured selection yet → auto-detection.
+     * → English; no configured selection yet → auto-detection; an unreadable
+     * store (corruption must never crash `Application.onCreate`) → detection.
      */
     fun initialLanguage(): AppLanguage {
-        val prefs = runBlocking { dataStore.data.first() }
-        if (prefs[IS_CONFIGURED] != true) return AppLanguage.detect()
-        return AppLanguage.fromCode(prefs[SELECTED_LANGUAGE_CODE])
+        return try {
+            val prefs = runBlocking { dataStore.data.first() }
+            if (prefs[IS_CONFIGURED] != true) return AppLanguage.detect()
+            AppLanguage.fromCode(prefs[SELECTED_LANGUAGE_CODE])
+        } catch (_: Exception) {
+            AppLanguage.detect()
+        }
     }
 }

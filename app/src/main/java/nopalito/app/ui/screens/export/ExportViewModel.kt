@@ -117,6 +117,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
     private val settingsRepository = container.settingsRepository
     private val ocrService = container.ocrService
     private val logger = container.logger
+    private val analyticsTracker = container.analyticsTracker
     private val historyRepository = container.historyRepository
     private val statsRepository = container.statsRepository
     private val cloudRepository = CloudRepository(context)
@@ -585,6 +586,22 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
     }
 
     /**
+     * Closed vocabularies for Analytics: format and page count derived from
+     * the export result. No file names, paths or user content leave the device.
+     */
+    private fun exportFormatName(result: ExportResult): String = when (result) {
+        is ExportResult.Pdf -> "pdf"
+        is ExportResult.Word -> "docx"
+        is ExportResult.Jpeg -> "jpeg"
+    }
+
+    private fun exportPageCount(result: ExportResult): Int = when (result) {
+        is ExportResult.Pdf -> result.pageCount
+        is ExportResult.Word -> result.pageCount
+        is ExportResult.Jpeg -> result.files.size
+    }
+
+    /**
      * Checks if the user has an active cloud session and updates isCloudAuthAvailable.
      * Self-heals a stuck background check: if the startup validation failed
      * (e.g. launched offline) the manager stays in Error even though valid
@@ -785,6 +802,11 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                 val result = applyRenaming()
                 recordExportInHistory()
                 runCatching { statsRepository.logScanShared() }
+                analyticsTracker.documentExported(
+                    format = exportFormatName(result),
+                    pageCount = exportPageCount(result),
+                    destination = "share"
+                )
                 _events.emit(ExportEvent.Share(result))
                 _uiState.update { it.copy(hasShared = true) }
             } catch (e: Exception) {
@@ -824,6 +846,14 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                     save(context, saveDir, exportFormat)
                 }
                 recordExportInHistory()
+                val savedResult = _uiState.value.result
+                if (savedResult != null) {
+                    analyticsTracker.documentExported(
+                        format = exportFormatName(savedResult),
+                        pageCount = exportPageCount(savedResult),
+                        destination = if (saveDir != null) "custom_folder" else "downloads"
+                    )
+                }
                 // Cloud upload only happens with the user's explicit opt-in
                 // (toggle enabled before saving). The local file is kept and
                 // the export succeeds regardless; uploadToCloud() re-checks

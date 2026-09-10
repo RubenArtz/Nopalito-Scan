@@ -54,6 +54,7 @@ import kotlinx.coroutines.withContext
 import nopalito.app.data.ImageRepository
 import nopalito.app.data.Logger
 import nopalito.app.data.OverlayRepository
+import nopalito.app.diagnostics.AnalyticsTracker
 import nopalito.app.domain.CapturedPage
 import nopalito.app.domain.Rotation
 import nopalito.app.domain.ScanPage
@@ -81,6 +82,7 @@ class MainViewModel(
     private val overlayRepository: OverlayRepository,
     private val logger: Logger,
     private val extractTextUseCase: ExtractDocumentTextUseCase,
+    private val analyticsTracker: AnalyticsTracker? = null,
 ) : ViewModel() {
 
     private val _navigationState = MutableStateFlow<NavigationState?>(null)
@@ -587,11 +589,19 @@ class MainViewModel(
             val bitmap = withContext(Dispatchers.IO) {
                 runCatching { imageRepository.jpegBytes(page.key())?.toBitmap() }.getOrNull()
             }
-            _textExtraction.value = if (bitmap == null) {
+            val result = if (bitmap == null) {
                 TextExtractionState.Error("No page bitmap available for OCR")
             } else {
                 extractTextUseCase(bitmap)
             }
+            if (result is TextExtractionState.Success) {
+                // Count only, never content: OCR text stays on the device.
+                val words = result.document.fullText
+                    .split(Regex("""\s+"""))
+                    .count { it.isNotBlank() }
+                analyticsTracker?.ocrCompleted(wordCount = words)
+            }
+            _textExtraction.value = result
         }
     }
 

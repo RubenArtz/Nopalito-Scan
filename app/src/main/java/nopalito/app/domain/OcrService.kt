@@ -54,16 +54,19 @@ class OcrService(
 
     fun initialize() {
         scope.launch {
-            ocrLanguageRepository.enabledLanguages.collect { _ -> reinitialize() }
+            runCatching {
+                ocrLanguageRepository.enabledLanguages.collect { _ -> reinitialize() }
+            }
         }
     }
 
     private suspend fun reinitialize() {
         mutex.withLock {
-            tess?.recycle()
+            runCatching { tess?.recycle() }
             tess = null
 
-            val raw = ocrLanguageRepository.buildTesseractLanguageString()
+            val raw = runCatching { ocrLanguageRepository.buildTesseractLanguageString() }
+                .getOrDefault("")
             // Safety cap: previous WiFi bug could enable 100+ languages
             // (afr+amh+ara+...), making Tesseract load dozens of models and
             // OCR 4 min per page. Cap to max 3 languages, prioritizing eng/spa.
@@ -85,10 +88,15 @@ class OcrService(
             }
             if (languageString.isEmpty()) return
 
-            val dataPath = ocrLanguageRepository.tessdataDir.parent!!
+            val dataPath = runCatching { ocrLanguageRepository.tessdataDir.parent!! }
+                .getOrNull() ?: return
+            // Native Tesseract init can throw on devices with an incompatible
+            // .so: OCR stays disabled instead of crashing the process.
             val newTess = TessBaseAPI()
-            if (!newTess.init(dataPath, languageString)) {
-                newTess.recycle()
+            val ready = runCatching { newTess.init(dataPath, languageString) }
+                .getOrDefault(false)
+            if (!ready) {
+                runCatching { newTess.recycle() }
                 return
             }
             // Reduce hallucinations on nearly-blank pages:

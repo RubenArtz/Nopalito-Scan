@@ -36,7 +36,8 @@ okhttp = "5.5.0"
 securityCrypto = "1.1.0"
 biometric = "1.1.0"
 robolectric = "4.16.1"
-firebaseBom = "34.18.0"
+firebaseBom = "34.19.0"
+firebaseCrashlytics = "3.0.8"
 googleServices = "4.5.0"
 billing = "9.1.0"
 playServicesAuth = "22.0.0"
@@ -99,6 +100,8 @@ okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3"
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 billing-client = { group = "com.android.billingclient", name = "billing", version.ref = "billing" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
@@ -116,4 +119,5 @@ license = { id = "com.github.hierynomus.license", version.ref = "license" }
 aboutLibrariesAndroid = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutLibraries" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -92,6 +92,11 @@ class SubscriptionPlansViewModel(application: Application) : AndroidViewModel(ap
     private val _uiState = MutableStateFlow(SubscriptionPlansUiState())
     val uiState: StateFlow<SubscriptionPlansUiState> = _uiState
 
+    // Business analytics only (plan id + success); never purchase tokens or ids.
+    private val analyticsTracker by lazy {
+        nopalito.app.diagnostics.AnalyticsTracker(getApplication<Application>().applicationContext)
+    }
+
     internal var billingManager: BillingManager
         private set
     internal var repository: BillingRepository
@@ -477,6 +482,8 @@ class SubscriptionPlansViewModel(application: Application) : AndroidViewModel(ap
                             blocking = false
                         )
                     )
+                    // Backend-verified purchase only: product/plan id, no tokens.
+                    analyticsTracker.subscriptionStarted(status?.plan ?: "unknown")
                     // Notify global bus as signal only (no plan payload)
                     try {
                         nopalito.app.billing.BillingSyncBus.notifyPlanChanged()
