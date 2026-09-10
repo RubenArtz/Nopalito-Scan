@@ -138,7 +138,7 @@ class AppContainer(private val context: Context) {
             context = context.applicationContext,
             repository = nopalito.app.billing.BillingRepository(context.applicationContext),
             scope = scope,
-            tokenProvider = nopalito.app.ui.screens.cloud.network.CloudApiClient.getInstance(context).tokenProviderInstance
+            tokenProvider = CloudApiClient.getInstance(context).tokenProviderInstance
         )
     }
 

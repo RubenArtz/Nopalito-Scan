@@ -164,7 +164,7 @@ object DeletePagesEngine {
         visited: MutableSet<COSBase>,
         signals: PageContentSignals
     ) {
-        if (!visited.add(stream.getCOSObject())) return
+        if (!visited.add(stream.cosObject)) return
         val tokens = runCatching {
             stream.createInputStream().use { input ->
                 val bytes = input.readBytes()

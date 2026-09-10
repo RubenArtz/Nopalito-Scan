@@ -136,11 +136,11 @@ class OcrService(
             if (ocrBitmap.isRecycled) return listOf()
             val needsRecycle = ocrBitmap !== bitmap
             val effectivePsm = pageSegMode ?: TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK
-            tess.setPageSegMode(effectivePsm)
+            tess.pageSegMode = effectivePsm
             try {
                 val textBoxes = mutableListOf<OcrTextBox>()
                 tess.setImage(ocrBitmap)
-                tess.getUTF8Text() // Trigger text recognition
+                tess.utF8Text // Trigger text recognition
                 // Whole-page gate: when even the average is unreadable, all is noise.
                 // (tesseract4android 4.9.0: meanConfidence(), not meanTextConf).
                 if (tess.meanConfidence() < 55) return listOf()
@@ -188,7 +188,7 @@ class OcrService(
             } finally {
                 // Restore SINGLE_BLOCK (our default), not AUTO, so batch
                 // callers (PDF/DOCX) stay deterministic.
-                tess.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK)
+                tess.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK
                 if (needsRecycle && !ocrBitmap.isRecycled) ocrBitmap.recycle()
             }
         }

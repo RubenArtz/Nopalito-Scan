@@ -173,7 +173,7 @@ object TranslationHelper {
             val code = identifier.identifyLanguage(text).await()
             if (code == "und") detectSourceLanguageHeuristic(text) else code
         } catch (e: Exception) {
-            android.util.Log.w(TAG, "Language identification failed: ${e.message}")
+            Log.w(TAG, "Language identification failed: ${e.message}")
             detectSourceLanguageHeuristic(text)
         }
     }

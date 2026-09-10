@@ -188,7 +188,11 @@ class MainViewModel(
                             try {
                                 imageRepository.previewBase(it.id)?.toBitmap()
                             } catch (e: Exception) {
-                                logger.e("MainViewModel", "Failed to load preview base for ${it.id}", e)
+                                logger.e(
+                                    "MainViewModel",
+                                    "Failed to load preview base for ${it.id}",
+                                    e
+                                )
                                 null
                             }
                         }

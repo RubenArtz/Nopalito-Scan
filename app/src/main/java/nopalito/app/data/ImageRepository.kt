@@ -96,6 +96,7 @@ class ImageRepository(
     private val imageCache = createLruCache<PageViewKey, Deferred<Jpeg?>>(maxEntries = 50)
     private val thumbnailCache =
         createLruCache<ThumbnailCacheKey, Deferred<Jpeg?>>(maxEntries = 1000)
+
     /**
      * Neutral ORIGINAL renderings (thumbnail-sized) used as the base for the
      * filter-strip previews. Keyed by page + quad version; never written to

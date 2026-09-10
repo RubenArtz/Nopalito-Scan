@@ -810,7 +810,7 @@ fun SubscriptionPlansDialog(
                                     )
                                 } else {
                                     Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.Refresh,
+                                        imageVector = Icons.Default.Refresh,
                                         contentDescription = stringResource(R.string.billing_restore_purchases),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)

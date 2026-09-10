@@ -82,9 +82,7 @@ sealed interface BiometricRequest {
 
             other as Encrypt
 
-            if (!tier2.contentEquals(other.tier2)) return false
-
-            return true
+            return tier2.contentEquals(other.tier2)
         }
 
         override fun hashCode(): Int {

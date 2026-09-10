@@ -129,7 +129,7 @@ class AuthInterceptor(
 
         // Add Authorization if we have an access token
         val accessToken = tokenProvider.getAccessToken()
-        android.util.Log.d(
+        Log.d(
             "AuthInterceptor",
             "Token present: ${accessToken != null}, path: ${originalRequest.url.encodedPath}"
         )
@@ -138,7 +138,7 @@ class AuthInterceptor(
                 .addHeader("Authorization", "Bearer $accessToken")
                 .build()
         } else {
-            android.util.Log.w(
+            Log.w(
                 "AuthInterceptor",
                 "NO TOKEN - request without Authorization: ${originalRequest.url.encodedPath}"
             )

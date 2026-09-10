@@ -259,7 +259,7 @@ class CloudStorageViewModel(
                 val mgr = nopalito.app.billing.BillingEntitlementManager.getInstance(ctx)
                     ?: return@launch
                 mgr.entitlementFlow.collect { ent ->
-                    val usage = nopalito.app.ui.screens.cloud.model.StorageUsage(
+                    val usage = StorageUsage(
                         plan = ent.plan,
                         limitBytes = ent.storageLimitBytes,
                         usedBytes = ent.storageUsedBytes ?: _state.value.usage?.usedBytes ?: 0L,

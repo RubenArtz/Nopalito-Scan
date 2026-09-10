@@ -105,8 +105,7 @@ class I18nIntegrationTest {
         defaultRes: Int = R.string.error_unknown,
     ): Pair<ApiException, String> {
         val e = ErrorParser.parse(statusCode, rawBody).toApiException { "status-fallback" }
-        val resolved = CloudErrorPresenter.resolve(e, defaultRes)
-        val message = when (resolved) {
+        val message = when (val resolved = CloudErrorPresenter.resolve(e, defaultRes)) {
             is CloudErrorPresenter.Resolved.Legacy -> resolved.text
             is CloudErrorPresenter.Resolved.Res -> localizedFor(dir, resolved.resId, e)
         }

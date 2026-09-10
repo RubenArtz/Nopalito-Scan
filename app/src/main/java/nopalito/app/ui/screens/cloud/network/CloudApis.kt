@@ -129,7 +129,7 @@ interface AuthApi {
     @POST("api/auth/session-recovery/request")
     suspend fun requestSessionRecovery(
         @Body request: nopalito.app.ui.screens.cloud.model.SessionRecoveryRequest
-    ): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.AuthCodeResponseData>>
+    ): Response<ApiResponse<AuthCodeResponseData>>
 
     @POST("api/auth/session-recovery/verify")
     suspend fun verifySessionRecovery(

@@ -695,10 +695,10 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
             val folderName = bundle.folderName
                 ?: state.filename.takeIf { it.isNotBlank() }
                 ?: "Export ${
-                    java.text.SimpleDateFormat(
+                    SimpleDateFormat(
                         "yyyy-MM-dd HH:mm",
-                        java.util.Locale.getDefault()
-                    ).format(java.util.Date())
+                        Locale.getDefault()
+                    ).format(Date())
                 }"
             var uploadedCount = 0
             var lastError: String? = null

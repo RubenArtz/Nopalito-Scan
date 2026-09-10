@@ -890,7 +890,7 @@ object CompressionEngine {
                 val xObject = runCatching { resources.getXObject(name) }.getOrNull() ?: continue
                 if (xObject !is PDImageXObject || xObject.isStencil) continue
                 try {
-                    val bitmap = xObject.getImage()
+                    val bitmap = xObject.image
                     val bytes = ByteArrayOutputStream().also { bos ->
                         bitmap.compress(Bitmap.CompressFormat.JPEG, level.jpegQuality, bos)
                     }.toByteArray()

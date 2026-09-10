@@ -901,7 +901,7 @@ private fun LinkGoogleCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val app = context.applicationContext as android.app.Application
+    val app = context.applicationContext as Application
     val factory = androidx.compose.runtime.remember { CloudViewModelFactory(app) }
     val linkVm: AccountLinkGoogleViewModel = viewModel(factory = factory)
     val linkState by linkVm.state.collectAsState()

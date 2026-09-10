@@ -507,7 +507,7 @@ private fun HelpStepRow(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(28.dp)
         ) {
-            androidx.compose.foundation.layout.Box(
+            Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize()
             ) {

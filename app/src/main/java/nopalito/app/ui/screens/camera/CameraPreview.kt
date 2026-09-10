@@ -559,7 +559,7 @@ fun AnalysisOverlay(
                 ).toOffset()
             }
 
-            fun armOffset(p: nopalito.imageprocessing.Point) =
+            fun armOffset(p: Point) =
                 mapAnalysisPointToPreview(
                     point = p,
                     maskSize = maskSize,

@@ -221,7 +221,7 @@ class BillingEntitlementManagerFinalAuditTest {
         // No crash, no loop
         assertTrue(true)
         // Also verify BillingSyncBus is signal only
-        nopalito.app.billing.BillingSyncBus.notifyPlanChanged()
+        BillingSyncBus.notifyPlanChanged()
         // Collecting bus should not trigger repository
         var calls = 0
         coEvery { repository.fetchBillingStatus() } answers {

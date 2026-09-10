@@ -456,7 +456,7 @@ class CloudRepository(private val context: Context) {
      * Session recovery — request code (enumeration-safe, unauthenticated).
      * Always returns success envelope; email is normalized by the backend.
      */
-    suspend fun requestSessionRecovery(email: String): Result<nopalito.app.ui.screens.cloud.model.AuthCodeResponseData> {
+    suspend fun requestSessionRecovery(email: String): Result<AuthCodeResponseData> {
         return safeApiCall {
             authApi.requestSessionRecovery(
                 nopalito.app.ui.screens.cloud.model.SessionRecoveryRequest(

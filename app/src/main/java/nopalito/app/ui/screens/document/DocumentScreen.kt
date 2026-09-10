@@ -51,7 +51,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -112,8 +111,8 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -581,26 +580,27 @@ private fun DocumentPreview(
                 }
                 // Only the visible page is zoomable; neighbors stay swipeable.
                 val zoomGesturesEnabled = index == currentPageIndex
-                @Suppress("DEPRECATION") val zoomTransformState = rememberTransformableState { zoomChange, panChange, _ ->
-                    val newScale = (zoomScale * zoomChange).coerceIn(1f, EDITOR_MAX_ZOOM)
-                    zoomScale = newScale
-                    zoomOffset = if (newScale <= 1f) {
-                        Offset.Zero
-                    } else {
-                        (zoomOffset + panChange * newScale)
-                            .coercedToBounds(imageContainerSize, newScale)
-                    }
-                    // Write only on zoomed/not-zoomed transitions to avoid
-                    // recomposing the preview on every gesture frame.
-                    if (pageIdAtIndex != null) {
-                        val zoomed = newScale > 1f
-                        if (zoomedPages[pageIdAtIndex] == true && !zoomed) {
-                            zoomedPages.remove(pageIdAtIndex)
-                        } else if (zoomed) {
-                            zoomedPages[pageIdAtIndex] = true
+                @Suppress("DEPRECATION") val zoomTransformState =
+                    rememberTransformableState { zoomChange, panChange, _ ->
+                        val newScale = (zoomScale * zoomChange).coerceIn(1f, EDITOR_MAX_ZOOM)
+                        zoomScale = newScale
+                        zoomOffset = if (newScale <= 1f) {
+                            Offset.Zero
+                        } else {
+                            (zoomOffset + panChange * newScale)
+                                .coercedToBounds(imageContainerSize, newScale)
+                        }
+                        // Write only on zoomed/not-zoomed transitions to avoid
+                        // recomposing the preview on every gesture frame.
+                        if (pageIdAtIndex != null) {
+                            val zoomed = newScale > 1f
+                            if (zoomedPages[pageIdAtIndex] == true && !zoomed) {
+                                zoomedPages.remove(pageIdAtIndex)
+                            } else if (zoomed) {
+                                zoomedPages[pageIdAtIndex] = true
+                            }
                         }
                     }
-                }
                 if (bitmap != null && (index != currentPageIndex || pageKey != null)) {
                     val imageBitmap = bitmap.asImageBitmap()
 
