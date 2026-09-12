@@ -34,52 +34,23 @@ interface StatsDao {
     suspend fun insert(event: StatsEvent)
 
     /**
-     * Daily aggregation for chart and summary (7/30/365 days).
-     * Uses json_extract (SQLite >=3.38, Room 2.8.4 → API 30+). On older APIs
-     * pages/sizeKb will be 0 and UI tolerates it.
+     * Raw events for the requested window. Aggregation (per-day counts,
+     * pages/size, tool and export breakdowns) happens in
+     * [StatsAggregator] on the JVM side.
+     *
+     * The previous implementation used json_extract in SQL, but the
+     * framework SQLite on some devices (e.g. OnePlus 8 Pro) is built
+     * without the JSON1 extension, so compiling those queries throws
+     * "no such function: json_extract" and crashes the stats screen.
+     * This query uses only core SQL available on every API level.
      */
     @Query(
         """
-        SELECT 
-          DATE(timestamp/1000,'unixepoch','localtime') AS date,
-          SUM(CASE WHEN eventType='scan_created' THEN 1 ELSE 0 END) AS scans,
-          SUM(CASE WHEN eventType='scan_created' THEN CAST(json_extract(propertiesJson,'$.pages') AS INTEGER) ELSE 0 END) AS pages,
-          SUM(CASE WHEN eventType='scan_created' THEN CAST(json_extract(propertiesJson,'$.size_kb') AS INTEGER) ELSE 0 END) AS sizeKb,
-          SUM(CASE WHEN eventType='scan_exported' THEN 1 ELSE 0 END) AS exports,
-          SUM(CASE WHEN eventType='scan_shared' THEN 1 ELSE 0 END) AS shares,
-          SUM(CASE WHEN eventType='scan_deleted' THEN 1 ELSE 0 END) AS deletes,
-          SUM(CASE WHEN eventType='tool_used' THEN 1 ELSE 0 END) AS tools,
-          SUM(CASE WHEN eventType='scan_opened' THEN 1 ELSE 0 END) AS opens,
-          SUM(CASE WHEN eventType='photo_captured' THEN 1 ELSE 0 END) AS photos
-        FROM stats_events 
+        SELECT id, eventType, timestamp, propertiesJson
+        FROM stats_events
         WHERE timestamp >= :fromMillis
-        GROUP BY date 
-        ORDER BY date ASC
+        ORDER BY timestamp ASC
         """
     )
-    fun dailySince(fromMillis: Long): Flow<List<DailyRow>>
-
-    @Query(
-        """
-        SELECT json_extract(propertiesJson,'$.tool') AS tool, COUNT(*) AS count
-        FROM stats_events
-        WHERE eventType='tool_used' AND timestamp >= :fromMillis
-        AND json_extract(propertiesJson,'$.tool') IS NOT NULL
-        GROUP BY tool
-        ORDER BY count DESC
-        """
-    )
-    fun toolCountsSince(fromMillis: Long): Flow<List<ToolCountRow>>
-
-    @Query(
-        """
-        SELECT json_extract(propertiesJson,'$.format') AS format, COUNT(*) AS count
-        FROM stats_events
-        WHERE eventType='scan_exported' AND timestamp >= :fromMillis
-        AND json_extract(propertiesJson,'$.format') IS NOT NULL
-        GROUP BY format
-        ORDER BY count DESC
-        """
-    )
-    fun exportCountsSince(fromMillis: Long): Flow<List<ExportCountRow>>
+    fun eventsSince(fromMillis: Long): Flow<List<StatsEvent>>
 }

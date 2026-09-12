@@ -24,8 +24,14 @@ package nopalito.app.data.stats
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import nopalito.app.data.stats.StatsAggregator.toDailyRows
+import nopalito.app.data.stats.StatsAggregator.toExportCounts
+import nopalito.app.data.stats.StatsAggregator.toStatsSummary
+import nopalito.app.data.stats.StatsAggregator.toToolCounts
 import org.json.JSONObject
 
 class StatsRepository(
@@ -136,43 +142,37 @@ class StatsRepository(
 
     fun getStatsFlow(days: Int): Flow<StatsSummary> {
         val fromMillis = System.currentTimeMillis() - days * 24L * 60L * 60L * 1000L
-        return combine(
-            dao.dailySince(fromMillis),
-            dao.toolCountsSince(fromMillis),
-            dao.exportCountsSince(fromMillis)
-        ) { rows, tools, exports ->
-            StatsSummary(
-                scans = rows.sumOf { it.scans },
-                pages = rows.sumOf { it.pages },
-                sizeKb = rows.sumOf { it.sizeKb },
-                exportedCount = rows.sumOf { it.exports },
-                shares = rows.sumOf { it.shares },
-                deletes = rows.sumOf { it.deletes },
-                toolsTotal = rows.sumOf { it.tools },
-                opens = rows.sumOf { it.opens },
-                photos = rows.sumOf { it.photos },
-                toolBreakdown = tools,
-                exportBreakdown = exports
-            )
-        }
+        return dao.eventsSince(fromMillis)
+            .map { events -> events.toStatsSummary() }
+            .flowOn(ioDispatcher)
+            .catch { emit(StatsSummary()) }
     }
 
     fun getStatsFlow(period: StatsPeriod): Flow<StatsSummary> = getStatsFlow(period.days)
 
     fun getDailyFlow(days: Int): Flow<List<DailyRow>> {
         val fromMillis = System.currentTimeMillis() - days * 24L * 60L * 60L * 1000L
-        return dao.dailySince(fromMillis)
+        return dao.eventsSince(fromMillis)
+            .map { events -> events.toDailyRows() }
+            .flowOn(ioDispatcher)
+            .catch { emit(emptyList()) }
     }
 
     fun getDailyFlow(period: StatsPeriod): Flow<List<DailyRow>> = getDailyFlow(period.days)
 
     fun getToolBreakdown(period: StatsPeriod): Flow<List<ToolCountRow>> {
         val fromMillis = System.currentTimeMillis() - period.days * 24L * 60L * 60L * 1000L
-        return dao.toolCountsSince(fromMillis)
+        return dao.eventsSince(fromMillis)
+            .map { events -> events.toToolCounts() }
+            .flowOn(ioDispatcher)
+            .catch { emit(emptyList()) }
     }
 
     fun getExportBreakdown(period: StatsPeriod): Flow<List<ExportCountRow>> {
         val fromMillis = System.currentTimeMillis() - period.days * 24L * 60L * 60L * 1000L
-        return dao.exportCountsSince(fromMillis)
+        return dao.eventsSince(fromMillis)
+            .map { events -> events.toExportCounts() }
+            .flowOn(ioDispatcher)
+            .catch { emit(emptyList()) }
     }
 }
