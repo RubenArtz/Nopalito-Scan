@@ -1,0 +1,42 @@
+<!--
+  ~
+  ~ Copyright 2025-2026 The FairScan authors
+  ~ Copyright 2026 Ruben Matias
+  ~
+  ~ Modified by Ruben Matias in 2026.
+  ~ This file is part of the Nopalito Scan fork.
+  ~
+  ~ This program is free software: you can redistribute it and/or modify it
+  ~ under the terms of the GNU General Public License as published by the Free
+  ~ Software Foundation, either version 3 of the License, or (at your option)
+  ~ any later version.
+  ~ This program is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  ~ FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+  ~ more details.
+  ~ You should have received a copy of the GNU General Public License along with
+  ~ this program. If not, see <https://www.gnu.org/licenses/>.
+  ~
+  -->
+
+<resources>
+    <string name="processing_variant_comparison_title">Comparación de variantes A/B</string>
+    <string name="processing_variant_active">Activa: %1$s</string>
+    <string name="processing_variant_active_unregistered">resultado actual (sin registrar)</string>
+    <string name="processing_variant_freeze_current">Congelar resultado actual</string>
+    <string name="processing_variant_reprocess_baseline">Reprocesar baseline</string>
+    <string name="processing_dewarp_experimental">Dewarp experimental: solo NoChange</string>
+    <string name="processing_variant_candidate_missing">Candidate: ninguno</string>
+    <string name="processing_variant_not_comparable">Candidate no comparable: la región, orientación o proporción difiere.</string>
+    <string name="processing_variant_delete_candidate">Eliminar candidate</string>
+    <string name="action_reset_zoom">Restablecer zoom</string>
+    <string name="processing_variant_saved">Referencia guardada.</string>
+    <string name="processing_variant_cancelled">Cancelado; se conservó la referencia anterior.</string>
+    <string name="processing_variant_metadata">%1$s: %2$d×%3$d, %4$d bytes; algorithmId=%5$s; region=%6$s; rotation=%7$d; recipeHash=%8$s; sourceSha256=%9$s; outputSha256=%10$s; reproducible=%11$b</string>
+    <string name="processing_dewarp_not_implemented">NoChange: la implementación candidate aún no está disponible.</string>
+    <string name="processing_variant_baseline">Baseline</string>
+    <string name="processing_variant_candidate">Candidate</string>
+    <string name="processing_variant_active_suffix">Activa</string>
+    <string name="processing_compare_original">Comparar original</string>
+    <string name="processing_compare_ab_short">A/B</string>
+</resources>

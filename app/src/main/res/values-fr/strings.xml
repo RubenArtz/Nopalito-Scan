@@ -100,9 +100,10 @@
     <string name="export_quality">Qualité d\'exportation</string>
     <string name="export_quality_original">Sans compression</string>
     <string name="export_quality_balanced">Équilibrée</string>
-    <string name="export_quality_high">Élevée</string>
+    <string name="export_quality_high">Haute résolution, max 6 MP dans cette version</string>
     <string name="export_quality_compressed">Compressée</string>
     <string name="export_quality_max_compression">Compression maximale</string>
+    <string name="focus_not_confirmed">Mise au point non confirmée — capture enregistrée quand même</string>
     <string name="export_protect_document">Protéger par mot de passe</string>
     <string name="export_password">Mot de passe</string>
     <string name="export_password_hint">Laisser vide pour ne pas protéger le fichier</string>

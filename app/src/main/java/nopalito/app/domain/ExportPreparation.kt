@@ -19,6 +19,8 @@
  *
  */
 
+@file:Suppress("KotlinConstantConditions")
+
 package nopalito.app.domain
 
 import android.graphics.Bitmap
@@ -41,6 +43,8 @@ data class PageToExport(
     val page: ScanPage,
     val overlays: PageExportOverlays? = null,
     val jpeg: JpegProvider,
+    val origin: ExportOrigin = ExportOrigin.PROCESSED_STORED,
+    val originCause: String? = null,
 ) {
     data class PageExportOverlays(
         val signatureBitmap: Bitmap? = null,
@@ -80,39 +84,199 @@ private fun EstimatedDimensions.applyRotation(rotation: Rotation): EstimatedDime
     return this
 }
 
+/**
+ * Where export bytes came from. ORIGINAL_FILE means the preserved capture
+ * was copied without decode/encode; anything else documents why a decode
+ * was required (rotation, overlays, OCR bitmap, filter, missing original).
+ */
+enum class ExportOrigin {
+    ORIGINAL_FILE,
+    REPROCESSED_HIGH,
+    PROCESSED_STORED,
+    FALLBACK_NO_ORIGINAL,
+}
+
+@Suppress("DEPRECATION")
 suspend fun pagesToExport(
     imageRepository: ImageRepository,
     exportQuality: ExportQuality
 ): List<PageToExport> {
 
     val pages = imageRepository.pages()
-    return when (exportQuality) {
-        ExportQuality.ORIGINAL -> pages.map {
-            PageToExport(it) { jpeg(it, imageRepository) }
-        }
-
-        ExportQuality.HIGH -> pages.map { page ->
-            PageToExport(page) {
-                val source = imageRepository.source(page.id)
-                val metadata = page.metadata
-                val colorMode = page.colorMode
-                if (source != null && metadata != null && colorMode != null) {
-                    val rotation = page.totalRotation()
-                    processedImage(source, metadata, rotation, colorMode, exportQuality)
-                } else
-                    jpeg(page, imageRepository)
+    // MAX_COMPRESSION is a legacy alias of HIGH, never a 0.5 MP render.
+    val effective =
+        if (exportQuality == ExportQuality.MAX_COMPRESSION) ExportQuality.HIGH else exportQuality
+    return when (effective) {
+        ExportQuality.ORIGINAL -> pages.map { page ->
+            val original = if (imageRepository.hasOriginal(page.id)) {
+                imageRepository.originalBytes(page.id)
+            } else {
+                null
             }
-        }
-
-        ExportQuality.BALANCED, ExportQuality.COMPRESSED, ExportQuality.MAX_COMPRESSION -> pages.map { page ->
-            PageToExport(page) {
-                resizeJpegBytesForMaxPixels(
-                    jpeg = jpeg(page, imageRepository),
-                    maxPixels = exportQuality.maxPixels.toDouble(),
-                    jpegQuality = exportQuality.jpegQuality
+            if (original != null) {
+                if (page.totalRotation() != Rotation.R0) {
+                    android.util.Log.w(
+                        "Export",
+                        "ORIGINAL for ${page.id} requires decode: rotation=${page.totalRotation()}",
+                    )
+                    PageToExport(
+                        page = page,
+                        origin = ExportOrigin.ORIGINAL_FILE,
+                        originCause = "rotation-decode",
+                        jpeg = JpegProvider {
+                            rotateOriginalForExport(
+                                original,
+                                page.totalRotation()
+                            )
+                        },
+                    )
+                } else {
+                    PageToExport(
+                        page = page,
+                        origin = ExportOrigin.ORIGINAL_FILE,
+                        jpeg = JpegProvider { Jpeg(original) },
+                    )
+                }
+            } else {
+                android.util.Log.w(
+                    "Export",
+                    "ORIGINAL requested without SourceOriginal for ${page.id}: falling back to stored processed",
+                )
+                PageToExport(
+                    page = page,
+                    origin = ExportOrigin.FALLBACK_NO_ORIGINAL,
+                    originCause = "missing-original",
+                    jpeg = JpegProvider { jpeg(page, imageRepository) },
                 )
             }
         }
+
+        ExportQuality.HIGH -> pages.map { page ->
+            PageToExport(
+                page = page,
+                origin = ExportOrigin.REPROCESSED_HIGH,
+                jpeg = JpegProvider { highReprocess(imageRepository, page, effective) },
+            )
+        }
+
+        ExportQuality.BALANCED -> pages.map {
+            PageToExport(
+                page = it,
+                origin = ExportOrigin.PROCESSED_STORED,
+                jpeg = JpegProvider { jpeg(it, imageRepository) },
+            )
+        }
+
+        ExportQuality.COMPRESSED -> pages.map { page ->
+            PageToExport(
+                page = page,
+                origin = ExportOrigin.PROCESSED_STORED,
+                jpeg = JpegProvider {
+                    resizeJpegBytesForMaxPixels(
+                        jpeg = jpeg(page, imageRepository),
+                        maxPixels = ExportQuality.COMPRESSED.maxPixels.toDouble(),
+                        jpegQuality = ExportQuality.COMPRESSED.jpegQuality,
+                    )
+                },
+            )
+        }
+
+        ExportQuality.PREVIEW -> pages.map { page ->
+            PageToExport(
+                page = page,
+                origin = ExportOrigin.PROCESSED_STORED,
+                jpeg = JpegProvider {
+                    resizeJpegBytesForMaxPixels(
+                        jpeg = jpeg(page, imageRepository),
+                        maxPixels = ExportQuality.PREVIEW.maxPixels.toDouble(),
+                        jpegQuality = ExportQuality.PREVIEW.jpegQuality,
+                    )
+                },
+            )
+        }
+
+        ExportQuality.MAX_COMPRESSION -> pages.map { page ->
+            PageToExport(
+                page = page,
+                origin = ExportOrigin.REPROCESSED_HIGH,
+                originCause = "legacy-max-alias-high",
+                jpeg = JpegProvider { highReprocess(imageRepository, page, ExportQuality.HIGH) },
+            )
+        }
+    }
+}
+
+private suspend fun highReprocess(
+    imageRepository: ImageRepository,
+    page: ScanPage,
+    quality: ExportQuality,
+): Jpeg {
+    // Priority: SourceOriginal > SourceSafe > stored processed (legacy).
+    imageRepository.originalBytes(page.id)?.let { bytes ->
+        val metadata = page.metadata
+        val colorMode = page.colorMode
+        if (metadata != null && colorMode != null) {
+            return try {
+                // Single full-res decode inside processedImage; working
+                // segmentation already happened at capture, so no second
+                // full-res bitmap is held here.
+                processedImage(Jpeg(bytes), metadata, page.totalRotation(), colorMode, quality)
+            } catch (e: Exception) {
+                android.util.Log.w(
+                    "Export",
+                    "HIGH from original failed for ${page.id}, trying safe",
+                    e
+                )
+                highFromSafeOrStored(imageRepository, page, quality)
+            }
+        }
+    }
+    return highFromSafeOrStored(imageRepository, page, quality)
+}
+
+private suspend fun highFromSafeOrStored(
+    imageRepository: ImageRepository,
+    page: ScanPage,
+    quality: ExportQuality,
+): Jpeg {
+    imageRepository.safeBytes(page.id)?.let { bytes ->
+        val metadata = page.metadata
+        val colorMode = page.colorMode
+        if (metadata != null && colorMode != null) {
+            return runCatching {
+                processedImage(Jpeg(bytes), metadata, page.totalRotation(), colorMode, quality)
+            }.getOrElse { jpeg(page, imageRepository) }
+        }
+    }
+    android.util.Log.w(
+        "Export",
+        "HIGH without original/safe for ${page.id}: using stored processed"
+    )
+    return jpeg(page, imageRepository)
+}
+
+private fun rotateOriginalForExport(original: ByteArray, rotation: Rotation): Jpeg {
+    if (rotation == Rotation.R0) return Jpeg(original)
+    val opts = android.graphics.BitmapFactory.Options().apply {
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+    }
+    val bitmap = android.graphics.BitmapFactory.decodeByteArray(original, 0, original.size, opts)
+        ?: return Jpeg(original)
+    try {
+        val matrix = android.graphics.Matrix().apply { postRotate(rotation.degrees.toFloat()) }
+        val rotated = Bitmap.createBitmap(
+            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true,
+        )
+        try {
+            val out = java.io.ByteArrayOutputStream()
+            // q95: rotation only, no enhancement change.
+            rotated.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, out)
+            return Jpeg(out.toByteArray())
+        } finally {
+            if (rotated !== bitmap && !rotated.isRecycled) rotated.recycle()
+        }
+    } finally {
+        if (!bitmap.isRecycled) bitmap.recycle()
     }
 }
 

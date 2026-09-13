@@ -169,6 +169,9 @@ fun DocumentScreen(
     onUpdateDateStyle: (pageId: String, style: DateOverlayStyle) -> Unit = { _, _ -> },
     onDeleteSignatureOverlay: (pageId: String) -> Unit = {},
     onDeleteDateOverlay: (pageId: String) -> Unit = {},
+    debugCompareVisible: Boolean = false,
+    onCompareOriginalClick: () -> Unit = {},
+    onCompareVariantsClick: () -> Unit = {},
 ) {
     val showDeletePageDialog = rememberSaveable { mutableStateOf(false) }
     var showSignatureDialog by remember { mutableStateOf(false) }
@@ -234,6 +237,14 @@ fun DocumentScreen(
                 subtitle = stringResource(R.string.document_subtitle),
                 onBack = { navigation.back() },
                 actions = {
+                    if (debugCompareVisible) {
+                        androidx.compose.material3.TextButton(onClick = onCompareVariantsClick) {
+                            androidx.compose.material3.Text(
+                                stringResource(R.string.processing_compare_ab_short),
+                                color = Color.White
+                            )
+                        }
+                    }
                     TopActionButtons(
                         navigation = navigation,
                         tint = Color.White,
@@ -250,6 +261,11 @@ fun DocumentScreen(
             )
         },
     ) { modifier ->
+        if (debugCompareVisible) {
+            androidx.compose.material3.TextButton(onClick = onCompareOriginalClick) {
+                androidx.compose.material3.Text(stringResource(R.string.processing_compare_original))
+            }
+        }
         DocumentPreview(
             uiState = uiState,
             onDeleteImage = { showDeletePageDialog.value = true },

@@ -55,8 +55,8 @@ import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.LanguageRepository
 import nopalito.app.i18n.LanguageViewModel
 import nopalito.app.i18n.LegalConsentRepository
-import nopalito.app.i18n.isComplete
 import nopalito.app.i18n.LocaleNormalizer
+import nopalito.app.i18n.isComplete
 import nopalito.app.platform.AndroidDocxWriter
 import nopalito.app.platform.AndroidImageLoader
 import nopalito.app.platform.AndroidPdfWriter

@@ -19,6 +19,7 @@
  *
  */
 
+import java.security.MessageDigest
 import java.util.Properties
 
 plugins {
@@ -70,8 +71,30 @@ android {
         // https://ai.google.dev/edge/litert/android/index
         minSdk = 26
         targetSdk = 36
-        versionCode = 38
-        versionName = "1.0.17"
+        versionCode = 39
+        versionName = "1.0.18"
+
+        // Fingerprint current working-tree implementation, including uncommitted capture fixes.
+        // Gradle tracks these text inputs; changing an implementation invalidates the recipe identity.
+        val baselineSources = listOf(
+            "imageprocessing/src/main/java/nopalito/imageprocessing/DocumentDetection.kt",
+            "imageprocessing/src/main/java/nopalito/imageprocessing/Perspective.kt",
+            "imageprocessing/src/main/java/nopalito/imageprocessing/Geometry.kt",
+            "imageprocessing/src/main/java/nopalito/imageprocessing/PostProcessing.kt",
+            "imageprocessing/src/main/java/nopalito/imageprocessing/Utils.kt",
+            "app/src/main/java/nopalito/app/platform/ImageProcessor.kt",
+            "app/src/main/java/nopalito/app/domain/ExportQuality.kt",
+        )
+        val baselineDigest = MessageDigest.getInstance("SHA-256")
+        baselineSources.sorted().forEach { path ->
+            baselineDigest.update(path.toByteArray(Charsets.UTF_8))
+            baselineDigest.update(
+                providers.fileContents(rootProject.layout.projectDirectory.file(path))
+                    .asText.get().replace("\r\n", "\n").toByteArray(Charsets.UTF_8)
+            )
+        }
+        val baselineHash = baselineDigest.digest().joinToString("") { "%02x".format(it) }
+        buildConfigField("String", "BASELINE_IMPLEMENTATION_SHA256", "\"$baselineHash\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -210,6 +233,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.documentfile)
+    implementation(libs.androidx.exifinterface)
     // LiteRT 1.x line only (org.tensorflow.lite API used by ImageSegmentation).
     // Do NOT add the 2.x litert core or litert-metadata here: nothing imports
     // com.google.ai.edge.litert or the model-metadata API, and a second major

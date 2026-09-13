@@ -76,7 +76,6 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LowPriority
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -538,7 +537,12 @@ private fun QualitySelector(
     quality: ExportQuality,
     onQualityChange: (ExportQuality) -> Unit,
 ) {
-    val qualities = ExportQuality.entries.reversed()
+    // PREVIEW is UI-only and MAX_COMPRESSION is a legacy alias of HIGH:
+    // neither is offered as a file export quality.
+    val qualities = ExportQuality.entries.filter {
+        @Suppress("DEPRECATION")
+        it != ExportQuality.PREVIEW && it != ExportQuality.MAX_COMPRESSION
+    }.reversed()
     val rows = qualities.chunked(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         rows.forEach { rowQualities ->
@@ -604,7 +608,8 @@ private fun qualityIcon(quality: ExportQuality): ImageVector = when (quality) {
     ExportQuality.HIGH -> Icons.Default.Star
     ExportQuality.BALANCED -> Icons.Default.Tune
     ExportQuality.COMPRESSED -> Icons.Default.Compress
-    ExportQuality.MAX_COMPRESSION -> Icons.Default.LowPriority
+    ExportQuality.PREVIEW -> Icons.Default.Visibility
+    ExportQuality.MAX_COMPRESSION -> Icons.Default.Star
 }
 
 /** INE-only selector: how large the composed credential appears on the exported sheet. */

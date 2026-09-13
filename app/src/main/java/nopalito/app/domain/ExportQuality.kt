@@ -28,16 +28,31 @@ enum class ExportQuality(
     val maxPixels: Long,
     val labelResource: Int,
 ) {
+    /**
+     * Original file without app reprocessing. Exported by copying
+     * SourceOriginal bytes directly when the output format allows it.
+     */
     ORIGINAL(
         jpegQuality = 100,
         maxPixels = Long.MAX_VALUE,
         R.string.export_quality_original,
     ),
+
+    /**
+     * High-resolution reprocessing from SourceOriginal (fallback Safe,
+     * then stored processed for legacy docs). "High" means high-res
+     * reprocessing, not lossless: Phase 1 still caps at 6 MP.
+     */
     HIGH(
         jpegQuality = 85,
         maxPixels = 6_000_000,
         R.string.export_quality_high,
     ),
+
+    /**
+     * Balanced stored result (~2 MP with the current pipeline).
+     * Capture may use up to 6 MP but processed output stays ~2 MP.
+     */
     BALANCED(
         jpegQuality = 75,
         maxPixels = 2_000_000,
@@ -48,9 +63,24 @@ enum class ExportQuality(
         maxPixels = 1_000_000,
         R.string.export_quality_compressed,
     ),
-    MAX_COMPRESSION(
-        jpegQuality = 40,
+
+    /**
+     * Small preview/thumbnail for UI, not for archival export.
+     */
+    PREVIEW(
+        jpegQuality = 60,
         maxPixels = 500_000,
+        R.string.export_quality_compressed,
+    ),
+
+    /**
+     * Legacy name kept for stored preferences/history. Alias of HIGH:
+     * must not be used to generate a 0.5 MP image.
+     */
+    @Deprecated("Legacy alias of HIGH. Use HIGH or PREVIEW explicitly.")
+    MAX_COMPRESSION(
+        jpegQuality = 85,
+        maxPixels = 6_000_000,
         R.string.export_quality_max_compression,
     ),
 }

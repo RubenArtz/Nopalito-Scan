@@ -63,6 +63,7 @@ object StatsAggregator {
                             pages += event.propertiesJson.intProperty("pages")
                             sizeKb += event.propertiesJson.longProperty("size_kb")
                         }
+
                         StatsEvent.SCAN_EXPORTED -> exports++
                         StatsEvent.SCAN_SHARED -> shares++
                         StatsEvent.SCAN_DELETED -> deletes++

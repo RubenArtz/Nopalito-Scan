@@ -127,6 +127,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -212,6 +213,9 @@ fun CameraScreen(
     val linkApproved by cameraViewModel.linkApproved.collectAsStateWithLifecycle()
     val linkApprovalError by cameraViewModel.linkApprovalError.collectAsStateWithLifecycle()
     val boundCameraInfo by cameraViewModel.boundCameraInfo.collectAsStateWithLifecycle()
+    val captureTier by cameraViewModel.captureTier.collectAsStateWithLifecycle()
+    val pipelineFlags by cameraViewModel.pipelineFlags.collectAsStateWithLifecycle()
+    val fileCaptureError by cameraViewModel.captureError.collectAsStateWithLifecycle()
     var torchReapplied by remember { mutableStateOf(false) }
 
     // Tactile confirmation for capture, errors and the finalize action.
@@ -440,6 +444,7 @@ fun CameraScreen(
     DisposableEffect(Unit) {
         onDispose {
             cameraViewModel.cancelImport()
+            cameraViewModel.cancelFileCapture()
         }
     }
 
@@ -464,21 +469,127 @@ fun CameraScreen(
         }
     }
 
+    var showFocusWarning by remember { mutableStateOf(false) }
+    LaunchedEffect(showFocusWarning) {
+        if (showFocusWarning) {
+            delay(2000.milliseconds)
+            showFocusWarning = false
+        }
+    }
+
     fun handleCapture() {
         // In Individual mode, only allow one capture (if already captured, ignore)
         if (currentCaptureMode == CaptureMode.INDIVIDUAL && hasCapturedInIndividual) return
         // INE mode takes exactly two shots (front, then back).
         if (ineMode && ineCaptured >= 2) return
-        previewView?.bitmap?.let {
+        previewView?.bitmap?.let { frozen ->
             Log.i("NopalitoScan", "Pressed <Capture>")
             haptics.click()
-            cameraViewModel.onCapturePressed(it)
-            captureController.takePicture(
-                onImageCaptured = { imageProxy, opticalMeasures ->
-                    cameraViewModel.onImageCaptured(imageProxy, opticalMeasures)
-                }
+            // Manual capture stays available without a confirmed focus, but
+            // warns when the device reports an unfocused AF state.
+            val (focused, _) = captureController.focusGate()
+            if (!focused && captureController.lastAfState != null) {
+                Log.w("NopalitoScan", "manual capture with unconfirmed focus")
+                showFocusWarning = true
+            }
+            val requested = captureTier
+            val effective = nopalito.app.platform.FileCapturePipeline.tierForFlags(
+                requested, pipelineFlags.highQualityCapture,
             )
+            val willPreserve =
+                effective == nopalito.app.domain.CaptureTier.ORIGINAL || pipelineFlags.keepOriginal
+            if (willPreserve) {
+                val root = qrContext.filesDir
+                val destDir = nopalito.app.data.OriginalStore.originalsDir(root)
+                when (val decision =
+                    nopalito.app.data.ProcessingBudget.check(qrContext, effective, destDir)) {
+                    is nopalito.app.data.ProcessingBudget.Decision.DenyStorage -> {
+                        // ORIGINAL is never downgraded silently: surface numbers
+                        // and let the user cancel or pick LOW/BALANCED explicitly.
+                        cameraViewModel.reportInsufficientStorage(
+                            decision.requiredBytes, decision.freeBytes, effective,
+                        )
+                        return@let
+                    }
+
+                    is nopalito.app.data.ProcessingBudget.Decision.DenyMemory -> {
+                        cameraViewModel.reportInsufficientStorage(
+                            decision.requiredBytes, decision.availBytes, effective,
+                        )
+                        return@let
+                    }
+
+                    nopalito.app.data.ProcessingBudget.Decision.Allowed -> Unit
+                }
+                val temp = nopalito.app.data.OriginalStore.newTempFile(destDir)
+                val captureId = cameraViewModel.beginFileCapture(frozen, effective, temp)
+                captureController.takePictureToFile(
+                    destFile = temp,
+                    captureId = captureId,
+                    onSaved = { cid, file, optical, frame ->
+                        cameraViewModel.onFileSaved(
+                            cid, file, optical, effective,
+                            captureController.boundCameraId ?: boundCameraInfo,
+                            effective == nopalito.app.domain.CaptureTier.ORIGINAL || pipelineFlags.keepOriginal,
+                            frame,
+                        )
+                    },
+                    onError = { cid, err ->
+                        cameraViewModel.onFileError(cid, temp, err)
+                    },
+                )
+            } else {
+                // keepOriginal=false for LOW/BALANCED/HIGH: legacy in-memory
+                // path without extra original file.
+                cameraViewModel.onCapturePressed(frozen)
+                captureController.takePicture(
+                    onImageCaptured = { imageProxy, opticalMeasures ->
+                        cameraViewModel.onImageCaptured(imageProxy, opticalMeasures)
+                    }
+                )
+            }
         }
+    }
+
+    @Composable
+    fun CaptureStorageErrorDialog() {
+        val err = fileCaptureError as? CaptureFileError.InsufficientStorage ?: return
+        fun mb(bytes: Long): String =
+            String.format(java.util.Locale.US, "%.1f MB", bytes / 1048576.0)
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { cameraViewModel.dismissCaptureError() },
+            title = { androidx.compose.material3.Text(stringResource(R.string.capture_original_no_space_title)) },
+            text = {
+                androidx.compose.material3.Text(
+                    stringResource(
+                        R.string.capture_original_no_space_msg,
+                        mb(err.requiredBytes),
+                        mb(err.freeBytes),
+                    )
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { cameraViewModel.dismissCaptureError() }) {
+                    androidx.compose.material3.Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            cameraViewModel.setCaptureTier(nopalito.app.domain.CaptureTier.LOW)
+                            cameraViewModel.dismissCaptureError()
+                        }
+                    ) { androidx.compose.material3.Text("LOW") }
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            cameraViewModel.setCaptureTier(nopalito.app.domain.CaptureTier.BALANCED)
+                            cameraViewModel.dismissCaptureError()
+                        }
+                    ) { androidx.compose.material3.Text("BALANCED") }
+                }
+            },
+        )
     }
 
     val onCapture = { handleCapture() }
@@ -497,8 +608,13 @@ fun CameraScreen(
     val stabilityMonitor = remember { QuadStabilityMonitor() }
     val currentQuad = liveAnalysisState.stableQuad
 
-    // Evaluate auto-capture conditions on each quad update
-    LaunchedEffect(currentQuad, ineMode, qrScanMode) {
+    // Evaluate auto-capture conditions on each quad update. The focus gate
+    // applies here only: a reported-but-unfocused AF state holds the shutter
+    // (without resetting quad stability, so capture fires as soon as focus
+    // locks). A null AF state means "focus state unavailable" and never
+    // blocks; manual capture below stays available regardless.
+    val afStateTick = captureController.lastAfState
+    LaunchedEffect(currentQuad, ineMode, qrScanMode, afStateTick) {
         val quad = currentQuad
         if (quad == null) {
             stabilityMonitor.reset()
@@ -515,6 +631,12 @@ fun CameraScreen(
         if (captureState !is CaptureState.Idle) return@LaunchedEffect
         if (importState !is ImportState.Idle) return@LaunchedEffect
 
+        val (focused, focusStatus) = captureController.focusGate()
+        if (!focused && captureController.lastAfState != null) {
+            Log.d("AutoCapture", "holding shutter: focus $focusStatus")
+            return@LaunchedEffect
+        }
+
         if (stabilityMonitor.update(quad, System.currentTimeMillis())) {
             Log.d("AutoCapture", "Triggering auto-capture after stable period")
             onCapture()
@@ -524,6 +646,7 @@ fun CameraScreen(
         CameraScreenScaffold(
             cameraPreview = {
                 CameraPreview(
+                    captureTier = captureTier,
                     captureController = captureController,
                     onPreviewViewReady = { view ->
                         previewView = view
@@ -590,6 +713,33 @@ fun CameraScreen(
             captureMode = captureMode,
             onCaptureModeChanged = onCaptureModeChanged,
         )
+        if (showFocusWarning) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 96.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.focus_not_confirmed),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
         SnackbarHost(
             hostState = importErrorHost,
             modifier = Modifier
@@ -662,6 +812,22 @@ fun CameraScreen(
     }
 
     NopalEasterEgg(visible = showNopalEgg, onFinished = { showNopalEgg = false })
+
+    CaptureStorageErrorDialog()
+
+    if (isDebugMode) {
+        val afTick = captureController.lastAfState
+        TierDebugRow(
+            selected = captureTier,
+            onSelect = { cameraViewModel.setCaptureTier(it) },
+            keepOriginal = pipelineFlags.keepOriginal,
+            onKeepOriginalChange = { cameraViewModel.setKeepOriginal(it) },
+            lensLabel = boundCameraInfo,
+            afStatus = if (afTick == null) "focus state unavailable"
+            else captureController.afStateName(afTick),
+            lastDiag = cameraViewModel.lastCaptureDiag.collectAsStateWithLifecycle().value,
+        )
+    }
 
     // Normal mode only: choose between the system picker and the Nopalito cloud.
     // The flags are cleared before any action fires, so rapid taps cannot open
@@ -1237,6 +1403,68 @@ private fun CameraPreviewBox(
 }
 
 @Composable
+private fun TierDebugRow(
+    selected: nopalito.app.domain.CaptureTier,
+    onSelect: (nopalito.app.domain.CaptureTier) -> Unit,
+    keepOriginal: Boolean,
+    onKeepOriginalChange: (Boolean) -> Unit,
+    lensLabel: String?,
+    afStatus: String,
+    lastDiag: String?,
+    modifier: Modifier = Modifier,
+) {
+    fun tierLabel(tier: nopalito.app.domain.CaptureTier): String = when (tier) {
+        nopalito.app.domain.CaptureTier.LOW -> "LOW"
+        nopalito.app.domain.CaptureTier.BALANCED -> "BAL"
+        nopalito.app.domain.CaptureTier.HIGH -> "HIGH"
+        nopalito.app.domain.CaptureTier.ORIGINAL -> "ORIG"
+    }
+    Column(modifier = modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (tier in nopalito.app.domain.CaptureTier.entries) {
+                androidx.compose.material3.FilterChip(
+                    selected = tier == selected,
+                    onClick = { onSelect(tier) },
+                    label = {
+                        Text(
+                            tierLabel(tier),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    },
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            androidx.compose.material3.FilterChip(
+                selected = keepOriginal,
+                onClick = { onKeepOriginalChange(!keepOriginal) },
+                label = {
+                    androidx.compose.material3.Text(
+                        "Keep original",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                },
+            )
+        }
+        Text(
+            text = "lens=${lensLabel ?: "?"} af=$afStatus",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (lastDiag != null) {
+            Text(
+                text = lastDiag,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun CaptureDeck(
     torchEnabled: Boolean,
     onTorchSwitched: () -> Unit,
@@ -1248,59 +1476,52 @@ private fun CaptureDeck(
     ineMode: Boolean = false,
     onIneSwitched: () -> Unit = {},
 ) {
-    Surface(
-        shape = RoundedCornerShape(32.dp),
-        color = Color.Black,
-        shadowElevation = 10.dp,
-        modifier = modifier,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .widthIn(max = 340.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .widthIn(max = 340.dp)
-        ) {
-            Spacer(Modifier.width(0.dp))
-            DeckSideButton(
-                icon = Icons.Default.Highlight,
-                label = stringResource(R.string.torch),
-                contentDescription = stringResource(
-                    if (torchEnabled) R.string.turn_off_torch else R.string.turn_on_torch
-                ),
-                containerColor =
-                    if (torchEnabled) Color(0xFFFFE14D) else Color.Black.copy(alpha = 0.5f),
-                contentColor = if (torchEnabled) Color(0xFF4A3A00) else Color.White,
-                onClick = onTorchSwitched,
-            )
-            DeckSideButton(
-                icon = Icons.Default.AddPhotoAlternate,
-                label = stringResource(R.string.import_photos),
-                contentDescription = stringResource(R.string.import_photos),
-                containerColor = Color.Black.copy(alpha = 0.5f),
-                contentColor = Color.White,
-                onClick = onImportClicked,
-            )
-            CaptureButton(onClick = onCapture, modifier = Modifier.size(62.dp))
-            DeckSideButton(
-                icon = Icons.Default.QrCodeScanner,
-                label = stringResource(R.string.qr_code),
-                contentDescription = stringResource(R.string.qr_code),
-                containerColor =
-                    if (qrScanMode) Color(0xFF4CAF50) else Color.Black.copy(alpha = 0.5f),
-                contentColor = Color.White,
-                onClick = onQrClicked,
-            )
-            DeckSideButton(
-                icon = Icons.Default.Badge,
-                label = stringResource(R.string.ine),
-                contentDescription = stringResource(R.string.ine),
-                containerColor =
-                    if (ineMode) Color(0xFF4CAF50) else Color.Black.copy(alpha = 0.5f),
-                contentColor = Color.White,
-                onClick = onIneSwitched,
-            )
-        }
+        Spacer(Modifier.width(0.dp))
+        DeckSideButton(
+            icon = Icons.Default.Highlight,
+            label = stringResource(R.string.torch),
+            contentDescription = stringResource(
+                if (torchEnabled) R.string.turn_off_torch else R.string.turn_on_torch
+            ),
+            containerColor =
+                if (torchEnabled) Color(0xFFFFE14D) else Color.Transparent,
+            contentColor = if (torchEnabled) Color(0xFF4A3A00) else Color.White,
+            onClick = onTorchSwitched,
+        )
+        DeckSideButton(
+            icon = Icons.Default.AddPhotoAlternate,
+            label = stringResource(R.string.import_photos),
+            contentDescription = stringResource(R.string.import_photos),
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
+            onClick = onImportClicked,
+        )
+        CaptureButton(onClick = onCapture, modifier = Modifier.size(62.dp))
+        DeckSideButton(
+            icon = Icons.Default.QrCodeScanner,
+            label = stringResource(R.string.qr_code),
+            contentDescription = stringResource(R.string.qr_code),
+            containerColor =
+                if (qrScanMode) Color(0xFF4CAF50) else Color.Transparent,
+            contentColor = Color.White,
+            onClick = onQrClicked,
+        )
+        DeckSideButton(
+            icon = Icons.Default.Badge,
+            label = stringResource(R.string.ine),
+            contentDescription = stringResource(R.string.ine),
+            containerColor =
+                if (ineMode) Color(0xFF4CAF50) else Color.Transparent,
+            contentColor = Color.White,
+            onClick = onIneSwitched,
+        )
     }
 }
 
@@ -1317,29 +1538,32 @@ private fun DeckSideButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(48.dp)
     ) {
-        Surface(
-            onClick = onClick,
-            shape = CircleShape,
-            color = containerColor,
-            contentColor = contentColor,
-            modifier = Modifier.size(40.dp),
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(containerColor)
+                .clickable(onClick = onClick)
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp)
+            )
         }
         Spacer(Modifier.height(4.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.85f),
+            style = MaterialTheme.typography.labelSmall.copy(
+                shadow = Shadow(
+                    color = Color.Black.copy(alpha = 0.8f),
+                    offset = Offset(0f, 1f),
+                    blurRadius = 4f,
+                )
+            ),
+            color = Color.White.copy(alpha = 0.95f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,

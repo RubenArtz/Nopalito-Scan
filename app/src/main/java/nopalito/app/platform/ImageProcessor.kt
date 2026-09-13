@@ -198,3 +198,70 @@ private fun compressSource(source: Bitmap): Jpeg {
         bgr.release()
     }
 }
+
+/**
+ * Phase 1 file path: same detection/warp/enhance values as
+ * [extractDocumentFromBitmap] (BALANCED 2 MP) but without the async
+ * source copy. The CameraX file is the master source, so no second
+ * full-res Bitmap is held. Returns page bytes plus output dimensions read
+ * from the encoded Mat, never hardcoded.
+ */
+data class FilePageResult(
+    val pageJpeg: Jpeg,
+    val metadata: PageMetadata,
+    val colorMode: ColorMode,
+    val outputWidth: Int,
+    val outputHeight: Int,
+)
+
+fun extractPageFromBitmapNoCopy(
+    full: Bitmap,
+    quadInMask: Quad?,
+    rotationDegrees: Int,
+    mask: Mask?,
+    defaultColorMode: DefaultColorMode = DefaultColorMode.AUTO,
+    opticalMeasures: OpticalMeasures?,
+): FilePageResult {
+    val exportQuality = ExportQuality.BALANCED
+    var colorMode = ColorMode.COLOR
+    var autoColorMode = colorMode
+    var normalizedQuad = createQuad(
+        listOf(
+            Point(0.0, 0.0), Point(0.0, 1.0), Point(1.0, 1.0), Point(1.0, 0.0)
+        )
+    )
+    val rgba = Mat()
+    Utils.bitmapToMat(full, rgba)
+    val bgr = Mat()
+    Imgproc.cvtColor(rgba, bgr, Imgproc.COLOR_RGBA2BGR)
+    rgba.release()
+    var page: Mat? = null
+    try {
+        page = if (mask == null || quadInMask == null) {
+            val resized = resizeForMaxPixels(bgr, exportQuality.maxPixels.toDouble())
+            val rotated = rotate(resized, rotationDegrees)
+            resized.release()
+            rotated
+        } else {
+            val quad = quadInMask.scaledTo(mask.width, mask.height, full.width, full.height)
+            normalizedQuad = quad.scaledTo(full.width, full.height, 1, 1)
+            autoColorMode = autoColorMode(bgr, mask, quad)
+            colorMode = defaultColorMode.colorMode ?: autoColorMode
+            extractDocument(
+                bgr, quad, rotationDegrees, colorMode, exportQuality.maxPixels,
+                opticalMeasures
+            )
+        }
+        val outW = page.width()
+        val outH = page.height()
+        val pageJpeg = Jpeg.fromMat(page, exportQuality.jpegQuality)
+        val baseRotation = Rotation.fromDegrees(rotationDegrees)
+        val sourceSize = ImageSize(full.width, full.height)
+        val metadata =
+            PageMetadata(normalizedQuad, baseRotation, autoColorMode, sourceSize, opticalMeasures)
+        return FilePageResult(pageJpeg, metadata, colorMode, outW, outH)
+    } finally {
+        bgr.release()
+        page?.release()
+    }
+}

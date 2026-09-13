@@ -82,9 +82,10 @@ class Stage8FStructuralTest {
     @Test
     fun qrGeneratorViewModelUsesLocalizedErrors() {
         val text = sourceText("nopalito/app/ui/screens/tools/qrgenerator/QrGeneratorViewModel.kt")
+        val compactText = text.replace(Regex("\\s+"), "")
         assertTrue(
             "must resolve errors via CloudErrorPresenter",
-            text.contains("CloudErrorPresenter.message(context")
+            compactText.contains("CloudErrorPresenter.message(context")
         )
         assertTrue(
             "content-required must be a resource",

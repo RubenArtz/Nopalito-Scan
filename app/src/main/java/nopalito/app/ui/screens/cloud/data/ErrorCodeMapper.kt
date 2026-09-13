@@ -177,7 +177,21 @@ object ErrorCodeMapper {
         val args = ArrayList<String>()
         var pattern = template
         var index = 0
+        // Catalog strings use Android positional placeholders. When a resource
+        // contains those tokens, bind them to the available detail values in
+        // the same stable order used for backend placeholders.
+        if (!pattern.contains("{") && pattern.contains("%1\$s")) {
+            for (key in PLACEHOLDER_ORDER) {
+                val value = placeholderValue(details, key) ?: continue
+                index += 1
+                pattern = pattern.replace("%$index\$s", "%$index\$s")
+                args.add(value)
+                if (!pattern.contains("%${index + 1}\$s")) break
+            }
+            return Formatted(pattern, args.toTypedArray())
+        }
         for (key in PLACEHOLDER_ORDER) {
+            if (!pattern.contains("{$key}")) continue
             val value = placeholderValue(details, key) ?: continue
             index += 1
             pattern = pattern.replace("{$key}", "%$index\$s")

@@ -268,6 +268,19 @@ class MainActivity : FragmentActivity() {
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             val aboutUiState by aboutViewModel.uiState.collectAsStateWithLifecycle()
             val cameraPermission = rememberCameraPermissionState()
+            val pipelineFlags by appContainer.settingsRepository.pipelineFlags.collectAsStateWithLifecycle(
+                initialValue = nopalito.app.domain.ScanPipelineFlags.Phase1Defaults,
+            )
+            var showOriginalCompare by androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(
+                    false
+                )
+            }
+            var showVariantCompare by androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(
+                    false
+                )
+            }
             CollectCameraEvents(cameraViewModel, viewModel)
             CollectExportEvents(context, exportViewModel)
             CollectAboutEvents(context, aboutViewModel, imageRepository)
@@ -469,7 +482,103 @@ class MainActivity : FragmentActivity() {
                                 onDeleteDateOverlay = { pageId ->
                                     viewModel.removeDateOverlay(pageId)
                                 },
+                                debugCompareVisible = pipelineFlags.debugOverlay,
+                                onCompareOriginalClick = { showOriginalCompare = true },
+                                onCompareVariantsClick = { showVariantCompare = true },
                             )
+                            if (showVariantCompare && pipelineFlags.debugOverlay) {
+                                documentUiState.currentPage?.key?.pageId?.let { id ->
+                                    nopalito.app.ui.screens.debug.VariantComparisonDialog(
+                                        pageId = id,
+                                        repository = imageRepository,
+                                        flags = pipelineFlags,
+                                        onDewarpChanged = { enabled ->
+                                            lifecycleScope.launch {
+                                                appContainer.settingsRepository.setDewarp(
+                                                    enabled
+                                                )
+                                            }
+                                        },
+                                        onDismiss = { showVariantCompare = false },
+                                    )
+                                }
+                            }
+                            if (showOriginalCompare && pipelineFlags.debugOverlay) {
+                                val comparePageId = documentUiState.currentPage?.key?.pageId
+                                var confirmDeleteOriginal by androidx.compose.runtime.remember(
+                                    comparePageId
+                                ) {
+                                    androidx.compose.runtime.mutableStateOf(false)
+                                }
+                                androidx.compose.material3.AlertDialog(
+                                    onDismissRequest = { showOriginalCompare = false },
+                                    confirmButton = {
+                                        androidx.compose.material3.TextButton(
+                                            onClick = { showOriginalCompare = false }
+                                        ) { androidx.compose.material3.Text("OK") }
+                                    },
+                                    dismissButton = {
+                                        androidx.compose.material3.TextButton(
+                                            onClick = { confirmDeleteOriginal = true }
+                                        ) { androidx.compose.material3.Text("Delete original") }
+                                    },
+                                    text = {
+                                        if (comparePageId != null) {
+                                            nopalito.app.ui.screens.debug.CompareOriginalScreen(
+                                                pageId = comparePageId,
+                                                originalBytes = {
+                                                    viewModel.imageRepository.originalBytes(
+                                                        comparePageId
+                                                    )
+                                                },
+                                                processedBytes = {
+                                                    viewModel.imageRepository.jpegBytes(
+                                                        documentUiState.currentPage!!.key
+                                                    )?.bytes
+                                                },
+                                                infoLine = comparePageId,
+                                                enabled = true,
+                                            )
+                                            if (confirmDeleteOriginal) {
+                                                androidx.compose.material3.AlertDialog(
+                                                    onDismissRequest = {
+                                                        confirmDeleteOriginal = false
+                                                    },
+                                                    title = { androidx.compose.material3.Text("Delete preserved original?") },
+                                                    text = {
+                                                        androidx.compose.material3.Text(
+                                                            "ORIGINAL export and HIGH reprocessing from the master " +
+                                                                    "will stop working for this page. The processed page is kept."
+                                                        )
+                                                    },
+                                                    confirmButton = {
+                                                        androidx.compose.material3.TextButton(
+                                                            onClick = {
+                                                                confirmDeleteOriginal = false
+                                                                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                                    runCatching {
+                                                                        viewModel.imageRepository.deleteOriginalWithConfirmation(
+                                                                            comparePageId,
+                                                                            confirmed = true,
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        ) { androidx.compose.material3.Text("Delete") }
+                                                    },
+                                                    dismissButton = {
+                                                        androidx.compose.material3.TextButton(
+                                                            onClick = {
+                                                                confirmDeleteOriginal = false
+                                                            }
+                                                        ) { androidx.compose.material3.Text("Cancel") }
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    },
+                                )
+                            }
                         }
 
                         is Export -> {

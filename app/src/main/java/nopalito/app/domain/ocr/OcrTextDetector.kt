@@ -57,11 +57,18 @@ class OcrTextDetector(
         bitmap: Bitmap,
         pageSegMode: Int = TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK,
     ): List<OcrTextBox> {
-        val prepared = runCatching { binarize(bitmap) }.getOrNull() ?: bitmap
+        // Order matters: upscale small captures BEFORE binarizing. Binarizing
+        // a 773px camera crop first turns sensor noise into speckle that the
+        // later upscale bakes in; upscaling grayscale pixels first preserves
+        // glyph shapes for the adaptive threshold. Big imports are unaffected
+        // (upscale is a no-op for them).
+        val sized = runCatching { ocrService.upscaleForOcr(bitmap) }.getOrNull() ?: bitmap
+        val prepared = runCatching { binarize(sized) }.getOrNull() ?: sized
         try {
             return ocrService.runOcr(prepared, pageSegMode)
         } finally {
-            if (prepared !== bitmap) prepared.recycle()
+            if (prepared !== sized && !prepared.isRecycled) prepared.recycle()
+            if (sized !== bitmap && !sized.isRecycled) sized.recycle()
         }
     }
 

@@ -22,7 +22,6 @@
 package nopalito.app.ui.screens.export
 
 import android.net.Uri
-import androidx.core.net.toUri
 import nopalito.app.ui.screens.history.ExportHistoryEntity
 import java.io.File
 
@@ -32,6 +31,10 @@ import java.io.File
  * the history, and result opening.
  */
 object ExportArtifactMapper {
+
+    private fun parseUri(value: String?): Uri? = value?.takeIf { it.isNotBlank() }?.let {
+        runCatching { Uri.parse(it) }.getOrNull()
+    }
 
     /**
      * Maps a save ([SavedBundle]) — and optionally its generation result
@@ -99,7 +102,7 @@ object ExportArtifactMapper {
                         displayName = uri.substringAfterLast('/'),
                         itemCount = 1,
                         sizeInBytes = 0,
-                        uri = uri.toUri(),
+                        uri = parseUri(uri),
                     )
                 }
                 ?: emptyList()
@@ -110,19 +113,21 @@ object ExportArtifactMapper {
                 itemCount = entity.exportedItemCount,
                 sizeInBytes = entity.fileSizeBytes,
                 createdAt = entity.dateTime,
-                uri = entity.exportedFilePath?.toUri()
+                uri = parseUri(entity.exportedFilePath)
                     ?: entity.backupDirPath?.let { dir ->
                         File(dir).listFiles()?.firstOrNull()?.let { Uri.fromFile(it) }
                     },
-                folderUri = entity.exportedFolderUri?.toUri(),
+                folderUri = parseUri(entity.exportedFolderUri),
                 children = children,
             )
         }
         // Prefer the private backup copy: it survives deletion from Downloads and
         // is readable via FileProvider (openUri converts file:// to a provider uri).
         val uri = entity.backupPath?.let { Uri.fromFile(File(it)) }
-            ?: entity.exportedFilePath?.takeIf { it.isNotBlank() }?.toUri()
-            ?: return null
+            ?: parseUri(entity.exportedFilePath)
+        if (uri == null && entity.backupPath.isNullOrBlank() && entity.exportedFilePath.isNullOrBlank()) {
+            return null
+        }
         return ExportArtifact(
             type = ExportArtifactType.FILE,
             format = format,

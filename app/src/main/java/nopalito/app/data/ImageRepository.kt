@@ -72,12 +72,123 @@ class ImageRepository(
     private val sourceDir = File(scanRootDir, SOURCE_DIR_NAME).apply { mkdirs() }
     private val processedDir = File(scanRootDir, PROCESSED_DIR_NAME).apply { mkdirs() }
     private val thumbnailDir = File(scanRootDir, THUMBNAIL_DIR_NAME)
+    private val scanRoot: File = scanRootDir
+    private val originalsDir: File get() = OriginalStore.originalsDir(scanRoot)
+    private val safeDir: File get() = OriginalStore.safeDir(scanRoot)
 
     private val mutex = Mutex()
 
     private val metadataFile = File(processedDir, "document.json")
     private val json = Json { prettyPrint = false; encodeDefaults = true }
     private var pages: PageStore = PageStore(loadPages())
+
+    // Lazy, opt-in reference work: no capture-time hashing, decoding or variant allocations.
+    val variants by lazy { ProcessingVariantStore(scanRoot) }
+    private val referenceMutex = Mutex()
+
+    suspend fun referenceSelection(id: String): VariantSelection = withContext(Dispatchers.IO) {
+        variants.selection(id)
+    }
+
+    suspend fun referenceVariants(id: String): List<VariantMetadata> = withContext(Dispatchers.IO) {
+        variants.comparison(id)
+    }
+
+    suspend fun deleteCandidateReference(id: String) = referenceMutex.withLock {
+        withContext(Dispatchers.IO) {
+            variants.deleteCandidate(id)
+            val selection = variants.selection(id)
+            mutex.withLock {
+                pages.update(id) {
+                    it.copy(
+                        candidateVariantId = selection.candidateVariantId,
+                        activeVariantId = selection.activeVariantId
+                    )
+                }
+                saveMetadata(atomically = true)
+            }
+        }
+    }
+
+    /** This action never replaces the editor JPEG, its caches, or the preserved original. */
+    suspend fun createBaselineReference(
+        id: String,
+        freezeStored: Boolean,
+        flags: nopalito.app.domain.ScanPipelineFlags,
+    ): VariantMetadata = referenceMutex.withLock {
+        val snapshot = mutex.withLock { requireNotNull(pages.get(id)) { "Page no longer exists" } }
+        val stored = processedImageFile(
+            PageViewKey(
+                id,
+                Rotation.R0,
+                snapshot.colorMode,
+                snapshot.quadVersion
+            )
+        )
+        val source = nopalito.app.domain.BaselineSource(originalFile(id), sourceFile(id), stored)
+        val useCase = nopalito.app.domain.ReprocessBaselineUseCase(
+            variants,
+            nopalito.app.domain.DewarpGate { android.util.Log.i("Dewarp", it) })
+        try {
+            // Freeze the visible reference before the first regeneration. Active remains this JPEG.
+            if (!freezeStored && variants.selection(id).baselineVariantId == null) {
+                useCase.run(
+                    id,
+                    source,
+                    flags,
+                    true,
+                    { nopalito.app.platform.BaselineReference.render(snapshot, it) },
+                    { input, output, kind, storedCopy ->
+                        nopalito.app.platform.BaselineReference.recipe(
+                            snapshot,
+                            input,
+                            output,
+                            kind,
+                            storedCopy
+                        )
+                    },
+                    { mutex.withLock { check(pages.get(id) == snapshot) { "Page changed during processing" } } })
+            }
+            useCase.run(
+                id,
+                source,
+                flags,
+                freezeStored || snapshot.toMetadata() == null,
+                { nopalito.app.platform.BaselineReference.render(snapshot, it) },
+                { input, output, kind, storedCopy ->
+                    nopalito.app.platform.BaselineReference.recipe(
+                        snapshot,
+                        input,
+                        output,
+                        kind,
+                        storedCopy
+                    )
+                },
+                { mutex.withLock { check(pages.get(id) == snapshot) { "Page changed during processing" } } })
+        } finally {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+                val selection = variants.selection(id)
+                val active = selection.activeVariantId?.let { variants.metadata(id, it) }
+                mutex.withLock {
+                    // Do not overwrite concurrent color/crop/rotation edits with an old snapshot.
+                    pages.update(id) { current ->
+                        current.copy(
+                            activeVariantId = selection.activeVariantId,
+                            baselineVariantId = selection.baselineVariantId,
+                            candidateVariantId = selection.candidateVariantId,
+                            variantsVersion = selection.variantsVersion,
+                            processingRecipeHash = active?.identity?.recipeHash,
+                            algorithmId = active?.identity?.algorithmId,
+                            regionId = active?.identity?.regionId,
+                            processingStatus = selection.processingStatus,
+                            processingError = selection.processingError,
+                        )
+                    }
+                    saveMetadata(atomically = true)
+                }
+            }
+        }
+    }
 
     /** Persisted flag: the current document is an INE (credential front/back) session. */
     private var isIne: Boolean = false
@@ -160,18 +271,48 @@ class ImageRepository(
     }
 
     private fun migrateFromV1(meta: DocumentMetadataV1): DocumentMetadataV2 =
-        DocumentMetadataV2(pages = meta.pages.map { pageFromLegacyFileName(it.file) })
+        DocumentMetadataV2(
+            pages = meta.pages.map { pageFromLegacyFileName(it.file) },
+            schemaVersion = "2.1",
+            pipelineVersion = nopalito.app.domain.CaptureMetadata.PIPELINE_VERSION,
+        )
 
     private fun pageFromLegacyFileName(fileName: String): PageV2 {
         val name = fileName.removeSuffix(".jpg")
         val dashIndex = name.lastIndexOf('-')
         val id = if (dashIndex >= 0) name.substring(0, dashIndex) else name
-        return PageV2(id)
+        // Legacy docs never had a preserved original: mark explicitly so
+        // export falls back to scanned_pages with a warning.
+        return PageV2(id, hasOriginal = false, processingStatus = "PROCESSED")
     }
 
-    private fun saveMetadata() {
-        val metadata = DocumentMetadataV2(pages = pages.pages(), isIne = isIne)
-        metadataFile.writeText(json.encodeToString(metadata))
+    private fun saveMetadata(atomically: Boolean = false) {
+        val metadata = DocumentMetadataV2(
+            pages = pages.pages(),
+            isIne = isIne,
+            schemaVersion = "2.1",
+            pipelineVersion = nopalito.app.domain.CaptureMetadata.PIPELINE_VERSION,
+        )
+        if (!atomically) {
+            metadataFile.writeText(json.encodeToString(metadata))
+            return
+        }
+        val temporary =
+            File(metadataFile.parentFile, ".tmp-document-${java.util.UUID.randomUUID()}")
+        try {
+            java.io.FileOutputStream(temporary).use { stream ->
+                stream.write(json.encodeToString(metadata).toByteArray(Charsets.UTF_8))
+                stream.fd.sync()
+            }
+            java.nio.file.Files.move(
+                temporary.toPath(),
+                metadataFile.toPath(),
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
+        } finally {
+            temporary.delete()
+        }
     }
 
     // --- Main API ---
@@ -207,12 +348,116 @@ class ImageRepository(
                     subjectDistance = metadata.opticalMeasures?.subjectDistance,
                     sourceWidth = metadata.sourceSize?.width?.toInt(),
                     sourceHeight = metadata.sourceSize?.height?.toInt(),
+                    hasOriginal = false,
+                    processingStatus = "PROCESSED",
                 )
             )
             saveMetadata()
             // Pre-populate cache for R0
             imageCache.put(key, CompletableDeferred(processed))
         }
+
+    class InsufficientStorageException(val requiredBytes: Long, val freeBytes: Long) :
+        java.io.IOException("insufficient storage: required=$requiredBytes free=$freeBytes")
+
+    class AtomicMoveException(reason: String) : java.io.IOException(reason)
+
+    class InvalidCaptureException(reason: String) : java.io.IOException(reason)
+
+    /**
+     * Phase 1 file-capture persist: moves the CameraX temp file into
+     * `originals/<id>.jpg` atomically, writes the processed page, and records
+     * real dimensions. Never overwrites an existing id; failures keep the
+     * temp file for diagnosis except on cancellation.
+     */
+    suspend fun addFileCapture(
+        originalTemp: File,
+        processed: Jpeg,
+        metadata: PageMetadata,
+        colorMode: ColorMode,
+        tier: nopalito.app.domain.CaptureTier,
+        originalSha256: String?,
+        capturedWidth: Int?,
+        capturedHeight: Int?,
+        workingWidth: Int?,
+        workingHeight: Int?,
+        processedWidth: Int?,
+        processedHeight: Int?,
+        cameraId: String?,
+        rotationDegrees: Int,
+        exifOrientation: Int,
+        captureMode: String?,
+    ): String = mutex.withLock {
+        val id = "${System.currentTimeMillis()}"
+        when (val move = OriginalStore.finalizeCapture(originalTemp, originalsDir, id)) {
+            is AtomicMoveResult.Success -> {
+                val key = PageViewKey(id, Rotation.R0, colorMode, 0)
+                val processedFile = processedImageFile(key)
+                processedFile.writeBytes(processed.bytes)
+                // Legacy working source is not duplicated: editor prefers
+                // originals/ when present (see updatePage).
+                pages.addOrReplace(
+                    PageV2(
+                        id = id,
+                        quad = metadata.normalizedQuad.toSerializable(),
+                        baseRotationDegrees = metadata.baseRotation.degrees,
+                        manualRotationDegrees = Rotation.R0.degrees,
+                        isColored = metadata.autoColorMode == ColorMode.COLOR,
+                        colorMode = colorMode,
+                        focalLength = metadata.opticalMeasures?.cameraIntrinsics?.focalLength,
+                        sensorWidth = metadata.opticalMeasures?.cameraIntrinsics?.sensorWidth,
+                        subjectDistance = metadata.opticalMeasures?.subjectDistance,
+                        sourceWidth = metadata.sourceSize?.width?.toInt(),
+                        sourceHeight = metadata.sourceSize?.height?.toInt(),
+                        captureTier = tier.name,
+                        originalCaptureTier = tier.name,
+                        capturedWidth = capturedWidth,
+                        capturedHeight = capturedHeight,
+                        workingWidth = workingWidth,
+                        workingHeight = workingHeight,
+                        processedWidth = processedWidth,
+                        processedHeight = processedHeight,
+                        sourceFile = "originals/$id.jpg",
+                        processedFile = processedFile.name,
+                        sourceFileSize = move.finalFile.length(),
+                        processedFileSize = processed.bytes.size.toLong(),
+                        sourceSha256 = move.sha256,
+                        jpegQuality = nopalito.app.domain.ExportQuality.BALANCED.jpegQuality,
+                        captureMode = captureMode,
+                        cameraId = cameraId,
+                        rotationDegrees = rotationDegrees,
+                        exifOrientation = exifOrientation,
+                        timestamp = System.currentTimeMillis(),
+                        pipelineVersion = nopalito.app.domain.CaptureMetadata.PIPELINE_VERSION,
+                        hasOriginal = true,
+                        processingStatus = "PROCESSED",
+                    )
+                )
+                saveMetadata()
+                imageCache.put(key, CompletableDeferred(processed))
+                id
+            }
+
+            is AtomicMoveResult.InsufficientStorage ->
+                throw InsufficientStorageException(move.requiredBytes, move.freeBytes)
+
+            is AtomicMoveResult.AtomicMoveFailed ->
+                throw AtomicMoveException(move.reason)
+
+            is AtomicMoveResult.InvalidCapture ->
+                throw InvalidCaptureException(move.reason)
+
+            is AtomicMoveResult.Cancelled ->
+                throw java.util.concurrent.CancellationException("capture cancelled")
+        }
+    }
+
+    suspend fun markProcessingFailed(id: String, error: String?) {
+        mutex.withLock {
+            pages.update(id) { it.copy(processingStatus = "FAILED", processingError = error) }
+            saveMetadata()
+        }
+    }
 
     suspend fun setColorMode(id: String, colorMode: ColorMode) {
         updatePage(id) { page, metadata ->
@@ -249,8 +494,10 @@ class ImageRepository(
     ) {
         val page = mutex.withLock { pages.get(id) }
         val metadata = page?.toMetadata() ?: return
-        val sourceFile = sourceFile(id)
-        if (!sourceFile.exists())
+        // Prefer the preserved original; fall back to the legacy working
+        // source for documents captured before Phase 1.
+        val masterFile = if (originalFile(id).exists()) originalFile(id) else sourceFile(id)
+        if (!masterFile.exists())
             return
 
         val update = buildUpdate(page, metadata)
@@ -265,7 +512,7 @@ class ImageRepository(
         val job = processingJobs.computeIfAbsent(key) {
             scope.async(Dispatchers.IO) {
                 if (!processedFile.exists()) {
-                    val sourceJpeg = Jpeg(sourceFile.readBytes())
+                    val sourceJpeg = Jpeg(masterFile.readBytes())
                     val processedJpeg =
                         transformations.process(
                             sourceJpeg,
@@ -283,7 +530,17 @@ class ImageRepository(
         }
 
         mutex.withLock {
-            pages.update(id) { update.updatedPage }
+            val bounds =
+                android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(processedFile.absolutePath, bounds)
+            pages.update(id) {
+                update.updatedPage.copy(
+                    processedFile = processedFile.name,
+                    processedFileSize = runCatching { processedFile.length() }.getOrNull(),
+                    processedWidth = bounds.outWidth.takeIf { it > 0 },
+                    processedHeight = bounds.outHeight.takeIf { it > 0 },
+                )
+            }
             saveMetadata()
         }
     }
@@ -323,7 +580,8 @@ class ImageRepository(
         return getOrCompute(previewBaseCache, PreviewBaseKey(id, page.quadVersion)) {
             withContext(Dispatchers.IO) {
                 val metadata = page.toMetadata() ?: return@withContext null
-                val file = sourceFile(page.id)
+                val file =
+                    if (originalFile(page.id).exists()) originalFile(page.id) else sourceFile(page.id)
                 if (!file.exists()) return@withContext null
                 runCatching {
                     val neutral = transformations.process(
@@ -449,6 +707,85 @@ class ImageRepository(
     }
 
     /**
+     * Phase 1 original handling.
+     *
+     * - `originals/` is the master source and is never deleted by quota.
+     * - `safe/` is optional and regenerable; quota LRU may delete it.
+     * - `sources/` (legacy working source) is kept for backward compat.
+     */
+    fun originalFile(id: String): File = File(originalsDir, "$id.jpg")
+
+    fun safeJpegFile(id: String): File = File(safeDir, "$id.jpg")
+
+    fun hasOriginal(id: String): Boolean =
+        runCatching { originalFile(id).exists() }.getOrDefault(false)
+
+    fun originalBytes(id: String): ByteArray? {
+        val f = originalFile(id)
+        return if (f.exists()) runCatching { f.readBytes() }.getOrNull() else null
+    }
+
+    /**
+     * Editing master bytes: the preserved original for Phase 1 captures,
+     * the legacy working source otherwise. Crop init must use this: file
+     * captures never write `sources/`, so [source] alone returns null and
+     * the crop screen opens empty.
+     */
+    fun masterBytes(id: String): ByteArray? =
+        originalBytes(id) ?: source(id)?.bytes
+
+    fun safeBytes(id: String): ByteArray? {
+        val f = safeJpegFile(id)
+        return if (f.exists()) runCatching { f.readBytes() }.getOrNull() else null
+    }
+
+    suspend fun pageRecord(id: String): PageV2? = mutex.withLock { pages.get(id) }
+
+    /**
+     * Quota cleanup: deletes only regenerable files (safe/, thumbnails,
+     * processed files that can be re-rendered from source). Never deletes
+     * `originals/`. Returns freed bytes.
+     */
+    suspend fun enforceQuota(maxSafeBytes: Long = 300L * 1024L * 1024L): Long =
+        withContext(Dispatchers.IO) {
+            var freed = 0L
+            val safeFiles = safeDir.listFiles()?.sortedBy { it.lastModified() }.orEmpty()
+            var total = safeFiles.sumOf { it.length() }
+            for (f in safeFiles) {
+                if (total <= maxSafeBytes) break
+                val size = f.length()
+                if (f.delete()) {
+                    freed += size
+                    total -= size
+                }
+            }
+            thumbnailDir.listFiles()?.forEach { it.delete() }
+            freed
+        }
+
+    /**
+     * Explicit user-initiated deletion of a preserved original. Callers must
+     * show confirmation explaining that ORIGINAL export and HIGH reprocessing
+     * from the master will stop working for this page.
+     */
+    suspend fun deleteOriginalWithConfirmation(id: String, confirmed: Boolean): Boolean {
+        if (!confirmed) return false
+        return mutex.withLock {
+            val page = pages.get(id) ?: return@withLock false
+            runCatching { originalFile(id).delete() }
+            pages.update(id) {
+                it.copy(
+                    hasOriginal = false,
+                    sourceFile = null,
+                    sourceSha256 = null
+                )
+            }
+            saveMetadata()
+            !originalFile(page.id).exists()
+        }
+    }
+
+    /**
      * Moves the whole page object with [id] to [newIndex] and returns the new
      * ordered snapshot atomically (move + persist + snapshot under a single
      * lock), so concurrent reorder calls can never interleave a stale read
@@ -481,6 +818,8 @@ class ImageRepository(
         pages.delete(id)
         saveMetadata()
         sourceFile(id).delete()
+        runCatching { originalFile(id).delete() }
+        runCatching { safeJpegFile(id).delete() }
         processedDir.listFiles()
             ?.filter { it.name.startsWith("$id.") || it.name.startsWith("$id-") }
             ?.forEach { it.delete() }
@@ -540,6 +879,8 @@ class ImageRepository(
         pages.clear()
         saveMetadata()
         sourceDir.listFiles()?.forEach { it.delete() }
+        runCatching { originalsDir.listFiles()?.forEach { it.delete() } }
+        runCatching { safeDir.listFiles()?.forEach { it.delete() } }
         processedDir.listFiles()?.forEach { it.delete() }
         synchronized(imageCache) { imageCache.clear() }
         synchronized(thumbnailCache) { thumbnailCache.clear() }

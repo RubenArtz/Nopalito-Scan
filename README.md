@@ -57,14 +57,14 @@ Included document utilities in the same app:
 Document detection, perspective correction, image enhancement, PDF generation and OCR run on
 the device for the base capture-to-file flow:
 
-| Component                  | Purpose                                         |
-|----------------------------|-------------------------------------------------|
-| Kotlin and Jetpack Compose | Android application and user interface          |
-| CameraX                    | Camera capture                                  |
-| LiteRT                     | On-device document segmentation model inference (`fairscan-segmentation-model.tflite`) |
-| OpenCV                     | Perspective correction and image enhancement    |
+| Component                  | Purpose                                                                                              |
+|----------------------------|------------------------------------------------------------------------------------------------------|
+| Kotlin and Jetpack Compose | Android application and user interface                                                               |
+| CameraX                    | Camera capture                                                                                       |
+| LiteRT                     | On-device document segmentation model inference (`fairscan-segmentation-model.tflite`)               |
+| OpenCV                     | Perspective correction and image enhancement                                                         |
 | Tesseract                  | Optical character recognition (OCR); language data is downloaded from the official Tesseract project |
-| PDFBox-Android             | PDF generation                                  |
+| PDFBox-Android             | PDF generation                                                                                       |
 
 Network use on the device: cleartext traffic is blocked (`network_security_config.xml` sets
 `cleartextTrafficPermitted="false"`). `INTERNET` is declared for OCR language-data downloads

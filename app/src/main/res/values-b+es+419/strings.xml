@@ -130,9 +130,10 @@
     <!-- Export screen: compression level options -->
     <string name="export_quality_original">Sin compresión</string>
     <string name="export_quality_balanced">Equilibrada</string>
-    <string name="export_quality_high">Alta</string>
+    <string name="export_quality_high">Alta resolución, máximo 6 MP en esta versión</string>
     <string name="export_quality_compressed">Comprimida</string>
     <string name="export_quality_max_compression">Compresión máxima</string>
+    <string name="focus_not_confirmed">Enfoque no confirmado — captura guardada de todos modos</string>
     <!-- Export screen: optional password protection for PDF / Word exports -->
     <string name="export_protect_document">Proteger con contraseña</string>
     <string name="export_password">Contraseña</string>

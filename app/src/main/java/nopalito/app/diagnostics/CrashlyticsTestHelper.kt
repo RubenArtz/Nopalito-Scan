@@ -23,6 +23,8 @@ package nopalito.app.diagnostics
 
 import android.util.Log
 import nopalito.app.BuildConfig
+import nopalito.app.diagnostics.CrashlyticsTestHelper.testCrashlytics
+import nopalito.app.diagnostics.CrashlyticsTestHelper.testNonFatalCrashlytics
 
 /**
  * Debug-only entry points to verify the Firebase consoles end to end.

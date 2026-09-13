@@ -51,6 +51,14 @@ enum class Mode {
  */
 private const val LIVE_ANALYSIS_MIN_QUAD_SCORE = 0.5
 
+/**
+ * Imported photos can contain strong rectangular content inside the page.
+ * Require a document-sized candidate before replacing the full-image editor
+ * fallback with an automatic crop.
+ */
+private const val IMPORT_MIN_QUAD_SCORE = 0.5
+private const val IMPORT_MIN_QUAD_AREA_RATIO = 0.15
+
 fun detectDocumentQuad(mask: Mask, originalSize: ImageSize, mode: Mode): Quad? {
     val mat = mask.toMat()
     // Best thresholds on test dataset: {0.95=146, 0.85=39, 0.75=35, 0.90=8, 0.70=1, 0.35=1}
@@ -58,9 +66,20 @@ fun detectDocumentQuad(mask: Mask, originalSize: ImageSize, mode: Mode): Quad? {
     val thresholds =
         if (mode == Mode.CAPTURE) listOf(0.5, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95)
         else listOf(0.5, 0.7, 0.85, 0.9, 0.95)
-    val minQuadScore = if (mode == Mode.LIVE_ANALYSIS) LIVE_ANALYSIS_MIN_QUAD_SCORE else 0.0
+    val minQuadScore = when (mode) {
+        Mode.LIVE_ANALYSIS -> LIVE_ANALYSIS_MIN_QUAD_SCORE
+        Mode.IMPORT -> IMPORT_MIN_QUAD_SCORE
+        Mode.CAPTURE -> 0.0
+    }
+    val minQuadAreaRatio = if (mode == Mode.IMPORT) IMPORT_MIN_QUAD_AREA_RATIO else 0.02
     var vertices =
-        findQuadFromOrientationWithAdaptiveThreshold(mat, originalSize, thresholds, minQuadScore)
+        findQuadFromOrientationWithAdaptiveThreshold(
+            mat,
+            originalSize,
+            thresholds,
+            minQuadScore,
+            minQuadAreaRatio,
+        )
             ?.map { Point(it.x, it.y) }
 
     if (vertices == null && mode == Mode.CAPTURE) {
@@ -82,6 +101,7 @@ fun findQuadFromOrientationWithAdaptiveThreshold(
     originalSize: ImageSize,
     thresholds: List<Double>,
     minScore: Double = 0.0,
+    minQuadAreaRatio: Double = 0.02,
 ): List<org.opencv.core.Point>? {
     val probmapU8 = Mat()
     val probmap = maskMat
@@ -100,7 +120,7 @@ fun findQuadFromOrientationWithAdaptiveThreshold(
         if (quad != null) {
             val probFloat = Mat()
             probmap.convertTo(probFloat, CvType.CV_32F)
-            val score = scoreQuadAgainstProbmap(quad, probFloat, minQuadAreaRatio = 0.02)
+            val score = scoreQuadAgainstProbmap(quad, probFloat, minQuadAreaRatio)
             if (score > bestScore && score >= minScore) {
                 bestScore = score
                 bestQuad = quad

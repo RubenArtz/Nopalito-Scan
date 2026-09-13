@@ -41,6 +41,34 @@ import org.opencv.imgproc.Imgproc
 import kotlin.math.max
 import kotlin.math.sqrt
 
+/**
+ * Pure OCR normalization scale math (unit-testable, no Bitmap needed).
+ * Small captures scale up (capped 2x per step); large ones scale down to the
+ * 2200px long side; total pixels are capped for low-RAM devices.
+ */
+internal fun ocrScaleFor(width: Int, height: Int): Float {
+    val targetLong = 2200f
+    val minLong = 1500f
+    val maxPixels = 2_600_000.0
+    val longSide = max(width, height).toFloat().coerceAtLeast(1f)
+    var scale = 1f
+    when {
+        longSide > targetLong -> scale = targetLong / longSide
+        longSide < minLong -> scale = (minLong / longSide).coerceAtMost(2f)
+    }
+    // Narrow crops (tall receipts): the long side can pass while the short
+    // side stays tiny and x-height unreadable. Floor it as well; the
+    // maxPixels guard below still caps total cost.
+    val shortSide = minOf(width, height).toFloat().coerceAtLeast(1f)
+    scale = max(scale, (900f / shortSide).coerceAtMost(2f))
+    // Safety cap in MP (low-RAM devices).
+    val scaledPixels = width.toDouble() * height.toDouble() * scale * scale
+    if (scaledPixels > maxPixels) {
+        scale *= sqrt(maxPixels / scaledPixels).toFloat()
+    }
+    return scale
+}
+
 class OcrService(
     private val ocrLanguageRepository: OcrLanguageRepository,
     private val scope: CoroutineScope,
@@ -241,27 +269,36 @@ class OcrService(
      * Returns (bitmapToUse, inverseScale) to remap boxes to the original.
      */
     private fun prepareBitmapForOcr(bitmap: Bitmap): Pair<Bitmap, Float> {
-        val targetLong = 2200f
-        val minLong = 1500f
-        val maxPixels = 2_600_000.0
-        val longSide = max(bitmap.width, bitmap.height).toFloat().coerceAtLeast(1f)
-        var scale = 1f
-        when {
-            longSide > targetLong -> scale = targetLong / longSide
-            longSide < minLong -> scale = (minLong / longSide).coerceAtMost(2f)
-        }
-        // Narrow crops (tall receipts): the long side can pass while the short
-        // side stays tiny and x-height unreadable. Floor it as well; the
-        // maxPixels guard below still caps total cost.
-        val shortSide = minOf(bitmap.width, bitmap.height).toFloat().coerceAtLeast(1f)
-        scale = max(scale, (900f / shortSide).coerceAtMost(2f))
-        // Safety cap in MP (low-RAM devices).
-        val scaledPixels = bitmap.width.toDouble() * bitmap.height.toDouble() * scale * scale
-        if (scaledPixels > maxPixels) {
-            scale *= sqrt(maxPixels / scaledPixels).toFloat()
-        }
+        val scale = ocrScaleFor(bitmap.width, bitmap.height)
         val needsConvert = bitmap.config != Bitmap.Config.ARGB_8888
         if (scale == 1f && !needsConvert) return bitmap to 1f
+        return scaledArgb(bitmap, scale) to (1f / scale)
+    }
+
+    /**
+     * Upscales small captures to OCR resolution WITHOUT binarizing.
+     * Binarizing a 773px camera crop first destroys thin strokes (adaptive
+     * threshold turns noise into speckle that Tesseract then upscales);
+     * upscaling the grayscale pixels first preserves glyph shapes, as proven
+     * against real captures. No-op (same instance) when already big enough.
+     * Callers must recycle the result when !== input.
+     */
+    internal fun upscaleForOcr(bitmap: Bitmap): Bitmap {
+        if (bitmap.isRecycled) return bitmap
+        val scale = ocrScaleFor(bitmap.width, bitmap.height)
+        if (scale == 1f && bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
+        return scaledArgb(bitmap, scale)
+    }
+
+    /**
+     * Pure scale math for OCR normalization (unit-testable, no Bitmap needed).
+     * Small captures scale up (capped 2x per step); large ones scale down to
+     * the 2200px long side; total pixels are capped for low-RAM devices.
+     */
+    internal fun ocrScaleFor(width: Int, height: Int): Float =
+        nopalito.app.domain.ocrScaleFor(width, height)
+
+    private fun scaledArgb(bitmap: Bitmap, scale: Float): Bitmap {
         val newW = (bitmap.width * scale).toInt().coerceAtLeast(1)
         val newH = (bitmap.height * scale).toInt().coerceAtLeast(1)
         // Bilinear (filter=true): preserves thin strokes; nearest breaks them.
@@ -271,7 +308,7 @@ class OcrService(
             if (c !== scaled && !scaled.isRecycled) scaled.recycle()
             c
         } else scaled
-        return argb to (1f / scale)
+        return argb
     }
 
     /**

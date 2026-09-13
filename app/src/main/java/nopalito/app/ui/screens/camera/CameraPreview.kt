@@ -97,7 +97,6 @@ import nopalito.app.R
 import nopalito.app.ui.components.CameraPermissionState
 import nopalito.imageprocessing.CameraIntrinsics
 import nopalito.imageprocessing.ImageSize
-import nopalito.imageprocessing.LensSpec
 import nopalito.imageprocessing.OpticalMeasures
 import nopalito.imageprocessing.PartialShape
 import nopalito.imageprocessing.Point
@@ -106,7 +105,6 @@ import nopalito.imageprocessing.QuadSpring
 import nopalito.imageprocessing.cameraIntrinsics
 import nopalito.imageprocessing.mapAnalysisPointToPreview
 import nopalito.imageprocessing.mapAnalysisQuadToPreview
-import nopalito.imageprocessing.pickUltraWideLens
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -121,6 +119,7 @@ fun CameraPreview(
     onImageAnalyzed: ((ImageProxy) -> Unit)? = null,
     onCameraBound: (String?) -> Unit = {},
     torchEnabled: Boolean = false,
+    captureTier: nopalito.app.domain.CaptureTier = nopalito.app.domain.CaptureTier.BALANCED,
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
@@ -179,7 +178,7 @@ fun CameraPreview(
                 }
             )
 
-            LaunchedEffect(previewView, retryKey, torchEnabled) {
+            LaunchedEffect(previewView, retryKey, torchEnabled, captureTier) {
                 val view = previewView ?: return@LaunchedEffect
 
                 val provider = cameraProviderFuture.get()
@@ -194,6 +193,7 @@ fun CameraPreview(
                         analysisExecutor = analysisExecutor,
                         onCameraBound = onCameraBound,
                         torchEnabled = torchEnabled,
+                        captureTier = captureTier,
                     )
                 }
 
@@ -238,18 +238,20 @@ fun bindCameraUseCases(
     analysisExecutor: java.util.concurrent.Executor? = null,
     onCameraBound: (String?) -> Unit = {},
     torchEnabled: Boolean = false,
+    captureTier: nopalito.app.domain.CaptureTier = nopalito.app.domain.CaptureTier.BALANCED,
 ) {
     cameraProvider.unbindAll()
 
-    // With the torch on, the ultra-wide lens is skipped: the auxiliary back
-    // cameras expose no flash unit of their own, so the default back camera
-    // is used instead (its torch actually works). Back to 0.6x when off.
-    val wideCameraId = if (torchEnabled) null else findUltraWideCameraId(cameraProvider)
-    val cameraSelector = if (wideCameraId != null) {
+    // Document-lens policy (Phase 1): always the primary rear camera (1x).
+    // The torch is never a lens selector (it would glare on paper); it only
+    // drives the flash unit of whichever camera is bound. No automatic
+    // switching between lenses in this phase.
+    val lensDecision = selectDocumentLens(cameraProvider)
+    val cameraSelector = if (lensDecision.cameraId != null) {
         CameraSelector.Builder()
             .requireLensFacing(CameraSelector.LENS_FACING_BACK)
             .addCameraFilter { infos ->
-                infos.filter { Camera2CameraInfo.from(it).getCameraId() == wideCameraId }
+                infos.filter { Camera2CameraInfo.from(it).getCameraId() == lensDecision.cameraId }
             }
             .build()
     } else {
@@ -268,13 +270,38 @@ fun bindCameraUseCases(
     // Capture is optimized for latency, not max quality: shutter is instant and
     // the preview freezes immediately, so moving the phone after tap does not
     // change the captured frame.
+    // Phase 1: resolution follows CaptureTier. LOW keeps legacy 1920x1440
+    // (~2 MP) + MINIMIZE_LATENCY; BALANCED asks up to 6 MP; HIGH/ORIGINAL ask
+    // the highest reasonable 4:3 resolution and use MAXIMIZE_QUALITY with
+    // direct file output so the original is preserved without app reprocessing.
+    val (captureSize, captureMode, tierLabel) = when (captureTier) {
+        nopalito.app.domain.CaptureTier.LOW ->
+            Triple(Size(1920, 1440), ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY, "LOW · 2MP")
+
+        nopalito.app.domain.CaptureTier.BALANCED ->
+            Triple(Size(3264, 2448), ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY, "BAL · 6MP")
+
+        nopalito.app.domain.CaptureTier.HIGH ->
+            Triple(Size(4032, 3024), ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY, "HIGH · max")
+
+        nopalito.app.domain.CaptureTier.ORIGINAL ->
+            Triple(Size(4032, 3024), ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY, "ORIG · max")
+    }
+    val fallbackRule = if (
+        captureTier == nopalito.app.domain.CaptureTier.HIGH ||
+        captureTier == nopalito.app.domain.CaptureTier.ORIGINAL
+    ) {
+        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+    } else {
+        ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
+    }
     val imageCaptureBuilder = ImageCapture.Builder()
         .setResolutionSelector(
             ResolutionSelector.Builder()
                 .setResolutionStrategy(
                     ResolutionStrategy(
-                        Size(1920, 1440),
-                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
+                        captureSize,
+                        fallbackRule
                     )
                 )
                 .setAspectRatioStrategy(
@@ -282,7 +309,7 @@ fun bindCameraUseCases(
                 )
                 .build()
         )
-        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setCaptureMode(captureMode)
         .setFlashMode(ImageCapture.FLASH_MODE_OFF)
 
     Camera2Interop.Extender(imageCaptureBuilder)
@@ -295,6 +322,19 @@ fun bindCameraUseCases(
                 result.get(CaptureResult.LENS_FOCUS_DISTANCE)?.let {
                     captureController.lastFocusDistanceDiopters = it
                 }
+                // Live focus/exposure snapshot for the auto-capture gate,
+                // per-capture diagnostics and the debug overlay. Values may be
+                // absent on HAL1-shim devices: null means "unavailable", never
+                // a fabricated value.
+                captureController.lastAfState = result.get(CaptureResult.CONTROL_AF_STATE)
+                captureController.lastAeState = result.get(CaptureResult.CONTROL_AE_STATE)
+                captureController.lastExposureNs =
+                    result.get(CaptureResult.SENSOR_EXPOSURE_TIME)
+                captureController.lastIso =
+                    result.get(CaptureResult.SENSOR_SENSITIVITY)
+                captureController.lastCropRegion =
+                    result.get(CaptureResult.SCALER_CROP_REGION)
+                captureController.lastFrameTimestampNs = result.frameNumber
             }
         })
 
@@ -340,47 +380,77 @@ fun bindCameraUseCases(
     captureController.cameraControl = camera.cameraControl
     captureController.cameraHasFlashUnit = camera.cameraInfo.hasFlashUnit()
     captureController.setCameraCharacteristics(Camera2CameraInfo.from(camera.cameraInfo))
-    val cameraLabel = if (wideCameraId != null) "0.6x · HD" else "1x · HD"
+    captureController.boundCameraId = runCatching {
+        Camera2CameraInfo.from(camera.cameraInfo).getCameraId()
+    }.getOrNull()
+    captureController.boundZoomRatio =
+        runCatching { camera.cameraInfo.zoomState.value?.zoomRatio }.getOrNull()
+    val cameraLabel = "1x · $tierLabel · cam${captureController.boundCameraId ?: "?"}"
     onCameraBound(cameraLabel)
-    // Apply the requested torch as soon as the (flash-capable) camera is bound.
-    if (torchEnabled && camera.cameraInfo.hasFlashUnit()) {
-        camera.cameraControl.enableTorch(true)
-    }
-    if (BuildConfig.DEBUG) {
-        Log.d(
-            "Camera",
-            "bound camera=${Camera2CameraInfo.from(camera.cameraInfo).getCameraId()} " +
-                    "label=$cameraLabel flashUnit=${camera.cameraInfo.hasFlashUnit()}"
-        )
-    }
-}
-
-@OptIn(ExperimentalCamera2Interop::class)
-private fun findUltraWideCameraId(provider: ProcessCameraProvider): String? {
-    val backLenses = provider.availableCameraInfos.mapNotNull { info ->
-        val camera2Info = Camera2CameraInfo.from(info)
-        val facing = camera2Info.getCameraCharacteristic(CameraCharacteristics.LENS_FACING)
-        if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
-            val focalLengths = camera2Info.getCameraCharacteristic(
-                CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS
-            )
-            val minFocal = focalLengths?.minOrNull()
-            if (minFocal != null) {
-                LensSpec(camera2Info.getCameraId(), minFocal.toDouble())
-            } else {
-                null
-            }
-        } else {
-            null
+    // Torch is manual illumination only, never a lens selector. If the bound
+    // (primary) camera has no flash unit, the request is ignored and logged.
+    if (torchEnabled) {
+        if (camera.cameraInfo.hasFlashUnit()) {
+            camera.cameraControl.enableTorch(true)
+        } else if (BuildConfig.DEBUG) {
+            Log.d("Camera", "torch requested but bound camera has no flash unit")
         }
     }
     if (BuildConfig.DEBUG) {
         Log.d(
             "Camera",
-            "back lenses: ${backLenses.joinToString { "${it.id}:${it.minFocalLengthMm}mm" }}"
+            "bound camera=${captureController.boundCameraId} " +
+                    "label=$cameraLabel flashUnit=${camera.cameraInfo.hasFlashUnit()} " +
+                    "focal=${captureController.cameraIntrinsics?.focalLength} " +
+                    "zoom=${captureController.boundZoomRatio} reason=${lensDecision.reason}"
         )
     }
-    return pickUltraWideLens(backLenses)?.id
+}
+
+/**
+ * Document-lens policy (Phase 1): the primary rear camera (1x) for every
+ * capture tier. Rationale: documents need the sharpest, least distorted
+ * optics with real autofocus; the 0.6x ultra-wide trades all three away.
+ *
+ * Fallback: CameraX's default back-facing selector already resolves to the
+ * primary rear camera. If a device exposed no back camera, [bindCameraUseCases]
+ * fails into the existing [CameraBindState.Error] + Retry path; the reason
+ * below documents which branch was taken. No automatic lens switching and no
+ * zoom-based selection in this phase.
+ */
+private data class LensDecision(val cameraId: String?, val reason: String)
+
+@OptIn(ExperimentalCamera2Interop::class)
+private fun selectDocumentLens(provider: ProcessCameraProvider): LensDecision {
+    if (BuildConfig.DEBUG) {
+        val inventory = provider.availableCameraInfos.mapNotNull { info ->
+            val camera2Info = Camera2CameraInfo.from(info)
+            val facing = camera2Info.getCameraCharacteristic(CameraCharacteristics.LENS_FACING)
+            if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                val focal = camera2Info.getCameraCharacteristic(
+                    CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS
+                )?.minOrNull()
+                "${camera2Info.getCameraId()}:${focal}mm"
+            } else {
+                null
+            }
+        }
+        Log.d("Camera", "back lenses: ${inventory.joinToString()} -> policy main-1x-default")
+    }
+    if (BuildConfig.DEBUG) {
+        val mainInfo = provider.availableCameraInfos.firstOrNull {
+            Camera2CameraInfo.from(it).getCameraCharacteristic(CameraCharacteristics.LENS_FACING) ==
+                    CameraCharacteristics.LENS_FACING_BACK
+        }?.let { Camera2CameraInfo.from(it) }
+        val jpegSizes = mainInfo?.getCameraCharacteristic(
+            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
+        )?.getOutputSizes(android.graphics.ImageFormat.JPEG)
+        Log.d(
+            "Camera",
+            "main jpeg sizes: ${jpegSizes?.joinToString { "${it.width}x${it.height}" } ?: "unavailable"}"
+        )
+    }
+    return LensDecision(null, "main-1x-default")
 }
 
 /**
@@ -658,9 +728,59 @@ class CameraCaptureController {
     var previewView: PreviewView? = null
     var cameraIntrinsics: CameraIntrinsics? = null
     var canUseFocusDistance = false
+    var boundCameraId: String? = null
+    var boundZoomRatio: Float? = null
 
     @Volatile
     var lastFocusDistanceDiopters: Float? = null
+
+    /**
+     * Latest preview-frame AF/AE/exposure snapshot. Null means the device did
+     * not deliver the value (e.g. HAL1 shim): "unavailable", never fabricated.
+     * AF state is a [androidx.compose.runtime.MutableState] so the debug
+     * overlay and the auto-capture gate observe it.
+     */
+    var lastAfState by mutableStateOf<Int?>(null)
+
+    @Volatile
+    var lastAeState: Int? = null
+
+    @Volatile
+    var lastExposureNs: Long? = null
+
+    @Volatile
+    var lastIso: Int? = null
+
+    @Volatile
+    var lastCropRegion: android.graphics.Rect? = null
+
+    @Volatile
+    var lastFrameTimestampNs: Long = 0L
+
+    /**
+     * Focus gate for auto-capture only. Returns (confirmed, statusName).
+     * Confirmed = FOCUSED_LOCKED or PASSIVE_FOCUSED. A null AF state means
+     * "focus state unavailable": the gate stays open and the status documents
+     * it instead of inventing stability.
+     */
+    fun focusGate(): Pair<Boolean, String> {
+        val af = lastAfState
+        if (af == null) return true to "focus state unavailable"
+        val confirmed = af == CameraMetadata.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                af == CameraMetadata.CONTROL_AF_STATE_PASSIVE_FOCUSED
+        return confirmed to afStateName(af)
+    }
+
+    fun afStateName(af: Int): String = when (af) {
+        CameraMetadata.CONTROL_AF_STATE_INACTIVE -> "INACTIVE"
+        CameraMetadata.CONTROL_AF_STATE_PASSIVE_SCAN -> "PASSIVE_SCAN"
+        CameraMetadata.CONTROL_AF_STATE_PASSIVE_FOCUSED -> "PASSIVE_FOCUSED"
+        CameraMetadata.CONTROL_AF_STATE_ACTIVE_SCAN -> "ACTIVE_SCAN"
+        CameraMetadata.CONTROL_AF_STATE_FOCUSED_LOCKED -> "FOCUS_LOCKED"
+        CameraMetadata.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED -> "NOT_FOCUSED_LOCKED"
+        CameraMetadata.CONTROL_AF_STATE_PASSIVE_UNFOCUSED -> "PASSIVE_UNFOCUSED"
+        else -> "UNKNOWN($af)"
+    }
 
     fun shutdown() {
         executor.shutdown()
@@ -686,6 +806,86 @@ class CameraCaptureController {
                 override fun onError(exception: ImageCaptureException) {
                     Log.e("CameraCapture", "Image capture failed: ${exception.message}", exception)
                     onImageCaptured(null, null)
+                }
+            }
+        )
+    }
+
+    /**
+     * Closest-available frame snapshot for diagnostics: values come from the
+     * last repeating preview result, i.e. the closest observable state to the
+     * exposure. Any null means "unavailable" on this device.
+     */
+    data class FrameSnapshot(
+        val afState: Int?,
+        val aeState: Int?,
+        val exposureNs: Long?,
+        val iso: Int?,
+        val focusDiopters: Float?,
+        val crop: String?,
+        val zoomRatio: Float?,
+        val focalMm: Float?,
+    )
+
+    fun frameSnapshot(): FrameSnapshot = FrameSnapshot(
+        afState = lastAfState,
+        aeState = lastAeState,
+        exposureNs = lastExposureNs,
+        iso = lastIso,
+        focusDiopters = lastFocusDistanceDiopters,
+        crop = lastCropRegion?.toShortString(),
+        zoomRatio = boundZoomRatio,
+        focalMm = cameraIntrinsics?.focalLength,
+    )
+
+    /**
+     * Phase 1 file capture: writes the CameraX JPEG directly to [destFile]
+     * without app reprocessing. CameraX 1.6.1 does not expose cancellation
+     * for [ImageCapture.takePicture] with OutputFileOptions, so callers must
+     * use a generationId: [captureId] is echoed back and stale callbacks
+     * (cancelled generation) must be ignored except for resource cleanup and
+     * deletion of their own temp file, never another capture's original.
+     */
+    fun takePictureToFile(
+        destFile: java.io.File,
+        captureId: Long,
+        onSaved: (
+            captureId: Long,
+            file: java.io.File,
+            OpticalMeasures?,
+            FrameSnapshot,
+        ) -> Unit,
+        onError: (captureId: Long, Throwable) -> Unit,
+    ) {
+        val capture = imageCapture ?: run {
+            onError(captureId, IllegalStateException("imageCapture not bound"))
+            return
+        }
+        destFile.parentFile?.mkdirs()
+        val options = ImageCapture.OutputFileOptions.Builder(destFile).build()
+        capture.takePicture(
+            options,
+            executor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    val diopters = lastFocusDistanceDiopters
+                    val subjectDistanceInMm =
+                        if (canUseFocusDistance && diopters != null && diopters != 0.0f) {
+                            1000 / diopters
+                        } else {
+                            null
+                        }
+                    onSaved(
+                        captureId,
+                        destFile,
+                        cameraIntrinsics?.let { OpticalMeasures(it, subjectDistanceInMm) },
+                        frameSnapshot(),
+                    )
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e("CameraCapture", "File capture failed: ${exception.message}", exception)
+                    onError(captureId, exception)
                 }
             }
         )

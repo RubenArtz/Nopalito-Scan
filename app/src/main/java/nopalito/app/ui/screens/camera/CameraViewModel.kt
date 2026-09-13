@@ -123,6 +123,18 @@ sealed interface CameraEvent {
     data class ImportError(val message: String) : CameraEvent
 }
 
+/** User-visible file-capture failures. ORIGINAL never downgrades silently. */
+sealed interface CaptureFileError {
+    data class InsufficientStorage(
+        val requiredBytes: Long,
+        val freeBytes: Long,
+        val tier: nopalito.app.domain.CaptureTier
+    ) : CaptureFileError
+
+    data class ProcessingFailed(val cause: String?) : CaptureFileError
+    data object Cancelled : CaptureFileError
+}
+
 class CameraViewModel(appContainer: AppContainer) : ViewModel() {
 
     private val imageSegmentationService = appContainer.imageSegmentationService
@@ -275,9 +287,40 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         }
     }
 
+    // --- Phase 1 file capture state (declared before init: init launches
+    // collectors that touch these flows) ---
+
+    private val captureGeneration = java.util.concurrent.atomic.AtomicLong(0L)
+    private var fileCaptureJob: Job? = null
+    private val pendingTempFiles = java.util.Collections.synchronizedMap(mutableMapOf<Long, File>())
+
+    private val _captureTier =
+        MutableStateFlow(nopalito.app.domain.CaptureTier.BALANCED)
+    val captureTier: StateFlow<nopalito.app.domain.CaptureTier> = _captureTier.asStateFlow()
+
+    private val _captureError = MutableStateFlow<CaptureFileError?>(null)
+    val captureError: StateFlow<CaptureFileError?> = _captureError.asStateFlow()
+
+    private val _pipelineFlags =
+        MutableStateFlow(nopalito.app.domain.ScanPipelineFlags.Phase1Defaults)
+    val pipelineFlags: StateFlow<nopalito.app.domain.ScanPipelineFlags> =
+        _pipelineFlags.asStateFlow()
+
+    private val pendingRequestedAt =
+        java.util.Collections.synchronizedMap(mutableMapOf<Long, Long>())
+
+    private val _lastCaptureDiag = MutableStateFlow<String?>(null)
+    val lastCaptureDiag: StateFlow<String?> = _lastCaptureDiag.asStateFlow()
+
     init {
         viewModelScope.launch {
             _qrScanMode.value = settingsRepository.qrScanModeEnabled.first()
+        }
+        viewModelScope.launch {
+            _captureTier.value = settingsRepository.captureTier.first()
+        }
+        viewModelScope.launch {
+            settingsRepository.pipelineFlags.collect { _pipelineFlags.value = it }
         }
     }
 
@@ -296,6 +339,275 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     fun onCapturePressed(frozenImage: Bitmap) {
         _captureState.value = CaptureState.Capturing(frozenImage)
         resetLiveAnalysis()
+    }
+
+
+    fun setCaptureTier(tier: nopalito.app.domain.CaptureTier) {
+        _captureTier.value = tier
+        viewModelScope.launch { settingsRepository.setCaptureTier(tier) }
+    }
+
+    fun setKeepOriginal(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setKeepOriginal(enabled) }
+    }
+
+    fun setHighQualityCapture(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setHighQualityCapture(enabled) }
+    }
+
+    fun dismissCaptureError() {
+        _captureError.value = null
+    }
+
+    fun reportInsufficientStorage(
+        required: Long,
+        free: Long,
+        tier: nopalito.app.domain.CaptureTier
+    ) {
+        _captureError.value = CaptureFileError.InsufficientStorage(required, free, tier)
+    }
+
+    /**
+     * Starts a file capture. Returns the generation id. CameraX file capture
+     * itself is not cancellable, so [cancelFileCapture] cancels post
+     * processing and marks late callbacks stale via the generation check in
+     * [onFileSaved]/[onFileError]: stale callbacks clean only their own temp
+     * file and never publish a page nor delete another capture's original.
+     */
+    fun beginFileCapture(
+        frozenImage: Bitmap,
+        tier: nopalito.app.domain.CaptureTier,
+        tempFile: File,
+    ): Long {
+        fileCaptureJob?.cancel()
+        val id = captureGeneration.incrementAndGet()
+        pendingTempFiles[id] = tempFile
+        pendingRequestedAt[id] = android.os.SystemClock.elapsedRealtime()
+        onCapturePressed(frozenImage)
+        return id
+    }
+
+    fun cancelFileCapture() {
+        fileCaptureJob?.cancel()
+        fileCaptureJob = null
+        // Invalidate pending generations so late CameraX callbacks go stale.
+        captureGeneration.incrementAndGet()
+        if (_captureState.value is CaptureState.Capturing) {
+            _captureState.value = CaptureState.Idle
+        }
+    }
+
+    fun onFileSaved(
+        captureId: Long,
+        file: File,
+        opticalMeasures: OpticalMeasures?,
+        tier: nopalito.app.domain.CaptureTier,
+        cameraId: String?,
+        keepOriginal: Boolean,
+        frame: CameraCaptureController.FrameSnapshot? = null,
+    ) {
+        pendingTempFiles.remove(captureId)
+        val requestedAt = pendingRequestedAt.remove(captureId)
+        if (captureId != captureGeneration.get()) {
+            // Stale callback after cancel/new capture: clean only its file.
+            runCatching { if (file.name.startsWith(".tmp-capture-")) file.delete() }
+            return
+        }
+        fileCaptureJob?.cancel()
+        fileCaptureJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val tCaptureMs = requestedAt?.let { android.os.SystemClock.elapsedRealtime() - it }
+                val tProc0 = android.os.SystemClock.elapsedRealtime()
+                val page = processFileCapture(
+                    file, opticalMeasures, tier, cameraId, keepOriginal,
+                    captureId, frame, tCaptureMs,
+                    requestedResolutionFor(tier),
+                )
+                val tProcMs = android.os.SystemClock.elapsedRealtime() - tProc0
+                page.captureDiag?.let { diag ->
+                    _lastCaptureDiag.value = diag.copy(processMs = tProcMs).toDebugLine()
+                    Log.i("CaptureDiag", diag.copy(processMs = tProcMs).toLogLine())
+                }
+                ensureActive()
+                if (captureId != captureGeneration.get()) {
+                    // Cancelled while processing: keep moved original, drop preview.
+                    return@launch
+                }
+                onCaptureProcessed(page)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.e("Camera", "File capture processing failed", e)
+                // Original already moved is preserved; only preview fails.
+                _captureError.value = CaptureFileError.ProcessingFailed(e.message)
+                onCaptureProcessed(null)
+            }
+        }
+    }
+
+    fun onFileError(captureId: Long, tempFile: File?, error: Throwable) {
+        pendingTempFiles.remove(captureId)
+        if (captureId != captureGeneration.get()) {
+            tempFile?.let { runCatching { if (it.name.startsWith(".tmp-capture-")) it.delete() } }
+            return
+        }
+        logger.e("Camera", "File capture failed", error)
+        tempFile?.let { runCatching { if (it.name.startsWith(".tmp-capture-")) it.delete() } }
+        onCaptureProcessed(null)
+    }
+
+    private fun afStateNameOf(af: Int): String = when (af) {
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_INACTIVE -> "INACTIVE"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_PASSIVE_SCAN -> "PASSIVE_SCAN"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_PASSIVE_FOCUSED -> "PASSIVE_FOCUSED"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_ACTIVE_SCAN -> "ACTIVE_SCAN"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_FOCUSED_LOCKED -> "FOCUS_LOCKED"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED -> "NOT_FOCUSED_LOCKED"
+        android.hardware.camera2.CameraMetadata.CONTROL_AF_STATE_PASSIVE_UNFOCUSED -> "PASSIVE_UNFOCUSED"
+        else -> "UNKNOWN($af)"
+    }
+
+    private fun requestedResolutionFor(tier: nopalito.app.domain.CaptureTier): String =
+        when (tier) {
+            nopalito.app.domain.CaptureTier.LOW -> "1920x1440"
+            nopalito.app.domain.CaptureTier.BALANCED -> "3264x2448"
+            nopalito.app.domain.CaptureTier.HIGH -> "4032x3024"
+            nopalito.app.domain.CaptureTier.ORIGINAL -> "4032x3024"
+        }
+
+    private suspend fun processFileCapture(
+        file: File,
+        opticalMeasures: OpticalMeasures?,
+        tier: nopalito.app.domain.CaptureTier,
+        cameraId: String?,
+        keepOriginal: Boolean,
+        captureId: Long,
+        frame: CameraCaptureController.FrameSnapshot?,
+        tCaptureMs: Long?,
+        requestedResolution: String,
+    ): nopalito.app.domain.CapturedPage {
+        currentCoroutineContext().ensureActive()
+        val bounds = nopalito.app.platform.FileCapturePipeline.decodeBounds(file)
+            ?: throw IOException("invalid capture file")
+        currentCoroutineContext().ensureActive()
+        val exif = nopalito.app.platform.FileCapturePipeline.readExif(file, null)
+        val effective = nopalito.app.domain.resolveEffectiveOrientation(
+            0, exif.orientation, bounds.width, bounds.height,
+        )
+        val workingLong = tier.workingLongSidePx
+        val sample = nopalito.app.platform.FileCapturePipeline.sampleSizeForLongSide(
+            nopalito.app.platform.FileCapturePipeline.Bounds(bounds.width, bounds.height),
+            workingLong,
+        )
+        val workingOpts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+        val working = android.graphics.BitmapFactory.decodeFile(file.absolutePath, workingOpts)
+            ?: throw IOException("decode failed")
+        try {
+            currentCoroutineContext().ensureActive()
+            val segInput = if (maxOf(working.width, working.height) > workingLong) {
+                val s = workingLong.toFloat() / maxOf(working.width, working.height)
+                working.scale((working.width * s).toInt(), (working.height * s).toInt())
+            } else working
+            val workingQuality =
+                nopalito.app.platform.FileCapturePipeline.measureWorkingQuality(segInput)
+            val workingW = segInput.width
+            val workingH = segInput.height
+            val segmentation = try {
+                imageSegmentationService.runSegmentationAndReturn(segInput)
+            } finally {
+                if (segInput !== working) segInput.recycle()
+            }
+            currentCoroutineContext().ensureActive()
+            val mask = segmentation?.segmentation
+            // Exactly one full-res Bitmap is alive at a time: working is
+            // recycled before the full decode below.
+            if (!working.isRecycled) working.recycle()
+            currentCoroutineContext().ensureActive()
+            val fullOpts = android.graphics.BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            val full = android.graphics.BitmapFactory.decodeFile(file.absolutePath, fullOpts)
+                ?: throw IOException("full decode failed")
+            try {
+                currentCoroutineContext().ensureActive()
+                val originalSize = ImageSize(full.width, full.height)
+                val quad = mask?.let { detectDocumentQuad(it, originalSize, Mode.CAPTURE) }
+                val defaultColorMode = settingsRepository.defaultColorMode.first()
+                // Same values as the legacy path (BALANCED 2 MP, same warp and
+                // enhance): only the input source changed from memory to file.
+                val fileResult = withContext(Dispatchers.IO) {
+                    currentCoroutineContext().ensureActive()
+                    nopalito.app.platform.extractPageFromBitmapNoCopy(
+                        full, quad, effective.degrees, mask, defaultColorMode, opticalMeasures,
+                    )
+                }
+                currentCoroutineContext().ensureActive()
+                val sha = runCatching {
+                    nopalito.app.domain.OriginalIntegrity.sha256(file)
+                }.getOrNull()
+                val afName = frame?.afState?.let { afStateNameOf(it) } ?: "unavailable"
+                val diag = nopalito.app.domain.CaptureDiag(
+                    captureId = captureId,
+                    captureTier = tier.name,
+                    cameraId = cameraId,
+                    focalLengthMm = frame?.focalMm
+                        ?: opticalMeasures?.cameraIntrinsics?.focalLength,
+                    zoomRatio = frame?.zoomRatio,
+                    requestedResolution = requestedResolution,
+                    deliveredResolution = "${bounds.width}x${bounds.height}",
+                    iso = frame?.iso,
+                    exposureNs = frame?.exposureNs,
+                    focusDistanceDiopters = frame?.focusDiopters,
+                    afState = afName,
+                    aeState = frame?.aeState?.let { "ae($it)" } ?: "unavailable",
+                    flashMode = "OFF",
+                    cropRegion = frame?.crop,
+                    rotationDegrees = effective.degrees,
+                    exifOrientation = exif.orientation,
+                    effectiveOrientation = effective.name,
+                    jpegBytes = runCatching { file.length() }.getOrNull(),
+                    sha12 = sha?.take(12),
+                    captureMs = tCaptureMs,
+                    processMs = null,
+                    laplacianVar = workingQuality?.laplacianVar,
+                    meanLuma = workingQuality?.meanLuma,
+                    saturatedPct = workingQuality?.saturatedPct,
+                )
+                val shouldKeep = keepOriginal || tier == nopalito.app.domain.CaptureTier.ORIGINAL
+                val deferredSource = kotlinx.coroutines.CompletableDeferred(
+                    nopalito.app.domain.Jpeg(file.readBytes())
+                )
+                return nopalito.app.domain.CapturedPage(
+                    pageJpeg = fileResult.pageJpeg,
+                    sourceJpeg = deferredSource,
+                    metadata = fileResult.metadata,
+                    colorMode = fileResult.colorMode,
+                    originalFile = if (shouldKeep) file else null,
+                    originalSha256 = sha,
+                    captureTier = tier,
+                    processingStatus = nopalito.app.domain.ProcessingStatus.PROCESSED,
+                    capturedWidth = bounds.width,
+                    capturedHeight = bounds.height,
+                    workingWidth = workingW,
+                    workingHeight = workingH,
+                    processedWidth = fileResult.outputWidth,
+                    processedHeight = fileResult.outputHeight,
+                    captureDiag = diag,
+                    cameraId = cameraId,
+                    exifOrientation = exif.orientation,
+                )
+            } finally {
+                if (!full.isRecycled) full.recycle()
+            }
+        } finally {
+            runCatching { if (!working.isRecycled) working.recycle() }
+        }
+    }
+
+    override fun onCleared() {
+        fileCaptureJob?.cancel()
+        qrScanner.close()
+        liveAnalyzer.release()
     }
 
     private fun onCaptureProcessed(captured: CapturedPage?) {
@@ -450,11 +762,6 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
             }
     }
 
-    override fun onCleared() {
-        qrScanner.close()
-        liveAnalyzer.release()
-    }
-
     fun onImageCaptured(imageProxy: ImageProxy?, opticalMeasures: OpticalMeasures?) {
         if (imageProxy != null) {
             viewModelScope.launch {
@@ -470,7 +777,6 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
                     }
                     val page =
                         processCapturedImage(source, rotationDegrees, opticalMeasures, Mode.CAPTURE)
-                    imageProxy.close()
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "Capture",
@@ -478,9 +784,13 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
                         )
                     }
                     onCaptureProcessed(page)
-                } catch (e: RuntimeException) {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
                     logger.e("Camera", "Failed to process captured image", e)
                     onCaptureProcessed(null)
+                } finally {
+                    runCatching { imageProxy.close() }
                 }
             }
         } else {

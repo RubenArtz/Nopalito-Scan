@@ -660,23 +660,66 @@ class MainViewModel(
                 _pageToReplaceId.value = null
                 val replacedIndex = _pages.value.indexOfFirst { it.id == replaceId }
                 val pages = withContext(Dispatchers.IO) {
-                    val sourceJpeg = capturedPage.sourceJpeg.await()
-                    if (replaceId != null) {
-                        imageRepository.replacePage(
-                            replaceId,
-                            capturedPage.pageJpeg,
-                            sourceJpeg,
-                            capturedPage.metadata,
-                            capturedPage.colorMode,
-                        )
+                    val originalTemp = capturedPage.originalFile
+                    if (originalTemp != null && replaceId == null) {
+                        // Phase 1 file path: atomic move into originals/ inside
+                        // the repository; failures keep the temp for diagnosis.
+                        try {
+                            imageRepository.addFileCapture(
+                                originalTemp = originalTemp,
+                                processed = capturedPage.pageJpeg,
+                                metadata = capturedPage.metadata,
+                                colorMode = capturedPage.colorMode,
+                                tier = capturedPage.captureTier
+                                    ?: nopalito.app.domain.CaptureTier.BALANCED,
+                                originalSha256 = capturedPage.originalSha256,
+                                capturedWidth = capturedPage.capturedWidth,
+                                capturedHeight = capturedPage.capturedHeight,
+                                workingWidth = capturedPage.workingWidth,
+                                workingHeight = capturedPage.workingHeight,
+                                processedWidth = capturedPage.processedWidth,
+                                processedHeight = capturedPage.processedHeight,
+                                cameraId = capturedPage.cameraId,
+                                rotationDegrees = capturedPage.metadata.baseRotation.degrees,
+                                exifOrientation = capturedPage.exifOrientation,
+                                captureMode = null,
+                            )
+                            launch { runCatching { imageRepository.enforceQuota() } }
+                        } catch (e: java.util.concurrent.CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // FAILED keeps the moved original when it exists;
+                            // fall back to legacy add so the page is not lost.
+                            runCatching { capturedPage.sourceJpeg.await() }.getOrNull()
+                                ?.let { src ->
+                                    imageRepository.add(
+                                        capturedPage.pageJpeg,
+                                        src,
+                                        capturedPage.metadata,
+                                        capturedPage.colorMode,
+                                    )
+                                }
+                            throw e
+                        }
                     } else {
-                        @Suppress("DeferredResultUnused")
-                        imageRepository.add(
-                            capturedPage.pageJpeg,
-                            sourceJpeg,
-                            capturedPage.metadata,
-                            capturedPage.colorMode,
-                        )
+                        val sourceJpeg = capturedPage.sourceJpeg.await()
+                        if (replaceId != null) {
+                            imageRepository.replacePage(
+                                replaceId,
+                                capturedPage.pageJpeg,
+                                sourceJpeg,
+                                capturedPage.metadata,
+                                capturedPage.colorMode,
+                            )
+                        } else {
+                            @Suppress("DeferredResultUnused")
+                            imageRepository.add(
+                                capturedPage.pageJpeg,
+                                sourceJpeg,
+                                capturedPage.metadata,
+                                capturedPage.colorMode,
+                            )
+                        }
                     }
                     imageRepository.pages()
                 }
@@ -739,8 +782,7 @@ class MainViewModel(
             val rotation = page.totalRotation()
 
             val bitmap = withContext(Dispatchers.IO) {
-                val source = imageRepository.source(page.id)
-                val bytes = source?.bytes ?: return@withContext null
+                val bytes = imageRepository.masterBytes(page.id) ?: return@withContext null
 
                 val original = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 if (original != null && rotation != Rotation.R0) {

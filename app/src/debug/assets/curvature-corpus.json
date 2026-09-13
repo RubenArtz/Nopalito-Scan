@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "status": "PARTIAL_REAL_CORPUS",
+  "provenance": "Existing repository photographs; Galaxy S24 Ultra origin is not established. No images uploaded.",
+  "cases": [
+    {
+      "case_id": "flat_printed",
+      "status": "AVAILABLE",
+      "asset": "uncropped/img03.jpg",
+      "quad_source": "MANUAL_VISUAL_ESTIMATE",
+      "quad": [
+        [
+          0.20,
+          0.09
+        ],
+        [
+          0.88,
+          0.09
+        ],
+        [
+          0.87,
+          0.85
+        ],
+        [
+          0.11,
+          0.83
+        ]
+      ],
+      "detection_confidence": 0.8,
+      "expected_decisions": [
+        "NO_CHANGE"
+      ],
+      "notes": "Mostly flat printed French page; slight edge bending. Provisional visual label, not calibrated ground truth."
+    },
+    {
+      "case_id": "tilted_flat",
+      "status": "AVAILABLE",
+      "asset": "uncropped/img01.jpg",
+      "quad_source": "MANUAL_VISUAL_ESTIMATE",
+      "quad": [
+        [
+          0.205,
+          0.23
+        ],
+        [
+          0.80,
+          0.20
+        ],
+        [
+          0.87,
+          0.90
+        ],
+        [
+          0.16,
+          0.90
+        ]
+      ],
+      "detection_confidence": 0.8,
+      "expected_decisions": [
+        "NO_CHANGE"
+      ],
+      "notes": "Printed French page photographed obliquely. Background remains in source."
+    },
+    {
+      "case_id": "curved_book",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    },
+    {
+      "case_id": "open_book_spine",
+      "status": "MISSING",
+      "reason": "No verified real photograph with a visible spine available"
+    },
+    {
+      "case_id": "wrinkled",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    },
+    {
+      "case_id": "low_text",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    },
+    {
+      "case_id": "table",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    },
+    {
+      "case_id": "large_image",
+      "status": "AVAILABLE",
+      "asset": "uncropped/img02.jpg",
+      "quad_source": "MANUAL_VISUAL_ESTIMATE",
+      "document_type": "ILLUSTRATION_HEAVY",
+      "quad": [
+        [
+          0.14,
+          0.15
+        ],
+        [
+          0.82,
+          0.10
+        ],
+        [
+          0.93,
+          0.89
+        ],
+        [
+          0.20,
+          0.915
+        ]
+      ],
+      "detection_confidence": 0.8,
+      "expected_decisions": [
+        "INSUFFICIENT_EVIDENCE"
+      ],
+      "notes": "Illustration-heavy French magazine page with multiple text blocks; provisional safety expectation."
+    },
+    {
+      "case_id": "handwritten",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    },
+    {
+      "case_id": "spanish_document",
+      "status": "MISSING",
+      "reason": "No verified real photograph available"
+    }
+  ]
+}

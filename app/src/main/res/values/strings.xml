@@ -128,11 +128,21 @@
     <!-- Settings screen -->
     <string name="export_quality">Export quality</string>
     <!-- Export screen: compression level options -->
-    <string name="export_quality_original">Uncompressed</string>
+    <string name="export_quality_original">Original file</string>
     <string name="export_quality_balanced">Balanced</string>
-    <string name="export_quality_high">High</string>
+    <string name="export_quality_high">High-res, max 6 MP in this version</string>
     <string name="export_quality_compressed">Compressed</string>
-    <string name="export_quality_max_compression">Maximum compression</string>
+    <string name="export_quality_max_compression">High-res reprocess (legacy)</string>
+    <!-- Phase 1 original comparator (debug only) -->
+    <string name="compare_original">Original</string>
+    <string name="compare_processed">Processed</string>
+    <string name="capture_original_no_space_title">Not enough space for ORIGINAL</string>
+    <string name="capture_original_no_space_msg">The original capture needs %1$s free, but only %2$s is available. Free space, or switch to LOW / BALANCED with an explicit choice. ORIGINAL is never downgraded silently.</string>
+    <string name="capture_tier_low">LOW · ~2 MP</string>
+    <string name="capture_tier_balanced">BALANCED · capture 6 MP / processed 2 MP</string>
+    <string name="capture_tier_high">HIGH · high-res reprocess (max safe)</string>
+    <string name="capture_tier_original">ORIGINAL · file without app reprocessing</string>
+    <string name="focus_not_confirmed">Focus not confirmed — capture saved anyway</string>
     <!-- Export screen: optional password protection for PDF / Word exports -->
     <string name="export_protect_document">Protect with password</string>
     <string name="export_password">Password</string>
@@ -1554,4 +1564,23 @@
     <string name="cloud_link_camera_detected_title">Cloud link code detected</string>
     <string name="cloud_link_camera_detected_body">This QR contains a session request to sign in to Nopalito Scan Cloud from a browser. Authorize it to link that device to your account?</string>
     <string name="cloud_link_camera_authorize">Authorize session</string>
+    <string name="processing_variant_comparison_title">A/B Variant Comparison</string>
+    <string name="processing_variant_active">Active: %1$s</string>
+    <string name="processing_variant_active_unregistered">current result (unregistered)</string>
+    <string name="processing_variant_freeze_current">Freeze current result</string>
+    <string name="processing_variant_reprocess_baseline">Reprocess baseline</string>
+    <string name="processing_dewarp_experimental">Experimental dewarp: NoChange only</string>
+    <string name="processing_variant_candidate_missing">Candidate: none</string>
+    <string name="processing_variant_not_comparable">Candidate is not comparable: region, orientation, or aspect ratio differs.</string>
+    <string name="processing_variant_delete_candidate">Delete candidate</string>
+    <string name="action_reset_zoom">Reset zoom</string>
+    <string name="processing_variant_saved">Reference saved.</string>
+    <string name="processing_variant_cancelled">Cancelled; previous reference was preserved.</string>
+    <string name="processing_variant_metadata">%1$s: %2$d×%3$d, %4$d bytes; algorithmId=%5$s; region=%6$s; rotation=%7$d; recipeHash=%8$s; sourceSha256=%9$s; outputSha256=%10$s; reproducible=%11$b</string>
+    <string name="processing_dewarp_not_implemented">NoChange: candidate implementation is not available yet.</string>
+    <string name="processing_variant_baseline">Baseline</string>
+    <string name="processing_variant_candidate">Candidate</string>
+    <string name="processing_variant_active_suffix">Active</string>
+    <string name="processing_compare_original">Compare original</string>
+    <string name="processing_compare_ab_short">A/B</string>
 </resources>

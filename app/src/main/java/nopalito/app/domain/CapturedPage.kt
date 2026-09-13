@@ -29,4 +29,25 @@ data class CapturedPage(
     val sourceJpeg: Deferred<Jpeg>,
     val metadata: PageMetadata,
     val colorMode: ColorMode,
+    /**
+     * Phase 1 preserved original (CameraX file without app reprocessing).
+     * Null for legacy in-memory captures and old documents.
+     */
+    val originalFile: java.io.File? = null,
+    val originalSha256: String? = null,
+    val captureTier: CaptureTier? = null,
+    val processingStatus: ProcessingStatus = ProcessingStatus.PROCESSED,
+    val processingError: String? = null,
+    val capturedWidth: Int? = null,
+    val capturedHeight: Int? = null,
+    val workingWidth: Int? = null,
+    val workingHeight: Int? = null,
+    val processedWidth: Int? = null,
+    val processedHeight: Int? = null,
+    /** Instrumentation record for this capture (null for legacy/import paths). */
+    val captureDiag: CaptureDiag? = null,
+    /** Real camera id that exposed the frame (null for legacy/import paths). */
+    val cameraId: String? = null,
+    /** EXIF orientation tag read from the CameraX file (1 if unknown). */
+    val exifOrientation: Int = 1,
 )

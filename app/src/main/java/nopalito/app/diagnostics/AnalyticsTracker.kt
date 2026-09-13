@@ -83,6 +83,7 @@ class AnalyticsTracker(private val appContext: Context) {
                         key,
                         AnalyticsEventValidator.sanitizeParam(value)
                     )
+
                     else -> bundle.putString(
                         key,
                         AnalyticsEventValidator.sanitizeParam(value.toString())

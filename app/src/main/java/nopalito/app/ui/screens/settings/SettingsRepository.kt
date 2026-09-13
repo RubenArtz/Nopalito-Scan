@@ -44,6 +44,13 @@ class SettingsRepository(
     private val AUTO_DETECT = booleanPreferencesKey("auto_detect")
     private val CAPTURE_MODE = stringPreferencesKey("capture_mode")
     private val QR_SCAN_MODE = booleanPreferencesKey("qr_scan_mode")
+    private val CAPTURE_TIER = stringPreferencesKey("capture_tier")
+    private val KEEP_ORIGINAL = booleanPreferencesKey("keep_original")
+    private val HIGH_QUALITY_CAPTURE = booleanPreferencesKey("high_quality_capture")
+    private val PIPELINE_NEW = booleanPreferencesKey("pipeline_new")
+    private val PIPELINE_DEWARP = booleanPreferencesKey("pipeline_dewarp")
+    private val PIPELINE_FINGER_REMOVAL = booleanPreferencesKey("pipeline_finger_removal")
+    private val PIPELINE_DEBUG_OVERLAY = booleanPreferencesKey("pipeline_debug_overlay")
 
     val defaultColorMode: Flow<DefaultColorMode> =
         dataStore.data.map { prefs ->
@@ -134,6 +141,51 @@ class SettingsRepository(
         dataStore.edit { prefs ->
             prefs[QR_SCAN_MODE] = enabled
         }
+    }
+
+    val captureTier: Flow<nopalito.app.domain.CaptureTier> =
+        dataStore.data.map { prefs ->
+            nopalito.app.domain.CaptureTier.fromName(prefs[CAPTURE_TIER])
+        }
+
+    suspend fun setCaptureTier(tier: nopalito.app.domain.CaptureTier) {
+        dataStore.edit { prefs ->
+            prefs[CAPTURE_TIER] = tier.name
+        }
+    }
+
+    /**
+     * Phase 1 flags with mandatory defaults. Only keepOriginal,
+     * highQualityCapture and debugOverlay are read; the rest exist but must
+     * not alter processing while false.
+     */
+    val pipelineFlags: Flow<nopalito.app.domain.ScanPipelineFlags> =
+        dataStore.data.map { prefs ->
+            nopalito.app.domain.ScanPipelineFlags(
+                keepOriginal = prefs[KEEP_ORIGINAL] ?: true,
+                highQualityCapture = prefs[HIGH_QUALITY_CAPTURE] ?: false,
+                newPipeline = prefs[PIPELINE_NEW] ?: false,
+                dewarp = prefs[PIPELINE_DEWARP] ?: false,
+                fingerRemoval = prefs[PIPELINE_FINGER_REMOVAL] ?: false,
+                debugOverlay = prefs[PIPELINE_DEBUG_OVERLAY] ?: false,
+            )
+        }
+
+    suspend fun setKeepOriginal(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEEP_ORIGINAL] = enabled }
+    }
+
+    suspend fun setHighQualityCapture(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[HIGH_QUALITY_CAPTURE] = enabled }
+    }
+
+    suspend fun setDebugOverlay(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[PIPELINE_DEBUG_OVERLAY] = enabled }
+    }
+
+    /** Experimental A/B gate only; true currently returns NoChange. */
+    suspend fun setDewarp(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[PIPELINE_DEWARP] = enabled }
     }
 }
 

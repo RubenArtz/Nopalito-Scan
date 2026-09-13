@@ -239,8 +239,22 @@ class AndroidPdfWriter(
 
                 // Fast path: when no overlay and OCR disabled, avoid Bitmap
                 // decode entirely and use JPEG bytes directly (1 JPEG parse
-                // instead of bitmap decode + JPEG parse).
+                // instead of bitmap decode + JPEG parse). For ORIGINAL this
+                // preserves the capture without app reprocessing; any decode
+                // (rotation, overlays, OCR bitmap, filter) is logged with cause
+                // and the output is not claimed byte-identical.
                 val needsBitmap = page.overlays != null || !disableOcr
+                if (page.origin == nopalito.app.domain.ExportOrigin.ORIGINAL_FILE && needsBitmap) {
+                    val cause = buildList {
+                        if (page.overlays != null) add("overlays")
+                        if (!disableOcr) add("ocr-bitmap")
+                        page.originCause?.let { add(it) }
+                    }.joinToString(",")
+                    Log.w(
+                        "PdfWriter",
+                        "ORIGINAL decode required for ${page.page.id}: $cause"
+                    )
+                }
                 val baseBitmap: Bitmap? = if (needsBitmap) jpeg.toBitmap() else null
 
                 // Derive pixel size: prefer bitmap when already decoded, else

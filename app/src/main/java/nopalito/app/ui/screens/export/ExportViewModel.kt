@@ -57,6 +57,7 @@ import nopalito.app.data.ExportNames
 import nopalito.app.data.FileManager
 import nopalito.app.data.ImageRepository
 import nopalito.app.domain.ExportQuality
+import nopalito.app.domain.JpegProvider
 import nopalito.app.domain.PageToExport
 import nopalito.app.domain.PageViewKey
 import nopalito.app.domain.Rotation
@@ -180,26 +181,29 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
             metadata = null,
         )
         return listOf(
-            PageToExport(mergedPage) {
-                val frontBmp = front.jpeg.get().toBitmap()
-                val backBmp = back.jpeg.get().toBitmap()
-                try {
-                    val frontComposed = nopalito.app.platform.composeOverlaysOnBitmap(
-                        frontBmp, front.overlays
-                    ) ?: frontBmp
-                    val backComposed = nopalito.app.platform.composeOverlaysOnBitmap(
-                        backBmp, back.overlays
-                    ) ?: backBmp
-                    mergeIneBitmaps(
-                        frontComposed,
-                        backComposed,
-                        fillFraction = ine.ineExportScale.fillFraction,
-                    )
-                } finally {
-                    frontBmp.recycle()
-                    backBmp.recycle()
-                }
-            }
+            PageToExport(
+                page = mergedPage,
+                jpeg = JpegProvider {
+                    val frontBmp = front.jpeg.get().toBitmap()
+                    val backBmp = back.jpeg.get().toBitmap()
+                    try {
+                        val frontComposed = nopalito.app.platform.composeOverlaysOnBitmap(
+                            frontBmp, front.overlays
+                        ) ?: frontBmp
+                        val backComposed = nopalito.app.platform.composeOverlaysOnBitmap(
+                            backBmp, back.overlays
+                        ) ?: backBmp
+                        mergeIneBitmaps(
+                            frontComposed,
+                            backComposed,
+                            fillFraction = ine.ineExportScale.fillFraction,
+                        )
+                    } finally {
+                        frontBmp.recycle()
+                        backBmp.recycle()
+                    }
+                },
+            )
         ) + rest
     }
 
@@ -519,17 +523,30 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         val files = pageToExports.mapIndexed { index, page ->
             val fileName = if (multi) "$timestamp-${index + 1}.jpg" else "$timestamp.jpg"
             val file = File(targetDir, fileName)
-            val baseBitmap = page.jpeg.get().toBitmap()
-            val composed = nopalito.app.platform.composeOverlaysOnBitmap(baseBitmap, page.overlays)
-            if (composed != null) {
-                val bos = java.io.ByteArrayOutputStream()
-                composed.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, bos)
-                file.writeBytes(bos.toByteArray())
-                composed.recycle()
-            } else {
+            if (page.overlays == null) {
+                // No annotations: copy provider bytes directly (ORIGINAL stays
+                // byte-preserving when rotation was already handled upstream).
                 file.writeBytes(page.jpeg.get().bytes)
+            } else {
+                val baseBitmap = page.jpeg.get().toBitmap()
+                try {
+                    val composed =
+                        nopalito.app.platform.composeOverlaysOnBitmap(baseBitmap, page.overlays)
+                    if (composed != null) {
+                        try {
+                            val bos = java.io.ByteArrayOutputStream()
+                            composed.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, bos)
+                            file.writeBytes(bos.toByteArray())
+                        } finally {
+                            if (!composed.isRecycled) composed.recycle()
+                        }
+                    } else {
+                        file.writeBytes(page.jpeg.get().bytes)
+                    }
+                } finally {
+                    if (!baseBitmap.isRecycled) baseBitmap.recycle()
+                }
             }
-            baseBitmap.recycle()
             onProgress(index + 1)
             file
         }.toList()
