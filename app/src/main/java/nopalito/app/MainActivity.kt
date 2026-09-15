@@ -45,7 +45,6 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTre
 import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -179,7 +178,6 @@ class MainActivity : FragmentActivity() {
         super.attachBaseContext(AppLocaleOverride.applyTo(newBase, AppLocaleOverride.locale))
     }
 
-    @RequiresApi(Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initLibraries()
@@ -241,7 +239,11 @@ class MainActivity : FragmentActivity() {
             exportViewModel.cleanUpOldPreparedFiles(1000 * 3600)
         }
         enableEdgeToEdge()
-        window.isNavigationBarContrastEnforced = false
+
+        if (SDK_INT >= Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+
         // Temporary debug diagnosis: explains why other apps show fingerprint+face
         // while this app shows only fingerprint (STRONG vs WEAK). Remove before release.
         if (BuildConfig.DEBUG) {

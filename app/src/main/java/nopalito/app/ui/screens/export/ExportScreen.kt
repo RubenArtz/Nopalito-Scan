@@ -134,6 +134,7 @@ import androidx.fragment.app.FragmentActivity
 import nopalito.app.R
 import nopalito.app.THUMBNAIL_SIZE_DP
 import nopalito.app.domain.ExportQuality
+import nopalito.app.domain.ExportQuality.MAX_COMPRESSION
 import nopalito.app.ui.Navigation
 import nopalito.app.ui.components.GradientHeroHeader
 import nopalito.app.ui.components.NewDocumentDialog
@@ -541,7 +542,7 @@ private fun QualitySelector(
     // neither is offered as a file export quality.
     val qualities = ExportQuality.entries.filter {
         @Suppress("DEPRECATION")
-        it != ExportQuality.PREVIEW && it != ExportQuality.MAX_COMPRESSION
+        it != ExportQuality.PREVIEW && it != MAX_COMPRESSION
     }.reversed()
     val rows = qualities.chunked(3)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -603,14 +604,16 @@ private fun QualitySelector(
     }
 }
 
-private fun qualityIcon(quality: ExportQuality): ImageVector = when (quality) {
-    ExportQuality.ORIGINAL -> Icons.Default.HighQuality
-    ExportQuality.HIGH -> Icons.Default.Star
-    ExportQuality.BALANCED -> Icons.Default.Tune
-    ExportQuality.COMPRESSED -> Icons.Default.Compress
-    ExportQuality.PREVIEW -> Icons.Default.Visibility
-    ExportQuality.MAX_COMPRESSION -> Icons.Default.Star
-}
+private fun qualityIcon(quality: ExportQuality): ImageVector =
+    @Suppress("DEPRECATION")
+    when (quality) {
+        ExportQuality.ORIGINAL -> Icons.Default.HighQuality
+        ExportQuality.HIGH -> Icons.Default.Star
+        ExportQuality.BALANCED -> Icons.Default.Tune
+        ExportQuality.COMPRESSED -> Icons.Default.Compress
+        ExportQuality.PREVIEW -> Icons.Default.Visibility
+        MAX_COMPRESSION -> Icons.Default.Star
+    }
 
 /** INE-only selector: how large the composed credential appears on the exported sheet. */
 @Composable

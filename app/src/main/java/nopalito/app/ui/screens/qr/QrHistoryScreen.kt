@@ -27,10 +27,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -111,7 +109,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun QrHistoryScreen(
     viewModel: QrScannerViewModel,
