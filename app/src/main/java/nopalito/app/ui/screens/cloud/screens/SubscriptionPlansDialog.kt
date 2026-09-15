@@ -667,14 +667,14 @@ fun SubscriptionPlansDialog(
                                     basePlanId
                                 )
                             val isAvailable =
-                                plan.id == "free" || (productId != null && basePlanId != null && offerToken != null && price != null)
+                                plan.id == "free" || (productId != null && basePlanId != null && !offerToken.isNullOrBlank() && price != null)
                             if (plan.id != "free") {
-                                val exactMatched = (offerToken != null && price != null)
+                                val exactMatched = (!offerToken.isNullOrBlank() && price != null)
                                 val periodName =
                                     if (period == BillingPeriod.Monthly) "Monthly" else "Annual"
                                 android.util.Log.d(
                                     "BillingDiag",
-                                    "UI selected plan=${plan.id} period=$periodName productId=$productId basePlanId=$basePlanId matched=$exactMatched hasOfferToken=${offerToken != null} hasPrice=${price != null} isAvailable=$isAvailable price=${price ?: "missing"}"
+                                    "UI selected plan=${plan.id} period=$periodName productId=$productId basePlanId=$basePlanId matched=$exactMatched hasOfferToken=${!offerToken.isNullOrBlank()} hasPrice=${price != null} isAvailable=$isAvailable price=${price ?: "missing"}"
                                 )
                                 if (!exactMatched) {
                                     android.util.Log.w(
@@ -1407,13 +1407,13 @@ private fun PremiumPlanCard(
                 if (plan.id != "free") {
                     val reason = when {
                         isCurrent -> "isCurrent"
-                        !isAvailable -> "unavailable offerToken=${offerToken != null} price=${price != null}"
+                        !isAvailable -> "unavailable offerToken=${!offerToken.isNullOrBlank()} price=${price != null}"
                         else -> "enabled"
                     }
                     val periodName = if (isAnnual) "Annual" else "Monthly"
                     android.util.Log.d(
                         "BillingDiag",
-                        "UI button plan=${plan.id} period=$periodName enabled=$buttonEnabled reason=$reason hasOfferToken=${offerToken != null} hasPrice=${price != null}"
+                        "UI button plan=${plan.id} period=$periodName enabled=$buttonEnabled reason=$reason hasOfferToken=${!offerToken.isNullOrBlank()} hasPrice=${price != null}"
                     )
                 } else {
                     android.util.Log.d(
@@ -1432,11 +1432,11 @@ private fun PremiumPlanCard(
                             if (isAnnual) plan.basePlanIdAnnual else plan.basePlanIdMonthly
                         android.util.Log.d(
                             "BillingDiag",
-                            "onClick plan=${plan.id} productId=$productId basePlanId=$basePlanId hasPrice=${price != null} hasOfferToken=${offerToken != null} isAvailable=$isAvailable"
+                            "onClick plan=${plan.id} productId=$productId basePlanId=$basePlanId hasPrice=${price != null} hasOfferToken=${!offerToken.isNullOrBlank()} isAvailable=$isAvailable"
                         )
                         android.util.Log.d(
                             "BillingDialog",
-                            "onClick plan=${plan.id} productId=$productId basePlanId=$basePlanId price=$price offerToken=${if (offerToken != null) "present" else "null"}"
+                            "onClick plan=${plan.id} productId=$productId basePlanId=$basePlanId price=$price offerToken=${if (!offerToken.isNullOrBlank()) "present" else "null"}"
                         )
                         if (productId == null || basePlanId == null) {
                             android.util.Log.w(
@@ -1454,7 +1454,7 @@ private fun PremiumPlanCard(
                             ).show()
                             return@Button
                         }
-                        if (offerToken == null) {
+                        if (offerToken.isNullOrBlank()) {
                             android.util.Log.w(
                                 "BillingDiag",
                                 "launch blocked offerToken null plan=${plan.id} basePlanId=$basePlanId expected Active=${plan.id != "plus" || basePlanId != "plus"} if PERSONAL missing check Play Console Active/country/price/eligibility and unfetchedProductList"

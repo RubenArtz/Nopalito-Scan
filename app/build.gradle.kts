@@ -71,8 +71,8 @@ android {
         // https://ai.google.dev/edge/litert/android/index
         minSdk = 26
         targetSdk = 36
-        versionCode = 39
-        versionName = "1.0.18"
+        versionCode = 40
+        versionName = "1.0.19"
 
         // Fingerprint current working-tree implementation, including uncommitted capture fixes.
         // Gradle tracks these text inputs; changing an implementation invalidates the recipe identity.

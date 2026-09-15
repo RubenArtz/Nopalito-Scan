@@ -60,6 +60,8 @@ class BillingManager private constructor(
     private var billingClient: BillingClient? = null
     private var isReady = false
 
+    fun isReady(): Boolean = isReady && billingClient != null
+
     fun startConnection(onReady: (Boolean) -> Unit) {
         if (billingClient == null) {
             val pendingPurchasesParams = PendingPurchasesParams.newBuilder()
@@ -189,6 +191,11 @@ class BillingManager private constructor(
     /**
      * Launches billing flow with exact offerToken for selected basePlanId.
      * BillingDiag logs responseCode/debugMessage only — never token or account ID.
+     *
+     * ProxyBillingActivity in Billing Library crashes with NPE when Play returns
+     * no PendingIntent. That happens when the flow is launched with a blank
+     * offerToken, a disconnected client, or a finishing Activity, so those are
+     * rejected here with a synchronous error instead of reaching Play.
      */
     fun launchBillingFlow(
         activity: Activity,
@@ -196,8 +203,26 @@ class BillingManager private constructor(
         offerToken: String,
         obfuscatedAccountId: String
     ): BillingResult {
+        if (activity.isFinishing || activity.isDestroyed) {
+            Log.w("BillingDiag", "launchBillingFlow blocked DEVELOPER_ERROR activity finishing/destroyed")
+            return BillingResult.newBuilder()
+                .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
+        }
+        if (offerToken.isBlank()) {
+            Log.w(
+                "BillingDiag",
+                "launchBillingFlow blocked DEVELOPER_ERROR blank offerToken productId=${productDetails.productId}"
+            )
+            return BillingResult.newBuilder()
+                .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
+        }
         val client = billingClient ?: run {
             Log.w("BillingDiag", "launchBillingFlow blocked SERVICE_UNAVAILABLE client null")
+            return BillingResult.newBuilder()
+                .setResponseCode(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE).build()
+        }
+        if (!isReady) {
+            Log.w("BillingDiag", "launchBillingFlow blocked SERVICE_UNAVAILABLE client not ready")
             return BillingResult.newBuilder()
                 .setResponseCode(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE).build()
         }
@@ -209,7 +234,13 @@ class BillingManager private constructor(
             .setProductDetailsParamsList(listOf(productDetailsParams))
             .setObfuscatedAccountId(obfuscatedAccountId)
             .build()
-        val result = client.launchBillingFlow(activity, params)
+        val result = try {
+            client.launchBillingFlow(activity, params)
+        } catch (e: Exception) {
+            Log.w("BillingDiag", "launchBillingFlow threw ${e.javaClass.simpleName}, returning SERVICE_UNAVAILABLE")
+            return BillingResult.newBuilder()
+                .setResponseCode(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE).build()
+        }
         Log.d(
             "BillingDiag",
             "launchBillingFlow responseCode=${result.responseCode} debugMessage=${result.debugMessage} productId=${productDetails.productId} hasOfferToken=${offerToken.isNotBlank()}"

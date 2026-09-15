@@ -937,6 +937,24 @@ class SubscriptionPlansViewModel(application: Application) : AndroidViewModel(ap
             onResult(com.android.billingclient.api.BillingClient.BillingResponseCode.ITEM_UNAVAILABLE)
             return
         }
+        if (offerToken.isBlank()) {
+            Log.w(
+                "BillingDiag",
+                "launchPurchase blocked DEVELOPER_ERROR blank offerToken productId=$productId"
+            )
+            onResult(com.android.billingclient.api.BillingClient.BillingResponseCode.DEVELOPER_ERROR)
+            return
+        }
+        if (activity.isFinishing || activity.isDestroyed) {
+            Log.w("BillingDiag", "launchPurchase blocked DEVELOPER_ERROR activity invalid")
+            onResult(com.android.billingclient.api.BillingClient.BillingResponseCode.DEVELOPER_ERROR)
+            return
+        }
+        if (!billingManager.isReady()) {
+            Log.w("BillingDiag", "launchPurchase blocked SERVICE_UNAVAILABLE client not ready")
+            onResult(com.android.billingclient.api.BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE)
+            return
+        }
         val hasToken = offerToken.isNotBlank()
         Log.d("BillingDiag", "launchPurchase request productId=$productId hasOfferToken=$hasToken")
         // Optimistically mark launching so UI blocks immediately (before Play sheet)
@@ -946,7 +964,20 @@ class SubscriptionPlansViewModel(application: Application) : AndroidViewModel(ap
         )
         val userId = currentUserId ?: "anonymous"
         val obfuscated = billingManager.obfuscatedAccountId(userId)
-        val result = billingManager.launchBillingFlow(activity, details, offerToken, obfuscated)
+        val result = try {
+            billingManager.launchBillingFlow(activity, details, offerToken, obfuscated)
+        } catch (e: Exception) {
+            Log.w(
+                "BillingDiag",
+                "launchBillingFlow threw ${e.javaClass.simpleName}, resetting to Idle"
+            )
+            _uiState.value = _uiState.value.copy(
+                purchaseInProgress = false,
+                purchaseFlow = PurchaseFlowState(phase = PurchasePhase.Idle, blocking = false)
+            )
+            onResult(com.android.billingclient.api.BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE)
+            return
+        }
         Log.d(
             "BillingDiag",
             "launchBillingFlow responseCode=${result.responseCode} debugMessage=${result.debugMessage} productId=$productId"
