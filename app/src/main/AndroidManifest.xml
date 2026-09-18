@@ -178,7 +178,9 @@
                 <data android:mimeType="text/rtf" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
-            <!-- File manager "Open with" for content/file schemes. -->
+            <!-- File manager "Open with" only for formats Nopalito can display
+                 directly. Office documents remain available through the explicit
+                 import/share flows, but must not claim themselves as viewers. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -202,18 +204,6 @@
                     android:scheme="content" />
                 <data
                     android:mimeType="text/plain"
-                    android:scheme="file" />
-                <data
-                    android:mimeType="application/msword"
-                    android:scheme="content" />
-                <data
-                    android:mimeType="application/msword"
-                    android:scheme="file" />
-                <data
-                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    android:scheme="content" />
-                <data
-                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     android:scheme="file" />
                 <data
                     android:mimeType="application/vnd.oasis.opendocument.text"

@@ -42,7 +42,7 @@ import nopalito.app.domain.Jpeg
 import nopalito.app.domain.ProcessingRecipe
 import nopalito.app.domain.Rotation
 import nopalito.app.domain.ScanPipelineFlags
-import nopalito.app.domain.pagesToExport
+import nopalito.app.domain.prepareProcessedExportPages
 import nopalito.app.platform.BaselineReference
 import nopalito.app.platform.ImageProcessor
 import nopalito.app.platform.processedImage
@@ -162,8 +162,13 @@ class BaselineReferenceInstrumentedTest {
                     before,
                     reopened.jpegBytes(reopened.pages().single().key())!!.bytes
                 )
-                val exports = pagesToExport(reopened, ExportQuality.BALANCED)
-                assertArrayEquals(before, exports.single().jpeg.get().bytes)
+                val exports = prepareProcessedExportPages(
+                    reopened,
+                    ExportQuality.BALANCED,
+                    File(root, "export-cache"),
+                    "TEST",
+                )
+                assertArrayEquals(before, exports.single().file.readBytes())
                 val dir = File(context.filesDir, "ab-validation").apply { mkdirs() }
                 File(dir, "variant.json").writeText(
                     ProcessingRecipe.recipeJson.encodeToString(

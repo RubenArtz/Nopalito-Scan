@@ -620,13 +620,22 @@ class MainViewModel(
                 val totalRotation = currentPage.totalRotation()
                 val rotateIterations = (4 - totalRotation.degrees / 90) % 4
                 val newQuad = userQuad.rotate90(rotateIterations, ImageSize(1, 1))
+                android.util.Log.i(
+                    "Crop",
+                    "applyQuad page=${currentPage.id} totalRotation=$totalRotation " +
+                            "uiQuad=${quadCorners(userQuad)} storedQuad=${quadCorners(newQuad)} " +
+                            "key=${currentPage.key()}",
+                )
                 _loadingPageId.value = currentPage.id
-                val pages = withContext(Dispatchers.IO) {
-                    imageRepository.setUserQuad(currentPage.id, newQuad)
-                    imageRepository.pages()
+                try {
+                    val pages = withContext(Dispatchers.IO) {
+                        imageRepository.setUserQuad(currentPage.id, newQuad)
+                        imageRepository.pages()
+                    }
+                    _pages.value = pages
+                } finally {
+                    _loadingPageId.value = null
                 }
-                _pages.value = pages
-                _loadingPageId.value = null
             }
         }
     }
@@ -672,7 +681,6 @@ class MainViewModel(
                                 colorMode = capturedPage.colorMode,
                                 tier = capturedPage.captureTier
                                     ?: nopalito.app.domain.CaptureTier.BALANCED,
-                                originalSha256 = capturedPage.originalSha256,
                                 capturedWidth = capturedPage.capturedWidth,
                                 capturedHeight = capturedPage.capturedHeight,
                                 workingWidth = capturedPage.workingWidth,
@@ -781,11 +789,12 @@ class MainViewModel(
             val metadata = page.metadata
             val rotation = page.totalRotation()
 
-            val bitmap = withContext(Dispatchers.IO) {
-                val bytes = imageRepository.masterBytes(page.id) ?: return@withContext null
+            val (bitmap, masterBytes) = withContext(Dispatchers.IO) {
+                val bytes = imageRepository.masterBytes(page.id)
+                    ?: return@withContext Pair(null, null)
 
                 val original = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                if (original != null && rotation != Rotation.R0) {
+                val rotated = if (original != null && rotation != Rotation.R0) {
                     val matrix = Matrix().apply { postRotate(rotation.degrees.toFloat()) }
                     Bitmap.createBitmap(
                         original, 0, 0, original.width, original.height, matrix, true
@@ -793,6 +802,7 @@ class MainViewModel(
                 } else {
                     original
                 }
+                Pair(rotated, bytes.size)
             }
 
             val quad = metadata?.normalizedQuad?.rotate90(
@@ -800,6 +810,13 @@ class MainViewModel(
                 ImageSize(1, 1)
             )
 
+            val bmpDims = if (bitmap != null) "${bitmap.width}x${bitmap.height}" else "null"
+            android.util.Log.i(
+                "Crop",
+                "cropInit page=${page.id} key=${page.key()} rotation=$rotation " +
+                        "quad=${quad?.let { quadCorners(it) } ?: "null"} " +
+                        "bitmap=$bmpDims masterBytes=$masterBytes",
+            )
             _cropInitState.value = if (bitmap == null || quad == null)
                 CropInitState.Error
             else
@@ -807,5 +824,13 @@ class MainViewModel(
             navigateTo(Screen.Main.EditImage)
         }
 
+    }
+
+    private fun quadCorners(quad: Quad): String {
+        fun f(v: Double) = "%.4f".format(v)
+        return "TL(${f(quad.topLeft.x)},${f(quad.topLeft.y)}) " +
+                "TR(${f(quad.topRight.x)},${f(quad.topRight.y)}) " +
+                "BR(${f(quad.bottomRight.x)},${f(quad.bottomRight.y)}) " +
+                "BL(${f(quad.bottomLeft.x)},${f(quad.bottomLeft.y)})"
     }
 }

@@ -204,7 +204,10 @@ class BillingManager private constructor(
         obfuscatedAccountId: String
     ): BillingResult {
         if (activity.isFinishing || activity.isDestroyed) {
-            Log.w("BillingDiag", "launchBillingFlow blocked DEVELOPER_ERROR activity finishing/destroyed")
+            Log.w(
+                "BillingDiag",
+                "launchBillingFlow blocked DEVELOPER_ERROR activity finishing/destroyed"
+            )
             return BillingResult.newBuilder()
                 .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
         }
@@ -237,7 +240,10 @@ class BillingManager private constructor(
         val result = try {
             client.launchBillingFlow(activity, params)
         } catch (e: Exception) {
-            Log.w("BillingDiag", "launchBillingFlow threw ${e.javaClass.simpleName}, returning SERVICE_UNAVAILABLE")
+            Log.w(
+                "BillingDiag",
+                "launchBillingFlow threw ${e.javaClass.simpleName}, returning SERVICE_UNAVAILABLE"
+            )
             return BillingResult.newBuilder()
                 .setResponseCode(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE).build()
         }

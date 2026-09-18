@@ -39,7 +39,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,16 +89,19 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -261,6 +263,21 @@ fun ExportScreen(
     onToggleCloudUpload: () -> Unit = {},
     onIneExportScaleChange: (IneExportScale) -> Unit = {},
 ) {
+    val context = LocalContext.current
+    var showResultSheet by rememberSaveable { mutableStateOf(false) }
+    // The save confirmation used to render at the top of a long scrollable
+    // column, forcing a scroll up after every save. It now opens as a bottom
+    // sheet, so Open / Share stay one tap away without scrolling.
+    LaunchedEffect(uiState.savedBundle) {
+        if (uiState.savedBundle != null) showResultSheet = true
+    }
+    val resultSizeText = uiState.result?.let { exportResult ->
+        val formattedSize = formatFileSize(exportResult.sizeInBytes, context)
+        val sizeMessageKey =
+            if (exportResult.files.size == 1) R.string.file_size else R.string.file_size_total
+        stringResource(sizeMessageKey, formattedSize)
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         GradientHeroHeader(
             title = stringResource(R.string.export_as, uiState.format.displayName),
@@ -278,71 +295,36 @@ fun ExportScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .navigationBarsPadding()
         ) {
             val containerModifier = Modifier.padding(horizontal = 16.dp)
             val onThumbnailClick = navigation.toDocumentScreen
             if (!isLandscape(LocalConfiguration.current)) {
                 Column(
-                    modifier = containerModifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .imePadding()
-                        .verticalScroll(rememberScrollState())
-                        .padding(vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    PdfInfosAndResultBar(uiState, currentDocument, onOpen, onThumbnailClick)
-                    FormatQualitySelectors(
-                        uiState.format,
-                        uiState.quality,
-                        onFormatChange,
-                        onQualityChange,
-                    )
-                    if (uiState.isIneDocument) {
-                        IneExportScaleSelector(
-                            selected = uiState.ineExportScale,
-                            onSelected = onIneExportScaleChange,
-                        )
-                    }
-                    if (uiState.format == ExportFormat.PDF || uiState.format == ExportFormat.WORD) {
-                        PasswordProtectionCard(
-                            enabled = uiState.protectWithPassword,
-                            password = uiState.password,
-                            onEnabledChange = onProtectWithPasswordChange,
-                            onPasswordChange = onPasswordChange,
-                            onGenerate = onGeneratePassword,
-                        )
-                    }
-                    MainActions(
-                        onFilenameChange,
-                        uiState,
-                        onShare,
-                        onSave,
-                        onCloseScan,
-                        onUploadToCloud,
-                        onToggleCloudUpload
-                    )
-                }
-            } else {
-                Row(
-                    modifier = containerModifier.fillMaxHeight(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Column(
-                        modifier = Modifier
+                        modifier = containerModifier
                             .weight(1f)
-                            .verticalScroll(rememberScrollState()),
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         PdfInfosAndResultBar(uiState, currentDocument, onOpen, onThumbnailClick)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
                         FormatQualitySelectors(
                             uiState.format,
                             uiState.quality,
                             onFormatChange,
                             onQualityChange,
                         )
+                        if (uiState.isIneDocument) {
+                            IneExportScaleSelector(
+                                selected = uiState.ineExportScale,
+                                onSelected = onIneExportScaleChange,
+                            )
+                        }
                         if (uiState.format == ExportFormat.PDF || uiState.format == ExportFormat.WORD) {
                             PasswordProtectionCard(
                                 enabled = uiState.protectWithPassword,
@@ -355,13 +337,72 @@ fun ExportScreen(
                         MainActions(
                             onFilenameChange,
                             uiState,
-                            onShare,
-                            onSave,
                             onCloseScan,
                             onUploadToCloud,
                             onToggleCloudUpload
                         )
                     }
+                    SaveShareBar(
+                        onShare = onShare,
+                        onSave = onSave,
+                        resultAvailable = uiState.result != null,
+                        isSaving = uiState.isSaving,
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                ) {
+                    Row(
+                        modifier = containerModifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            PdfInfosAndResultBar(uiState, currentDocument, onOpen, onThumbnailClick)
+                        }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            FormatQualitySelectors(
+                                uiState.format,
+                                uiState.quality,
+                                onFormatChange,
+                                onQualityChange,
+                            )
+                            if (uiState.format == ExportFormat.PDF || uiState.format == ExportFormat.WORD) {
+                                PasswordProtectionCard(
+                                    enabled = uiState.protectWithPassword,
+                                    password = uiState.password,
+                                    onEnabledChange = onProtectWithPasswordChange,
+                                    onPasswordChange = onPasswordChange,
+                                    onGenerate = onGeneratePassword,
+                                )
+                            }
+                            MainActions(
+                                onFilenameChange,
+                                uiState,
+                                onCloseScan,
+                                onUploadToCloud,
+                                onToggleCloudUpload
+                            )
+                        }
+                    }
+                    SaveShareBar(
+                        onShare = onShare,
+                        onSave = onSave,
+                        resultAvailable = uiState.result != null,
+                        isSaving = uiState.isSaving,
+                    )
                 }
             }
 
@@ -376,6 +417,17 @@ fun ExportScreen(
                     strokeWidth = 4.dp,
                 )
             }
+        }
+
+        if (showResultSheet && uiState.savedBundle != null) {
+            ExportResultSheet(
+                savedBundle = uiState.savedBundle,
+                fileSizeText = resultSizeText,
+                onOpen = onOpen,
+                onShare = onShare,
+                onNewScan = onCloseScan,
+                onDismiss = { showResultSheet = false },
+            )
         }
     }
 }
@@ -666,6 +718,7 @@ private fun IneExportScaleSelector(
 private fun formatIcon(format: ExportFormat): ImageVector = when (format) {
     ExportFormat.PDF -> Icons.Default.PictureAsPdf
     ExportFormat.JPEG -> Icons.Default.Image
+    ExportFormat.PNG -> Icons.Default.Image
     ExportFormat.WORD -> Icons.Default.TextFields
 }
 
@@ -985,17 +1038,178 @@ private fun FilenameTextField(
     )
 }
 
+/**
+ * Share / Save actions pinned above the navigation bar instead of living at
+ * the end of the scrollable column, so they are always reachable without
+ * scrolling. Buttons stay visible but disabled until the export is ready.
+ */
+@Composable
+private fun SaveShareBar(
+    onShare: () -> Unit,
+    onSave: () -> Unit,
+    resultAvailable: Boolean,
+    isSaving: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = rememberHapticManager()
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                ExportButton(
+                    onClick = {
+                        haptics.click()
+                        onShare()
+                    },
+                    enabled = resultAvailable,
+                    isPrimary = false,
+                    icon = Icons.Default.Share,
+                    text = stringResource(R.string.share),
+                    modifier = Modifier.weight(1f)
+                )
+                ExportButton(
+                    onClick = {
+                        haptics.click()
+                        onSave()
+                    },
+                    enabled = resultAvailable,
+                    isPrimary = true,
+                    icon = Icons.Default.Download,
+                    text = stringResource(R.string.save),
+                    modifier = Modifier
+                        .weight(1f)
+                        .alpha(if (isSaving) 0.6f else 1f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Save confirmation as a bottom sheet (same ModalBottomSheet style as the
+ * other sheets in the app): after saving, Open / Share stay one tap away
+ * without scrolling back up to the result bar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExportResultSheet(
+    savedBundle: SavedBundle,
+    fileSizeText: String?,
+    onOpen: (ExportArtifact) -> Unit,
+    onShare: () -> Unit,
+    onNewScan: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val artifact = remember(savedBundle) { ExportArtifactMapper.fromBundle(savedBundle) }
+    val dirName = savedBundle.folderName ?: savedBundle.saveDir?.name
+    ?: stringResource(R.string.download_dirname)
+    val nbFiles = savedBundle.items.size
+    val firstFileName = savedBundle.items[0].fileName
+    val isFolder = artifact.folderUri != null
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp)
+                .padding(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = LocalResources.current.getQuantityString(
+                            R.plurals.files_saved_to,
+                            nbFiles,
+                            nbFiles, firstFileName, dirName
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    fileSizeText?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            ExportButton(
+                onClick = {
+                    onDismiss()
+                    onOpen(artifact)
+                },
+                isPrimary = true,
+                icon = if (isFolder) Icons.Default.FolderOpen
+                else Icons.AutoMirrored.Filled.OpenInNew,
+                text = stringResource(
+                    if (isFolder) R.string.open_folder else R.string.open
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+            ExportButton(
+                onClick = {
+                    onDismiss()
+                    onShare()
+                },
+                isPrimary = false,
+                icon = Icons.Default.Share,
+                text = stringResource(R.string.share),
+                modifier = Modifier.fillMaxWidth()
+            )
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    onNewScan()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.scan_new),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun MainActions(
     onFilenameChange: (String) -> Unit,
     uiState: ExportUiState,
-    onShare: () -> Unit,
-    onSave: () -> Unit,
     onCloseScan: () -> Unit,
     onUploadToCloud: () -> Unit = {},
     onToggleCloudUpload: () -> Unit = {},
 ) {
-    val haptics = rememberHapticManager()
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -1013,36 +1227,6 @@ private fun MainActions(
             checked = uiState.cloudUploadEnabled,
             onToggle = onToggleCloudUpload,
         )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            ExportButton(
-                onClick = {
-                    haptics.click()
-                    onShare()
-                },
-                enabled = uiState.result != null,
-                isPrimary = false,
-                icon = Icons.Default.Share,
-                text = stringResource(R.string.share),
-                modifier = Modifier.weight(1f)
-            )
-            ExportButton(
-                onClick = {
-                    haptics.click()
-                    onSave()
-                },
-                enabled = uiState.result != null,
-                isPrimary = true,
-                icon = Icons.Default.Download,
-                text = stringResource(R.string.save),
-                modifier = Modifier
-                    .weight(1f)
-                    .alpha(if (uiState.isSaving) 0.6f else 1f)
-            )
-        }
 
         // Cloud upload section: only show if cloud session is available and file was saved
         if (uiState.isCloudAuthAvailable && uiState.savedBundle != null) {

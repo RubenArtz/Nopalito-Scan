@@ -27,6 +27,7 @@ import android.net.Uri
 import nopalito.imageprocessing.decodeJpeg
 import nopalito.imageprocessing.encodeJpeg
 import org.opencv.core.Mat
+import kotlin.math.max
 
 class Jpeg(val bytes: ByteArray) {
     companion object {
@@ -35,6 +36,22 @@ class Jpeg(val bytes: ByteArray) {
 
     fun toBitmap(): Bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     fun toMat(): Mat = decodeJpeg(bytes)
+
+    /** Bounds the source Mat allocated before perspective correction. */
+    fun toMat(maxPixels: Long): Mat {
+        require(maxPixels > 0) { "maxPixels must be positive" }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return decodeJpeg(bytes)
+        var sample = 1
+        while (
+            bounds.outWidth.toLong() * bounds.outHeight.toLong() /
+            (sample.toLong() * sample.toLong()) > maxPixels && sample < 8
+        ) {
+            sample *= 2
+        }
+        return decodeJpeg(bytes, max(1, sample))
+    }
 }
 
 interface ImageLoader {

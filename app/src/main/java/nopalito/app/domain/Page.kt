@@ -40,6 +40,12 @@ data class ScanPage(
     val colorMode: ColorMode?,
     val quadVersion: Int,
     val metadata: PageMetadata?,
+    /** Provenance snapshot used by export to reject orphaned/replaced source files. */
+    val hasOriginal: Boolean = false,
+    val originalRelativePath: String? = null,
+    val sourceSha256: String? = null,
+    val safeSha256: String? = null,
+    val hasSafeCopy: Boolean = false,
 ) {
     fun key() = PageViewKey(id, manualRotation, colorMode, quadVersion)
     fun totalRotation() = manualRotation.add(metadata?.baseRotation ?: Rotation.R0)

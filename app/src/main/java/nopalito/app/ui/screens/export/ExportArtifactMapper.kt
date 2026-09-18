@@ -24,6 +24,7 @@ package nopalito.app.ui.screens.export
 import android.net.Uri
 import nopalito.app.ui.screens.history.ExportHistoryEntity
 import java.io.File
+import androidx.core.net.toUri
 
 /**
  * Converts the intermediate export models to the final model
@@ -33,7 +34,7 @@ import java.io.File
 object ExportArtifactMapper {
 
     private fun parseUri(value: String?): Uri? = value?.takeIf { it.isNotBlank() }?.let {
-        runCatching { Uri.parse(it) }.getOrNull()
+        runCatching { it.toUri() }.getOrNull()
     }
 
     /**
@@ -90,6 +91,7 @@ object ExportArtifactMapper {
         val format = when (entity.format) {
             "PDF" -> ExportFormat.PDF
             "DOCX" -> ExportFormat.WORD
+            "PNG" -> ExportFormat.PNG
             else -> ExportFormat.JPEG
         }
         if (entity.resultType == "FOLDER") {

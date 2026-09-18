@@ -108,7 +108,7 @@ data class SavedItem(
 data class SavedBundle(
     val items: List<SavedItem>,
     val saveDir: SaveDir? = null,
-    /** Name of the container folder (only for multiple JPEG export). */
+    /** Name of the container folder for a multiple JPEG or PNG export. */
     val folderName: String? = null,
     /** URI of the DocumentFile of the folder created via SAF (null if MediaStore). */
     val folderUri: Uri? = null,

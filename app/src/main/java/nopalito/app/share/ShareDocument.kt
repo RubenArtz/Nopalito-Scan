@@ -44,7 +44,9 @@ object ShareDocument {
                 type = mimeType
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newRawUri(null, uris[0])
+                clipData = ClipData.newRawUri(null, uris[0]).apply {
+                    uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                }
             }
         }
     }

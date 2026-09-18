@@ -28,7 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nopalito.app.data.DocxWriter
 import nopalito.app.domain.OcrService
-import nopalito.app.domain.PageToExport
+import nopalito.app.domain.ProcessedExportPage
 import nopalito.app.domain.ocr.OcrTextDetector
 import nopalito.app.domain.ocr.OcrTextExtractor
 import nopalito.app.domain.ocr.filterBoxesForExport
@@ -62,8 +62,8 @@ class AndroidDocxWriter(
     private val ocrDetector: OcrTextDetector? = null,
 ) : DocxWriter {
 
-    override suspend fun writeDocxFromJpegs(
-        pages: List<PageToExport>,
+    override suspend fun writeDocxFromProcessedPages(
+        pages: List<ProcessedExportPage>,
         outputStream: OutputStream,
         disableOcr: Boolean,
         password: String?,
@@ -72,37 +72,17 @@ class AndroidDocxWriter(
         val pagesMedia = mutableListOf<DocxPageMedia>()
 
         for ((index, page) in pages.withIndex()) {
-            val jpeg = page.jpeg.get()
+            val jpeg = page.readJpeg()
             val baseBitmap = jpeg.toBitmap()
 
             try {
                 val widthPx = baseBitmap.width
                 val heightPx = baseBitmap.height
 
-                val composedBitmap = composeOverlaysOnBitmap(
-                    baseBitmap = baseBitmap,
-                    overlays = page.overlays,
-                )
-
-                val imageBytes: ByteArray
-                val isPng: Boolean
-
-                if (composedBitmap != null) {
-                    try {
-                        // JPEG is ~10x faster than PNG deflate on photographic
-                        // content (same fix as PdfWriter). White backdrop already
-                        // baked in, so JPEG quality 85 is visually lossless.
-                        imageBytes = bitmapToJpegBytes(composedBitmap)
-                        isPng = false
-                    } finally {
-                        if (!composedBitmap.isRecycled) {
-                            composedBitmap.recycle()
-                        }
-                    }
-                } else {
-                    imageBytes = jpeg.bytes
-                    isPng = false
-                }
+                // The central preparer already baked perspective, rotation,
+                // color and overlays. Word embeds that exact artifact.
+                val imageBytes = jpeg.bytes
+                val isPng = false
 
                 val ocrLines = if (disableOcr) {
                     emptyList()
@@ -172,27 +152,6 @@ class AndroidDocxWriter(
         }
     }
 
-    private fun bitmapToJpegBytes(bitmap: Bitmap): ByteArray {
-        return ByteArrayOutputStream().use { output ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_EXPORT_QUALITY, output)
-            output.toByteArray()
-        }
-    }
-
-    private companion object {
-        // Single export quality (was a parameter always passed as 85): JPEG
-        // quality 85 is visually lossless on photographic content and ~10x
-        // faster/smaller than PNG deflate. Tune here if needed.
-        const val JPEG_EXPORT_QUALITY = 85
-    }
-
-    @Suppress("unused")
-    private fun bitmapToPngBytes(bitmap: Bitmap): ByteArray {
-        return ByteArrayOutputStream().use { output ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-            output.toByteArray()
-        }
-    }
 }
 
 /**

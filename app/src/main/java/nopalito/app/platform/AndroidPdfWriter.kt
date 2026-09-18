@@ -48,14 +48,14 @@ import com.tom_roush.pdfbox.pdmodel.font.PDFontDescriptor
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import nopalito.app.BuildConfig
 import nopalito.app.data.PdfWriter
+import nopalito.app.domain.ExportPageOverlays
 import nopalito.app.domain.OcrService
-import nopalito.app.domain.PageToExport
+import nopalito.app.domain.ProcessedExportPage
 import nopalito.app.domain.ocr.OcrTextDetector
 import nopalito.app.domain.ocr.OcrTextExtractor
 import nopalito.app.domain.ocr.filterBoxesForExport
 import nopalito.app.ui.screens.document.DateBackgroundStyle
 import nopalito.app.ui.screens.document.OverlayConstants
-import nopalito.imageprocessing.EstimatedDimensions
 import nopalito.imageprocessing.OcrTextBox
 import nopalito.imageprocessing.PaperFormats
 import java.io.OutputStream
@@ -68,7 +68,7 @@ import java.util.Locale
  */
 internal fun composeOverlaysOnBitmap(
     baseBitmap: Bitmap,
-    overlays: PageToExport.PageExportOverlays?
+    overlays: ExportPageOverlays?
 ): Bitmap? {
     if (overlays == null) return null
     val hasSignature = overlays.signatureBitmap != null
@@ -222,8 +222,8 @@ class AndroidPdfWriter(
     val ocrDetector: OcrTextDetector? = null,
 ) : PdfWriter {
 
-    override suspend fun writePdfFromJpegs(
-        pages: List<PageToExport>,
+    override suspend fun writePdfFromProcessedPages(
+        pages: List<ProcessedExportPage>,
         outputStream: OutputStream,
         disableOcr: Boolean,
         password: String?,
@@ -235,57 +235,34 @@ class AndroidPdfWriter(
         doc.use { document ->
             val ocrDocument = OcrDocument(document, assets)
             for ((index, page) in pages.withIndex()) {
-                val jpeg = page.jpeg.get()
+                val jpeg = page.readJpeg()
 
-                // Fast path: when no overlay and OCR disabled, avoid Bitmap
-                // decode entirely and use JPEG bytes directly (1 JPEG parse
-                // instead of bitmap decode + JPEG parse). For ORIGINAL this
-                // preserves the capture without app reprocessing; any decode
-                // (rotation, overlays, OCR bitmap, filter) is logged with cause
-                // and the output is not claimed byte-identical.
-                val needsBitmap = page.overlays != null || !disableOcr
-                if (page.origin == nopalito.app.domain.ExportOrigin.ORIGINAL_FILE && needsBitmap) {
-                    val cause = buildList {
-                        if (page.overlays != null) add("overlays")
-                        if (!disableOcr) add("ocr-bitmap")
-                        page.originCause?.let { add(it) }
-                    }.joinToString(",")
-                    Log.w(
-                        "PdfWriter",
-                        "ORIGINAL decode required for ${page.page.id}: $cause"
-                    )
-                }
+                // Perspective, rotation, color and overlays are already baked
+                // into the materialized artifact. Decode only when OCR needs it.
+                val needsBitmap = !disableOcr
+                Log.i(
+                    "PdfWriter",
+                    "pdfInput pageId=${page.pageId} sourceType=${page.sourceType} " +
+                            "artifactType=${page.artifactType} input=${pathForLog(page.file)} " +
+                            "jpegBytes=${jpeg.bytes.size} dimensions=${page.width}x${page.height} " +
+                            "needsBitmap=$needsBitmap disableOcr=$disableOcr",
+                )
                 val baseBitmap: Bitmap? = if (needsBitmap) jpeg.toBitmap() else null
 
                 // Derive pixel size: prefer bitmap when already decoded, else
                 // parse JPEG header via JPEGFactory (or bitmap bounds if needed).
-                val (widthPx, heightPx) = when {
-                    baseBitmap != null -> baseBitmap.width.toFloat() to baseBitmap.height.toFloat()
-                    else -> {
-                        // No bitmap needed: decode JPEG header only for size.
-                        // Use BitmapFactory.Options to avoid full pixel allocation.
-                        val opts = android.graphics.BitmapFactory.Options().apply {
-                            inJustDecodeBounds = true
-                        }
-                        android.graphics.BitmapFactory.decodeByteArray(
-                            jpeg.bytes,
-                            0,
-                            jpeg.bytes.size,
-                            opts
-                        )
-                        val w = if (opts.outWidth > 0) opts.outWidth.toFloat() else 1000f
-                        val h = if (opts.outHeight > 0) opts.outHeight.toFloat() else 1000f
-                        w to h
-                    }
-                }
+                val widthPx = page.width.toFloat()
+                val heightPx = page.height.toFloat()
 
                 // PDF has 72 points (units) per inch, 1 inch = 25.4 mm
                 val pointsPerMm = 72f / 25.4f
 
-                val dimensions = page.estimatedDimensions()
-                val (widthMm, heightMm) = when (dimensions) {
-                    is EstimatedDimensions.Physical ->
-                        constrainToMaxFormat(dimensions.widthMm, dimensions.heightMm)
+                val (widthMm, heightMm) = when {
+                    page.physicalWidthMm != null && page.physicalHeightMm != null -> {
+                        val bounds =
+                            constrainToMaxFormat(page.physicalWidthMm, page.physicalHeightMm)
+                        fitPixelAspectInside(widthPx, heightPx, bounds.first, bounds.second)
+                    }
 
                     else -> {
                         // No physical dimensions available
@@ -300,72 +277,50 @@ class AndroidPdfWriter(
                 val pdPage = PDPage(PDRectangle(widthPoints, heightPoints))
                 document.addPage(pdPage)
 
-                val contentStream =
-                    PDPageContentStream(document, pdPage, AppendMode.OVERWRITE, false)
-
-                // Compose overlays onto the bitmap if present.
-                // Previously used LosslessFactory (PNG deflate) which on 2MP
-                // photographic content took 15-40s per page. JPEGFactory with
-                // quality 85 is ~10x faster and produces much smaller PDFs.
-                if (baseBitmap != null) {
-                    val composedBitmap = composeOverlaysOnBitmap(baseBitmap, page.overlays)
-                    if (composedBitmap != null) {
-                        try {
-                            val jpegBytes = bitmapToJpegBytes(composedBitmap)
-                            val pdImage = JPEGFactory.createFromByteArray(document, jpegBytes)
-                            contentStream.drawImage(pdImage, 0f, 0f, widthPoints, heightPoints)
-                        } finally {
-                            composedBitmap.recycle()
-                        }
-                    } else {
+                try {
+                    val contentStream =
+                        PDPageContentStream(document, pdPage, AppendMode.OVERWRITE, false)
+                    contentStream.use { contentStream ->
                         val image = JPEGFactory.createFromByteArray(document, jpeg.bytes)
                         contentStream.drawImage(image, 0f, 0f, widthPoints, heightPoints)
-                    }
-                } else {
-                    val image = JPEGFactory.createFromByteArray(document, jpeg.bytes)
-                    contentStream.drawImage(image, 0f, 0f, widthPoints, heightPoints)
-                }
 
-                if (!disableOcr && baseBitmap != null) {
-                    try {
-                        // Robust pipeline: SINGLE_BLOCK + blank check + conf>=65
-                        // (OcrService internals) + export filter.
-                        // The PDF image stays full-res; only OCR runs on the
-                        // ~200dpi normalized bitmap.
-                        val rawBoxes = if (ocrDetector != null) {
-                            // Option B: same pipeline as the preview.
-                            ocrDetector.detect(baseBitmap)
-                        } else {
-                            // Option A (default): binarize here, OCR afterwards.
-                            // preprocessForOcr returns a new bitmap or the same one.
-                            val pre = runCatching { ocrService.preprocessForOcr(baseBitmap) }
-                                .getOrNull() ?: baseBitmap
+                        if (!disableOcr && baseBitmap != null) {
                             try {
-                                ocrService.runOcr(
-                                    pre,
-                                    TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK,
-                                )
-                            } finally {
-                                if (pre !== baseBitmap && !pre.isRecycled) pre.recycle()
+                                // Robust pipeline: SINGLE_BLOCK + blank check + conf>=65
+                                // (OcrService internals) + export filter.
+                                val rawBoxes = if (ocrDetector != null) {
+                                    ocrDetector.detect(baseBitmap)
+                                } else {
+                                    val pre =
+                                        runCatching { ocrService.preprocessForOcr(baseBitmap) }
+                                            .getOrNull() ?: baseBitmap
+                                    try {
+                                        ocrService.runOcr(
+                                            pre,
+                                            TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK,
+                                        )
+                                    } finally {
+                                        if (pre !== baseBitmap && !pre.isRecycled) pre.recycle()
+                                    }
+                                }
+                                val cleanBoxes = filterBoxesForExport(rawBoxes, baseBitmap.height)
+                                if (cleanBoxes.isNotEmpty()) {
+                                    val pdfPageDimensions = PageDimensions(
+                                        baseBitmap.width,
+                                        baseBitmap.height,
+                                        widthPoints,
+                                        heightPoints
+                                    )
+                                    ocrDocument.addPage(pdPage, cleanBoxes, pdfPageDimensions)
+                                }
+                            } catch (e: Exception) {
+                                Log.e("AndroidPdfWriter", "Failed to run OCR on page $index", e)
                             }
                         }
-                        // Never embed garbage: drop specks/logos before addPage.
-                        val cleanBoxes = filterBoxesForExport(rawBoxes, baseBitmap.height)
-                        if (cleanBoxes.isNotEmpty()) {
-                            val pdfPageDimensions = PageDimensions(
-                                baseBitmap.width,
-                                baseBitmap.height,
-                                widthPoints,
-                                heightPoints
-                            )
-                            ocrDocument.addPage(pdPage, cleanBoxes, pdfPageDimensions)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("AndroidPdfWriter", "Failed to run OCR on page $index", e)
                     }
+                } finally {
+                    baseBitmap?.recycle()
                 }
-                baseBitmap?.recycle()
-                contentStream.close()
 
                 onProgress(index + 1)
             }
@@ -379,18 +334,26 @@ class AndroidPdfWriter(
         }
     }
 
-    private fun bitmapToJpegBytes(bitmap: Bitmap): ByteArray {
-        val out = java.io.ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_EXPORT_QUALITY, out)
-        return out.toByteArray()
-    }
+}
 
-    private companion object {
-        // Single export quality (was a parameter always passed as 85): JPEG
-        // quality 85 is visually lossless on photographic content and ~10x
-        // faster/smaller than PNG deflate. Tune here if needed.
-        const val JPEG_EXPORT_QUALITY = 85
-    }
+private fun pathForLog(file: java.io.File): String = if (BuildConfig.DEBUG) {
+    file.absolutePath
+} else {
+    "sha256:${
+        nopalito.app.domain.OriginalIntegrity.sha256(file.absolutePath.toByteArray()).take(16)
+    }"
+}
+
+private fun fitPixelAspectInside(
+    widthPx: Float,
+    heightPx: Float,
+    maxWidthMm: Double,
+    maxHeightMm: Double,
+): Pair<Double, Double> {
+    val safeWidthPx = widthPx.coerceAtLeast(1f).toDouble()
+    val safeHeightPx = heightPx.coerceAtLeast(1f).toDouble()
+    val scale = minOf(maxWidthMm / safeWidthPx, maxHeightMm / safeHeightPx)
+    return safeWidthPx * scale to safeHeightPx * scale
 }
 
 fun constrainToMaxFormat(widthMm: Double, heightMm: Double): Pair<Double, Double> {

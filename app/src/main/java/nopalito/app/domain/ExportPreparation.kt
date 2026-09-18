@@ -19,323 +19,570 @@
  *
  */
 
-@file:Suppress("KotlinConstantConditions")
-
 package nopalito.app.domain
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.util.Log
 import androidx.core.graphics.createBitmap
+import kotlinx.coroutines.CancellationException
+import nopalito.app.BuildConfig
 import nopalito.app.data.ImageRepository
+import nopalito.app.data.publishTempFile
+import nopalito.app.data.syncBestEffort
+import nopalito.app.platform.composeOverlaysOnBitmap
 import nopalito.app.platform.processedImage
+import nopalito.imageprocessing.ColorMode
 import nopalito.imageprocessing.EstimatedDimensions
+import nopalito.imageprocessing.Quad
 import nopalito.imageprocessing.estimateRealDimensions
 import nopalito.imageprocessing.resizeForMaxPixels
+import nopalito.imageprocessing.rotate
 import nopalito.imageprocessing.scaledTo
 import org.opencv.core.Mat
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.security.MessageDigest
 
-fun interface JpegProvider {
-    suspend fun get(): Jpeg
+/** The real physical input used to create an export artifact. */
+enum class ExportSourceType {
+    CAMERA_ORIGINAL,
+    SAFE_COPY,
+    LEGACY_SOURCE,
+    STORED_PROCESSED,
+    COMPOSITE,
 }
 
-data class PageToExport(
-    val page: ScanPage,
-    val overlays: PageExportOverlays? = null,
-    val jpeg: JpegProvider,
-    val origin: ExportOrigin = ExportOrigin.PROCESSED_STORED,
-    val originCause: String? = null,
-) {
-    data class PageExportOverlays(
-        val signatureBitmap: Bitmap? = null,
-        val signaturePositionFractionX: Float? = null,
-        val signaturePositionFractionY: Float? = null,
-        val signatureScale: Float = 1.0f,
-        val signatureRotationDegrees: Float = 0f,
-        val dateText: String? = null,
-        val datePositionFractionX: Float? = null,
-        val datePositionFractionY: Float? = null,
-        val dateScale: Float = 1.0f,
-        val dateRotationDegrees: Float = 0f,
-        val dateStyleTextColor: Long = 0xFFFFFFFF,
-        val dateStyleFontSize: Float = 14f,
-        val dateStyleBackgroundStyle: String = "CAPSULE",
-        val dateStyleBackgroundColor: Long = 0x80000000,
-    )
-
-    fun estimatedDimensions(): EstimatedDimensions? {
-        val metadata = page.metadata ?: return null
-        val size = metadata.sourceSize ?: return null
-
-        val quad = metadata.normalizedQuad.scaledTo(1.0, 1.0, size.width, size.height)
-        val realDimensions = estimateRealDimensions(
-            quad, size.width.toInt(), size.height.toInt(), metadata.opticalMeasures
-        ).snapToStandardFormat()
-        return realDimensions.applyRotation(page.totalRotation())
-    }
+/** What the materialized file contains; none of these values means raw camera data. */
+enum class ProcessedExportArtifactType {
+    PROCESSED_FULL_RES,
+    PROCESSED_HIGH,
+    PROCESSED_BALANCED,
+    PROCESSED_COMPRESSED,
+    PROCESSED_PREVIEW,
+    PROCESSED_COMPOSITE,
 }
 
-private fun EstimatedDimensions.applyRotation(rotation: Rotation): EstimatedDimensions {
-    if ((rotation == Rotation.R90 || rotation == Rotation.R270)
-        && this is EstimatedDimensions.Physical
-    ) {
-        return EstimatedDimensions.Physical(heightMm, widthMm)
-    }
-    return this
-}
+data class ExportQuadPoint(val x: Double, val y: Double)
+
+/** Overlay input consumed only by the central preparation layer. */
+data class ExportPageOverlays(
+    val signatureBitmap: Bitmap? = null,
+    val signaturePositionFractionX: Float? = null,
+    val signaturePositionFractionY: Float? = null,
+    val signatureScale: Float = 1.0f,
+    val signatureRotationDegrees: Float = 0f,
+    val dateText: String? = null,
+    val datePositionFractionX: Float? = null,
+    val datePositionFractionY: Float? = null,
+    val dateScale: Float = 1.0f,
+    val dateRotationDegrees: Float = 0f,
+    val dateStyleTextColor: Long = 0xFFFFFFFF,
+    val dateStyleFontSize: Float = 14f,
+    val dateStyleBackgroundStyle: String = "CAPSULE",
+    val dateStyleBackgroundColor: Long = 0x80000000,
+)
 
 /**
- * Where export bytes came from. ORIGINAL_FILE means the preserved capture
- * was copied without decode/encode; anything else documents why a decode
- * was required (rotation, overlays, OCR bitmap, filter, missing original).
+ * The only image object accepted by JPEG, PNG, PDF and Word exporters.
+ * [file] is always a non-empty JPEG which already contains perspective,
+ * rotation, color mode and overlays. Camera/source files never cross this boundary.
  */
-enum class ExportOrigin {
-    ORIGINAL_FILE,
-    REPROCESSED_HIGH,
-    PROCESSED_STORED,
-    FALLBACK_NO_ORIGINAL,
+@ConsistentCopyVisibility
+data class ProcessedExportPage internal constructor(
+    val pageId: String,
+    val file: File,
+    val sourceType: ExportSourceType,
+    val artifactType: ProcessedExportArtifactType,
+    val inputAbsolutePath: String,
+    val inputByteSize: Long,
+    val inputWidth: Int,
+    val inputHeight: Int,
+    val width: Int,
+    val height: Int,
+    val quad: List<ExportQuadPoint>,
+    val quadVersion: Int?,
+    val rotation: Int,
+    val colorMode: ColorMode?,
+    val requestedQuality: ExportQuality,
+    val byteSize: Long,
+    val sha256: String,
+    val physicalWidthMm: Double? = null,
+    val physicalHeightMm: Double? = null,
+) {
+    val absolutePath: String get() = file.absolutePath
+
+    fun readJpeg(): Jpeg {
+        check(file.exists() && file.length() > 0L) { "Missing export artifact for $pageId" }
+        val bytes = file.readBytes()
+        check(bytes.size.toLong() == byteSize) { "Export artifact size changed for $pageId" }
+        check(sha256(bytes) == sha256) { "Export artifact checksum changed for $pageId" }
+        val dimensions = imageBounds(bytes)
+        check(dimensions.first == width && dimensions.second == height) {
+            "Export artifact dimensions changed for $pageId"
+        }
+        return Jpeg(bytes)
+    }
+}
+
+private const val EXPORT_PIPELINE_VERSION = 3
+
+private data class InputCandidate(
+    val sourceType: ExportSourceType,
+    val file: File,
+    val bytes: suspend () -> ByteArray?,
+    val needsPerspectiveProcessing: Boolean,
+)
+
+/** Materializes pages sequentially so exporters can never reach a camera file. */
+@Suppress("DEPRECATION")
+suspend fun prepareProcessedExportPages(
+    imageRepository: ImageRepository,
+    requestedQuality: ExportQuality,
+    cacheDir: File,
+    requestedFormat: String,
+    overlays: Map<String, ExportPageOverlays> = emptyMap(),
+): List<ProcessedExportPage> {
+    cacheDir.mkdirs()
+    require(cacheDir.exists() && cacheDir.isDirectory) { "Invalid export cache: $cacheDir" }
+    val effectiveQuality = if (requestedQuality == ExportQuality.MAX_COMPRESSION) {
+        ExportQuality.HIGH
+    } else {
+        requestedQuality
+    }
+    return imageRepository.pages().map { page ->
+        prepareOnePage(
+            imageRepository = imageRepository,
+            page = page,
+            requestedQuality = requestedQuality,
+            effectiveQuality = effectiveQuality,
+            cacheDir = cacheDir,
+            requestedFormat = requestedFormat,
+            overlays = overlays[page.id],
+        )
+    }
+}
+
+private suspend fun prepareOnePage(
+    imageRepository: ImageRepository,
+    page: ScanPage,
+    requestedQuality: ExportQuality,
+    effectiveQuality: ExportQuality,
+    cacheDir: File,
+    requestedFormat: String,
+    overlays: ExportPageOverlays?,
+): ProcessedExportPage {
+    val metadata = page.metadata
+    val colorMode = page.colorMode
+    val storedFile = imageRepository.processedFileForExport(page.key().copy(rotation = Rotation.R0))
+    val candidates = buildList {
+        if (effectiveQuality == ExportQuality.ORIGINAL || effectiveQuality == ExportQuality.HIGH) {
+            add(
+                InputCandidate(
+                    ExportSourceType.CAMERA_ORIGINAL,
+                    imageRepository.originalFile(page.id),
+                    {
+                        imageRepository.verifiedOriginalBytesForExport(
+                            page.id, page.hasOriginal, page.originalRelativePath, page.sourceSha256,
+                        )
+                    },
+                    true
+                )
+            )
+            add(InputCandidate(ExportSourceType.SAFE_COPY, imageRepository.safeJpegFile(page.id), {
+                imageRepository.verifiedSafeBytesForExport(
+                    page.id, page.hasSafeCopy, page.safeSha256,
+                )
+            }, true))
+            val legacy = imageRepository.legacySourceFileForExport(page.id)
+            add(InputCandidate(ExportSourceType.LEGACY_SOURCE, legacy, {
+                legacy.takeIf(File::exists)?.readBytes()
+            }, true))
+        }
+        add(InputCandidate(ExportSourceType.STORED_PROCESSED, storedFile, {
+            storedFile.takeIf(File::exists)?.readBytes()
+        }, false))
+    }
+
+    var lastFailure: Throwable? = null
+    for (candidate in candidates) {
+        val inputBytes = try {
+            candidate.bytes()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            lastFailure = error
+            null
+        } ?: continue
+        if (inputBytes.isEmpty()) continue
+        if (candidate.needsPerspectiveProcessing && (metadata == null || colorMode == null)) continue
+
+        val inputDimensions = imageBounds(inputBytes)
+        val artifactType = artifactTypeFor(effectiveQuality, candidate.sourceType)
+        val cacheKey = exportCacheKey(page, effectiveQuality, candidate, inputBytes, overlays)
+        val target = File(cacheDir, "${safeName(page.id)}-$cacheKey.jpg")
+        try {
+            if (!isValidCachedArtifact(target)) {
+                val processed = if (candidate.needsPerspectiveProcessing) {
+                    processedImage(
+                        source = Jpeg(inputBytes),
+                        metadata = requireNotNull(metadata),
+                        rotation = page.totalRotation(),
+                        colorMode = requireNotNull(colorMode),
+                        exportQuality = effectiveQuality,
+                    )
+                } else {
+                    val oriented = rotateStoredProcessed(Jpeg(inputBytes), page.manualRotation)
+                    when (effectiveQuality) {
+                        ExportQuality.COMPRESSED, ExportQuality.PREVIEW -> resizeJpegBytesForMaxPixels(
+                            oriented,
+                            effectiveQuality.maxPixels.toDouble(),
+                            effectiveQuality.jpegQuality
+                        )
+
+                        else -> oriented
+                    }
+                }
+                val finalBytes = bakeOverlays(processed.bytes, overlays, page.id)
+                writeExportArtifactAtomically(target, finalBytes)
+            }
+            val outputBytes = target.readBytes()
+            val outputDimensions = imageBounds(outputBytes)
+            check(outputDimensions.first > 0 && outputDimensions.second > 0) {
+                "Invalid processed export dimensions for ${page.id}"
+            }
+            val physical = page.estimatedDimensionsForExport()
+            val artifact = ProcessedExportPage(
+                pageId = page.id,
+                file = target,
+                sourceType = candidate.sourceType,
+                artifactType = artifactType,
+                inputAbsolutePath = candidate.file.absolutePath,
+                inputByteSize = inputBytes.size.toLong(),
+                inputWidth = inputDimensions.first,
+                inputHeight = inputDimensions.second,
+                width = outputDimensions.first,
+                height = outputDimensions.second,
+                quad = metadata?.normalizedQuad?.toExportPoints().orEmpty(),
+                quadVersion = page.quadVersion,
+                rotation = page.totalRotation().degrees,
+                colorMode = colorMode,
+                requestedQuality = requestedQuality,
+                byteSize = target.length(),
+                sha256 = sha256(outputBytes),
+                physicalWidthMm = (physical as? EstimatedDimensions.Physical)?.widthMm,
+                physicalHeightMm = (physical as? EstimatedDimensions.Physical)?.heightMm,
+            )
+            logPreparedArtifact(artifact, requestedFormat)
+            return artifact
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            lastFailure = error
+            Log.w(
+                "ExportPrepare",
+                "candidateFailed pageId=${page.id} sourceType=${candidate.sourceType} " +
+                        "inputPath=${pathForLog(candidate.file.absolutePath)}",
+                error,
+            )
+        }
+    }
+    throw IOException("No processed export source available for page ${page.id}", lastFailure)
 }
 
 @Suppress("DEPRECATION")
-suspend fun pagesToExport(
-    imageRepository: ImageRepository,
-    exportQuality: ExportQuality
-): List<PageToExport> {
-
-    val pages = imageRepository.pages()
-    // MAX_COMPRESSION is a legacy alias of HIGH, never a 0.5 MP render.
-    val effective =
-        if (exportQuality == ExportQuality.MAX_COMPRESSION) ExportQuality.HIGH else exportQuality
-    return when (effective) {
-        ExportQuality.ORIGINAL -> pages.map { page ->
-            val original = if (imageRepository.hasOriginal(page.id)) {
-                imageRepository.originalBytes(page.id)
-            } else {
-                null
-            }
-            if (original != null) {
-                if (page.totalRotation() != Rotation.R0) {
-                    android.util.Log.w(
-                        "Export",
-                        "ORIGINAL for ${page.id} requires decode: rotation=${page.totalRotation()}",
-                    )
-                    PageToExport(
-                        page = page,
-                        origin = ExportOrigin.ORIGINAL_FILE,
-                        originCause = "rotation-decode",
-                        jpeg = JpegProvider {
-                            rotateOriginalForExport(
-                                original,
-                                page.totalRotation()
-                            )
-                        },
-                    )
-                } else {
-                    PageToExport(
-                        page = page,
-                        origin = ExportOrigin.ORIGINAL_FILE,
-                        jpeg = JpegProvider { Jpeg(original) },
-                    )
-                }
-            } else {
-                android.util.Log.w(
-                    "Export",
-                    "ORIGINAL requested without SourceOriginal for ${page.id}: falling back to stored processed",
-                )
-                PageToExport(
-                    page = page,
-                    origin = ExportOrigin.FALLBACK_NO_ORIGINAL,
-                    originCause = "missing-original",
-                    jpeg = JpegProvider { jpeg(page, imageRepository) },
-                )
-            }
-        }
-
-        ExportQuality.HIGH -> pages.map { page ->
-            PageToExport(
-                page = page,
-                origin = ExportOrigin.REPROCESSED_HIGH,
-                jpeg = JpegProvider { highReprocess(imageRepository, page, effective) },
-            )
-        }
-
-        ExportQuality.BALANCED -> pages.map {
-            PageToExport(
-                page = it,
-                origin = ExportOrigin.PROCESSED_STORED,
-                jpeg = JpegProvider { jpeg(it, imageRepository) },
-            )
-        }
-
-        ExportQuality.COMPRESSED -> pages.map { page ->
-            PageToExport(
-                page = page,
-                origin = ExportOrigin.PROCESSED_STORED,
-                jpeg = JpegProvider {
-                    resizeJpegBytesForMaxPixels(
-                        jpeg = jpeg(page, imageRepository),
-                        maxPixels = ExportQuality.COMPRESSED.maxPixels.toDouble(),
-                        jpegQuality = ExportQuality.COMPRESSED.jpegQuality,
-                    )
-                },
-            )
-        }
-
-        ExportQuality.PREVIEW -> pages.map { page ->
-            PageToExport(
-                page = page,
-                origin = ExportOrigin.PROCESSED_STORED,
-                jpeg = JpegProvider {
-                    resizeJpegBytesForMaxPixels(
-                        jpeg = jpeg(page, imageRepository),
-                        maxPixels = ExportQuality.PREVIEW.maxPixels.toDouble(),
-                        jpegQuality = ExportQuality.PREVIEW.jpegQuality,
-                    )
-                },
-            )
-        }
-
-        ExportQuality.MAX_COMPRESSION -> pages.map { page ->
-            PageToExport(
-                page = page,
-                origin = ExportOrigin.REPROCESSED_HIGH,
-                originCause = "legacy-max-alias-high",
-                jpeg = JpegProvider { highReprocess(imageRepository, page, ExportQuality.HIGH) },
-            )
-        }
+private fun artifactTypeFor(
+    quality: ExportQuality,
+    sourceType: ExportSourceType,
+): ProcessedExportArtifactType {
+    if (sourceType == ExportSourceType.STORED_PROCESSED &&
+        (quality == ExportQuality.ORIGINAL || quality == ExportQuality.HIGH)
+    ) return ProcessedExportArtifactType.PROCESSED_BALANCED
+    return when (quality) {
+        ExportQuality.ORIGINAL -> ProcessedExportArtifactType.PROCESSED_FULL_RES
+        ExportQuality.HIGH, ExportQuality.MAX_COMPRESSION -> ProcessedExportArtifactType.PROCESSED_HIGH
+        ExportQuality.BALANCED -> ProcessedExportArtifactType.PROCESSED_BALANCED
+        ExportQuality.COMPRESSED -> ProcessedExportArtifactType.PROCESSED_COMPRESSED
+        ExportQuality.PREVIEW -> ProcessedExportArtifactType.PROCESSED_PREVIEW
     }
 }
 
-private suspend fun highReprocess(
-    imageRepository: ImageRepository,
+private fun exportCacheKey(
     page: ScanPage,
     quality: ExportQuality,
-): Jpeg {
-    // Priority: SourceOriginal > SourceSafe > stored processed (legacy).
-    imageRepository.originalBytes(page.id)?.let { bytes ->
-        val metadata = page.metadata
-        val colorMode = page.colorMode
-        if (metadata != null && colorMode != null) {
-            return try {
-                // Single full-res decode inside processedImage; working
-                // segmentation already happened at capture, so no second
-                // full-res bitmap is held here.
-                processedImage(Jpeg(bytes), metadata, page.totalRotation(), colorMode, quality)
-            } catch (e: Exception) {
-                android.util.Log.w(
-                    "Export",
-                    "HIGH from original failed for ${page.id}, trying safe",
-                    e
-                )
-                highFromSafeOrStored(imageRepository, page, quality)
-            }
-        }
+    candidate: InputCandidate,
+    inputBytes: ByteArray,
+    overlays: ExportPageOverlays?,
+): String {
+    val identity = buildString {
+        append("v=").append(EXPORT_PIPELINE_VERSION)
+        append("|page=").append(page.id)
+        append("|quadVersion=").append(page.quadVersion)
+        append("|quad=").append(page.metadata?.normalizedQuad?.toExportPoints().orEmpty())
+        append("|rotation=").append(page.totalRotation().degrees)
+        append("|color=").append(page.colorMode)
+        append("|quality=").append(quality)
+        append("|source=").append(candidate.sourceType)
+        append("|sourcePath=").append(candidate.file.absolutePath)
+        append("|sourceLength=").append(inputBytes.size)
+        append("|sourceModified=").append(candidate.file.lastModified())
+        append("|sourceDigest=").append(sha256(inputBytes))
+        append("|overlays=").append(overlayFingerprint(overlays))
     }
-    return highFromSafeOrStored(imageRepository, page, quality)
+    return sha256(identity.toByteArray()).take(20)
 }
 
-private suspend fun highFromSafeOrStored(
-    imageRepository: ImageRepository,
-    page: ScanPage,
-    quality: ExportQuality,
-): Jpeg {
-    imageRepository.safeBytes(page.id)?.let { bytes ->
-        val metadata = page.metadata
-        val colorMode = page.colorMode
-        if (metadata != null && colorMode != null) {
-            return runCatching {
-                processedImage(Jpeg(bytes), metadata, page.totalRotation(), colorMode, quality)
-            }.getOrElse { jpeg(page, imageRepository) }
-        }
-    }
-    android.util.Log.w(
-        "Export",
-        "HIGH without original/safe for ${page.id}: using stored processed"
-    )
-    return jpeg(page, imageRepository)
-}
-
-private fun rotateOriginalForExport(original: ByteArray, rotation: Rotation): Jpeg {
-    if (rotation == Rotation.R0) return Jpeg(original)
-    val opts = android.graphics.BitmapFactory.Options().apply {
-        inPreferredConfig = Bitmap.Config.ARGB_8888
-    }
-    val bitmap = android.graphics.BitmapFactory.decodeByteArray(original, 0, original.size, opts)
-        ?: return Jpeg(original)
+private fun bakeOverlays(
+    bytes: ByteArray,
+    overlays: ExportPageOverlays?,
+    pageId: String
+): ByteArray {
+    if (overlays == null) return bytes
+    val base = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        ?: throw IOException("Cannot decode processed page $pageId for overlays")
     try {
-        val matrix = android.graphics.Matrix().apply { postRotate(rotation.degrees.toFloat()) }
-        val rotated = Bitmap.createBitmap(
-            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true,
-        )
+        val composed = composeOverlaysOnBitmap(base, overlays) ?: return bytes
         try {
-            val out = java.io.ByteArrayOutputStream()
-            // q95: rotation only, no enhancement change.
-            rotated.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, out)
-            return Jpeg(out.toByteArray())
+            return ByteArrayOutputStream().use { output ->
+                check(composed.compress(Bitmap.CompressFormat.JPEG, 95, output)) {
+                    "Cannot encode overlays for $pageId"
+                }
+                output.toByteArray()
+            }
         } finally {
-            if (rotated !== bitmap && !rotated.isRecycled) rotated.recycle()
+            if (!composed.isRecycled) composed.recycle()
         }
     } finally {
-        if (!bitmap.isRecycled) bitmap.recycle()
+        if (!base.isRecycled) base.recycle()
     }
 }
 
-private suspend fun jpeg(page: ScanPage, imageRepository: ImageRepository): Jpeg {
-    val key = page.key()
-    return imageRepository.jpegBytes(key)
-        ?: throw IllegalArgumentException("JPEG not found for $key")
+/** Creates the INE composite from two already-processed artifacts. */
+fun mergeIneProcessedPages(
+    front: ProcessedExportPage,
+    back: ProcessedExportPage,
+    cacheDir: File,
+    fillFraction: Float,
+    requestedFormat: String,
+): ProcessedExportPage {
+    val key = sha256(
+        "ine|v=$EXPORT_PIPELINE_VERSION|${front.sha256}|${back.sha256}|$fillFraction".toByteArray()
+    ).take(20)
+    val target = File(cacheDir.apply { mkdirs() }, "ine-composite-$key.jpg")
+    if (!isValidCachedArtifact(target)) {
+        val frontBitmap = front.readJpeg().toBitmap()
+        val backBitmap = back.readJpeg().toBitmap()
+        try {
+            writeExportArtifactAtomically(
+                target,
+                mergeIneBitmaps(frontBitmap, backBitmap, fillFraction).bytes,
+            )
+        } finally {
+            if (!frontBitmap.isRecycled) frontBitmap.recycle()
+            if (!backBitmap.isRecycled) backBitmap.recycle()
+        }
+    }
+    val bytes = target.readBytes()
+    val dimensions = imageBounds(bytes)
+    return ProcessedExportPage(
+        pageId = "ine-composite",
+        file = target,
+        sourceType = ExportSourceType.COMPOSITE,
+        artifactType = ProcessedExportArtifactType.PROCESSED_COMPOSITE,
+        inputAbsolutePath = "${front.absolutePath};${back.absolutePath}",
+        inputByteSize = front.byteSize + back.byteSize,
+        inputWidth = maxOf(front.width, back.width),
+        inputHeight = front.height + back.height,
+        width = dimensions.first,
+        height = dimensions.second,
+        quad = emptyList(),
+        quadVersion = null,
+        rotation = 0,
+        colorMode = null,
+        requestedQuality = front.requestedQuality,
+        byteSize = target.length(),
+        sha256 = sha256(bytes),
+    ).also { logPreparedArtifact(it, requestedFormat) }
 }
 
-/**
- * Stacks the front and back INE captures onto a single export page: front on top,
- * back below, on one clean white sheet. Each [Bitmap] must already have its overlays
- * (signature/date) and color/rotation applied. Used so an INE credential exports as
- * one unified document instead of two separate pages.
- *
- * [fillFraction] is the portion of the output's shorter side that the content occupies
- * (0..1). Higher values make the credential fill the sheet (e.g. the "INE at 200%"
- * legal copy), lower values leave a generous white margin around it.
- */
+internal fun writeExportArtifactAtomically(target: File, bytes: ByteArray) {
+    if (bytes.isEmpty()) throw IOException("Refusing to write an empty export artifact")
+    target.parentFile?.mkdirs()
+    val temp = File.createTempFile(".${target.name}.", ".tmp", target.parentFile)
+    try {
+        FileOutputStream(temp).use { output ->
+            output.write(bytes)
+            output.syncBestEffort(target.name)
+        }
+        if (temp.length() != bytes.size.toLong() || !isValidImage(temp)) {
+            throw IOException("Invalid temporary export artifact for ${target.name}")
+        }
+        publishTempFile(temp, target)
+        writeChecksumAtomically(target)
+    } finally {
+        if (temp.exists()) temp.delete()
+    }
+}
+
+private fun logPreparedArtifact(page: ProcessedExportPage, requestedFormat: String) {
+    Log.i(
+        "ExportPrepare",
+        "prepared pageId=${page.pageId} requestedFormat=$requestedFormat " +
+                "requestedQuality=${page.requestedQuality} sourceType=${page.sourceType} " +
+                "artifactType=${page.artifactType} inputPath=${pathForLog(page.inputAbsolutePath)} " +
+                "outputPath=${pathForLog(page.absolutePath)} inputByteSize=${page.inputByteSize} " +
+                "outputByteSize=${page.byteSize} inputWidth=${page.inputWidth} " +
+                "inputHeight=${page.inputHeight} outputWidth=${page.width} outputHeight=${page.height} " +
+                "quadVersion=${page.quadVersion} quadCoordinates=${page.quad} rotation=${page.rotation} " +
+                "colorMode=${page.colorMode} sha256=${page.sha256}",
+    )
+}
+
+private fun isValidImage(file: File): Boolean =
+    file.exists() && file.length() > 0L && imageBounds(file.readBytes()).let { it.first > 0 && it.second > 0 }
+
+private fun isValidCachedArtifact(file: File): Boolean {
+    if (!isValidImage(file)) return false
+    val checksumFile = checksumFile(file)
+    val expected = runCatching { checksumFile.readText().trim() }.getOrNull() ?: return false
+    return expected.length == 64 && runCatching { sha256(file.readBytes()) == expected }.getOrDefault(
+        false
+    )
+}
+
+private fun writeChecksumAtomically(target: File) {
+    val checksumTarget = checksumFile(target)
+    val bytes = sha256(target.readBytes()).toByteArray(Charsets.US_ASCII)
+    val temp = File.createTempFile(".${checksumTarget.name}.", ".tmp", checksumTarget.parentFile)
+    try {
+        FileOutputStream(temp).use { output ->
+            output.write(bytes)
+            output.syncBestEffort(checksumTarget.name)
+        }
+        publishTempFile(temp, checksumTarget)
+    } finally {
+        if (temp.exists()) temp.delete()
+    }
+}
+
+private fun checksumFile(file: File): File = File(file.parentFile, "${file.name}.sha256")
+
+private fun imageBounds(bytes: ByteArray): Pair<Int, Int> {
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    return options.outWidth to options.outHeight
+}
+
+private fun sha256(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+private fun safeName(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+private fun Quad.toExportPoints(): List<ExportQuadPoint> = listOf(
+    ExportQuadPoint(topLeft.x, topLeft.y),
+    ExportQuadPoint(topRight.x, topRight.y),
+    ExportQuadPoint(bottomRight.x, bottomRight.y),
+    ExportQuadPoint(bottomLeft.x, bottomLeft.y),
+)
+
+private fun overlayFingerprint(overlays: ExportPageOverlays?): String {
+    if (overlays == null) return "none"
+    val digest = MessageDigest.getInstance("SHA-256")
+    digest.update(overlays.copy(signatureBitmap = null).toString().toByteArray(Charsets.UTF_8))
+    overlays.signatureBitmap?.let { bitmap ->
+        digest.update(bitmap.width.toString().toByteArray())
+        digest.update(bitmap.height.toString().toByteArray())
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        pixels.forEach { pixel ->
+            digest.update((pixel ushr 24).toByte())
+            digest.update((pixel ushr 16).toByte())
+            digest.update((pixel ushr 8).toByte())
+            digest.update(pixel.toByte())
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+private fun pathForLog(path: String): String = if (BuildConfig.DEBUG) {
+    path
+} else {
+    "sha256:${sha256(path.toByteArray(Charsets.UTF_8)).take(16)}"
+}
+
+private fun ScanPage.estimatedDimensionsForExport(): EstimatedDimensions? {
+    val meta = metadata ?: return null
+    val size = meta.sourceSize ?: return null
+    val scaledQuad = meta.normalizedQuad.scaledTo(1.0, 1.0, size.width, size.height)
+    val dimensions = estimateRealDimensions(
+        scaledQuad, size.width.toInt(), size.height.toInt(), meta.opticalMeasures
+    ).snapToStandardFormat()
+    return if ((totalRotation() == Rotation.R90 || totalRotation() == Rotation.R270) &&
+        dimensions is EstimatedDimensions.Physical
+    ) {
+        EstimatedDimensions.Physical(dimensions.heightMm, dimensions.widthMm)
+    } else dimensions
+}
+
+/** Stacks two already-final page images on one white INE sheet. */
 fun mergeIneBitmaps(front: Bitmap, back: Bitmap, fillFraction: Float = 0.5f): Jpeg {
     val contentW = maxOf(front.width, back.width)
-    // Small vertical gap so the two faces don't touch, while still forming one sheet.
     val gap = (contentW * 0.06f).toInt().coerceAtLeast(16)
     val contentH = front.height + back.height + gap
-    // The content fills `fillFraction` of the shorter side; the rest is white margin.
     val shortSide = minOf(contentW, contentH).toFloat()
     val scale = if (fillFraction > 0f) shortSide / fillFraction else shortSide
     val outW = maxOf(contentW.toFloat(), scale).toInt().coerceAtLeast(1)
     val outH = maxOf(contentH.toFloat(), scale).toInt().coerceAtLeast(1)
-    val marginX = (outW - contentW) / 2f
-    val marginY = (outH - contentH) / 2f
     val composite = createBitmap(outW, outH)
-    val canvas = Canvas(composite)
-    canvas.drawColor(android.graphics.Color.WHITE)
-    canvas.drawBitmap(front, marginX + (contentW - front.width) / 2f, marginY, null)
-    canvas.drawBitmap(
-        back,
-        marginX + (contentW - back.width) / 2f,
-        marginY + front.height + gap,
-        null,
-    )
-    val bos = ByteArrayOutputStream()
-    composite.compress(Bitmap.CompressFormat.JPEG, 90, bos)
-    return Jpeg(bos.toByteArray())
+    return try {
+        val canvas = Canvas(composite)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        canvas.drawBitmap(front, (outW - front.width) / 2f, (outH - contentH) / 2f, null)
+        canvas.drawBitmap(
+            back,
+            (outW - back.width) / 2f,
+            (outH - contentH) / 2f + front.height + gap,
+            null,
+        )
+        ByteArrayOutputStream().use { output ->
+            check(composite.compress(Bitmap.CompressFormat.JPEG, 95, output))
+            Jpeg(output.toByteArray())
+        }
+    } finally {
+        composite.recycle()
+    }
 }
 
 private fun resizeJpegBytesForMaxPixels(
     jpeg: Jpeg,
     maxPixels: Double,
-    jpegQuality: Int
+    jpegQuality: Int,
 ): Jpeg {
     var decoded: Mat? = null
     var resized: Mat? = null
     try {
-        decoded = jpeg.toMat()
+        decoded = jpeg.toMat(MAX_FULL_RES_EXPORT_PIXELS)
         resized = resizeForMaxPixels(decoded, maxPixels)
         return Jpeg.fromMat(resized, jpegQuality)
     } finally {
         decoded?.release()
         resized?.release()
+    }
+}
+
+private fun rotateStoredProcessed(jpeg: Jpeg, rotation: Rotation): Jpeg {
+    if (rotation == Rotation.R0) return jpeg
+    var decoded: Mat? = null
+    var rotated: Mat? = null
+    try {
+        decoded = jpeg.toMat(MAX_FULL_RES_EXPORT_PIXELS)
+        rotated = rotate(decoded, rotation.degrees)
+        return Jpeg.fromMat(rotated, ExportQuality.ORIGINAL.jpegQuality)
+    } finally {
+        decoded?.release()
+        rotated?.release()
     }
 }

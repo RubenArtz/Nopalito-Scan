@@ -117,6 +117,19 @@ Push-Benachrichtigungen (Firebase Cloud Messaging) und IP-Geolokalisierung (ip-a
 Cache auf
 Länderebene).
 
+Absturzberichte (Firebase Crashlytics). Die Anwendung verwendet Firebase Crashlytics (Google), um
+Abstürze und
+technische Fehler aufzuzeichnen und so Stabilitätsprobleme zu diagnostizieren und zu beheben. Dieser
+Dienst ist immer
+aktiv, auch vor der rechtlichen Zustimmung, da eine Zustimmungspflicht genau die Abstürze unsichtbar
+machen würde, die
+beim Start der Anwendung auftreten. Es werden nur Fehlerprotokolle und technische
+Fehlerinformationen
+übertragen (zum
+Beispiel Gerätemodell sowie System- und Anwendungsversion); Meldungen werden bereinigt, sodass sie
+keine
+personenbezogenen Daten enthalten, und Dokumente, Fotos oder Nutzerinhalte werden niemals gesendet.
+
 Wir teilen Dokumente nicht mit Werbetreibenden oder Dritten für deren eigene kommerzielle Zwecke.
 Wir können
 Informationen offenlegen, wenn dies zur Erfüllung einer gesetzlichen Verpflichtung, zum Schutz von

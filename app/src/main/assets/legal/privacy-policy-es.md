@@ -105,6 +105,20 @@ protección (Cloudflare), notificaciones push (Firebase Cloud Messaging) y geolo
 ip-api.com, con
 caché local a nivel de país).
 
+Informes de fallos (Firebase Crashlytics). La Aplicación utiliza Firebase Crashlytics (Google) para
+registrar
+fallos y errores técnicos, con el fin de diagnosticar y corregir problemas de estabilidad. Este
+servicio está
+siempre activo, incluso antes de la aceptación legal, porque supeditarlo a dicha aceptación
+impediría
+detectar
+los fallos que ocurren al iniciar la Aplicación. Solo transmite trazas de error e información
+técnica
+del fallo
+(por ejemplo, modelo de dispositivo y versiones del sistema y de la Aplicación); los mensajes se
+depuran para no
+incluir datos personales, y nunca se envían documentos, fotografías ni Contenido del Usuario.
+
 No compartimos documentos con anunciantes ni con terceros para sus propios fines comerciales.
 Podemos divulgar
 información si es necesario para cumplir una obligación legal, proteger derechos y seguridad,

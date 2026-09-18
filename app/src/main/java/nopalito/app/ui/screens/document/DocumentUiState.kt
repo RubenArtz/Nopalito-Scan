@@ -23,7 +23,7 @@ package nopalito.app.ui.screens.document
 
 import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
-import nopalito.app.domain.PageToExport
+import nopalito.app.domain.ExportPageOverlays
 import nopalito.app.domain.PageViewKey
 import nopalito.app.domain.ocr.TextExtractionState
 import nopalito.app.ui.state.DocumentUiModel
@@ -115,12 +115,12 @@ data class CurrentPageUiState(
  * there is nothing to bake (no signature and no date), so callers can skip
  * compositing entirely.
  */
-fun PageOverlays.toPageExportOverlays(): PageToExport.PageExportOverlays? {
+fun PageOverlays.toPageExportOverlays(): ExportPageOverlays? {
     val hasSignature = signatureBitmap != null && signaturePositionFraction != null
     val hasDate = !dateText.isNullOrBlank() && datePositionFraction != null
     if (!hasSignature && !hasDate) return null
     val ds = dateStyle
-    return PageToExport.PageExportOverlays(
+    return ExportPageOverlays(
         signatureBitmap = signatureBitmap,
         signaturePositionFractionX = signaturePositionFraction?.x,
         signaturePositionFractionY = signaturePositionFraction?.y,

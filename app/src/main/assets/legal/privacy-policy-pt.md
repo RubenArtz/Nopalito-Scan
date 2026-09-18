@@ -103,6 +103,19 @@ proteção (Cloudflare),
 notificações push (Firebase Cloud Messaging) e geolocalização de IPs (ip-api.com, com cache local em
 nível de país).
 
+Relatórios de falhas (Firebase Crashlytics). O Aplicativo utiliza o Firebase Crashlytics (Google)
+para registrar
+falhas e erros técnicos, a fim de diagnosticar e corrigir problemas de estabilidade. Este serviço
+está sempre ativo,
+mesmo antes da aceitação legal, pois condicioná-lo a essa aceitação impediria detectar exatamente as
+falhas que ocorrem
+ao iniciar o Aplicativo. São transmitidos apenas rastros de erro e informações técnicas da falha (
+por
+exemplo, modelo
+do dispositivo e versões do sistema e do Aplicativo); as mensagens são higienizadas para não incluir
+dados pessoais, e
+documentos, fotografias e Conteúdo do Usuário nunca são enviados.
+
 Não compartilhamos documentos com anunciantes nem com terceiros para fins comerciais próprios.
 Podemos divulgar
 informações se for necessário para cumprir uma obrigação legal, proteger direitos e segurança,

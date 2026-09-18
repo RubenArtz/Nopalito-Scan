@@ -27,6 +27,7 @@ enum class ExportFormat(
 ) {
     PDF("application/pdf", "PDF"),
     JPEG("image/jpeg", "JPEG"),
+    PNG("image/png", "PNG"),
     WORD(
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Word",

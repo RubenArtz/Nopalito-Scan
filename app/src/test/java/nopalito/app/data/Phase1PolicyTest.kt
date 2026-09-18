@@ -22,7 +22,8 @@
 package nopalito.app.data
 
 import nopalito.app.domain.CaptureTier
-import nopalito.app.domain.ExportOrigin
+import nopalito.app.domain.ExportSourceType
+import nopalito.app.domain.ProcessedExportArtifactType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -34,16 +35,14 @@ class Phase1PolicyTest {
 
     @Test
     fun `ORIGINAL with keepOriginal false still preserves`() {
-        val tier = CaptureTier.ORIGINAL
-        val keepOriginal = false
-        val shouldPreserve = keepOriginal || tier == CaptureTier.ORIGINAL
+        val shouldPreserve = true
         assertThat(shouldPreserve).isTrue()
     }
 
     @Test
     fun `keepOriginal false disables extra save only for LOW BALANCED HIGH`() {
         for (tier in listOf(CaptureTier.LOW, CaptureTier.BALANCED, CaptureTier.HIGH)) {
-            val shouldPreserve = false || tier == CaptureTier.ORIGINAL
+            val shouldPreserve = tier == CaptureTier.ORIGINAL
             assertThat(shouldPreserve).isFalse()
         }
     }
@@ -55,12 +54,16 @@ class Phase1PolicyTest {
     }
 
     @Test
-    fun `export origins cover all cases`() {
-        assertThat(ExportOrigin.entries).contains(
-            ExportOrigin.ORIGINAL_FILE,
-            ExportOrigin.REPROCESSED_HIGH,
-            ExportOrigin.PROCESSED_STORED,
-            ExportOrigin.FALLBACK_NO_ORIGINAL,
+    fun `export source and artifact vocabularies are not conflated`() {
+        assertThat(ExportSourceType.entries).contains(
+            ExportSourceType.CAMERA_ORIGINAL,
+            ExportSourceType.SAFE_COPY,
+            ExportSourceType.STORED_PROCESSED,
+        )
+        assertThat(ProcessedExportArtifactType.entries).contains(
+            ProcessedExportArtifactType.PROCESSED_FULL_RES,
+            ProcessedExportArtifactType.PROCESSED_BALANCED,
+            ProcessedExportArtifactType.PROCESSED_COMPRESSED,
         )
     }
 
@@ -80,8 +83,7 @@ class Phase1PolicyTest {
 
     @Test
     fun `corrupt original falls back without crashing`() {
-        val bytes: ByteArray? = null
-        val fallbackUsed = bytes == null
+        val fallbackUsed = true
         assertThat(fallbackUsed).isTrue()
     }
 

@@ -58,7 +58,7 @@ fun encodeJpeg(mat: Mat, jpegQuality: Int): ByteArray {
     return result
 }
 
-fun decodeJpeg(jpegBytes: ByteArray): Mat {
+fun decodeJpeg(jpegBytes: ByteArray, sampleSize: Int = 1): Mat {
     val src = MatOfByte(*jpegBytes)
     // Ignore EXIF orientation: Mats are always in stored-pixel (sensor)
     // order, quads are stored in the same sensor frame, and rotation is
@@ -66,10 +66,13 @@ fun decodeJpeg(jpegBytes: ByteArray): Mat {
     // imdecode auto-rotates EXIF!=NORMAL files (e.g. CameraX originals with
     // EXIF=90 become portrait) while quads stay in sensor coordinates, so
     // every reprocess (filters, crop, HIGH export) warped the wrong region.
-    val decoded = Imgcodecs.imdecode(
-        src,
-        Imgcodecs.IMREAD_COLOR or Imgcodecs.IMREAD_IGNORE_ORIENTATION
-    )
+    val colorFlag = when {
+        sampleSize >= 8 -> Imgcodecs.IMREAD_REDUCED_COLOR_8
+        sampleSize >= 4 -> Imgcodecs.IMREAD_REDUCED_COLOR_4
+        sampleSize >= 2 -> Imgcodecs.IMREAD_REDUCED_COLOR_2
+        else -> Imgcodecs.IMREAD_COLOR
+    }
+    val decoded = Imgcodecs.imdecode(src, colorFlag or Imgcodecs.IMREAD_IGNORE_ORIENTATION)
     src.release()
     if (decoded.empty()) {
         decoded.release()

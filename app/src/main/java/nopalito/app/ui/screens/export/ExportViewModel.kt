@@ -52,20 +52,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import nopalito.app.AppContainer
+import nopalito.app.BuildConfig
 import nopalito.app.R
 import nopalito.app.data.ExportNames
 import nopalito.app.data.FileManager
 import nopalito.app.data.ImageRepository
+import nopalito.app.data.copyFileAtomically
+import nopalito.app.data.publishTempFile
+import nopalito.app.data.writeByteArrayAtomically
+import nopalito.app.domain.ExportPageOverlays
 import nopalito.app.domain.ExportQuality
-import nopalito.app.domain.JpegProvider
-import nopalito.app.domain.PageToExport
 import nopalito.app.domain.PageViewKey
-import nopalito.app.domain.Rotation
-import nopalito.app.domain.ScanPage
-import nopalito.app.domain.mergeIneBitmaps
-import nopalito.app.domain.pagesToExport
+import nopalito.app.domain.ProcessedExportPage
+import nopalito.app.domain.mergeIneProcessedPages
+import nopalito.app.domain.prepareProcessedExportPages
 import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.stringFor
+import nopalito.app.platform.ProcessedImageFileExporter
 import nopalito.app.ui.screens.cloud.data.CloudErrorPresenter
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.data.CloudSessionState
@@ -76,6 +79,7 @@ import nopalito.app.ui.screens.history.ExportHistoryEntity
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -154,57 +158,30 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
     private val _events = MutableSharedFlow<ExportEvent>()
     val events = _events.asSharedFlow()
 
-    private suspend fun pageToExportsWithOverlays(
+    private suspend fun processedPages(
         exportQuality: ExportQuality,
-    ): List<PageToExport> {
-        val exports = pagesToExport(imageRepository, exportQuality).map { pte ->
-            val pageId = pte.page.id
-            val overlays = pageOverlays[pageId]
-            if (overlays != null) {
-                pte.copy(overlays = toExportOverlays(overlays))
-            } else pte
-        }
-        val ine = _uiState.value
-        if (!ine.isIneDocument || exports.size < 2) return exports
-        // INE: merge front (page 0) on top of back (page 1) into a single sheet. Each
-        // face keeps its overlays (signature/date) and its color/rotation, so editor
-        // edits are preserved. A synthetic page without physical dimensions makes the
-        // writer size the sheet by the composite's vertical aspect ratio.
-        val front = exports[0]
-        val back = exports[1]
-        val rest = exports.drop(2)
-        val mergedPage = ScanPage(
-            id = "ine-composite",
-            manualRotation = Rotation.R0,
-            colorMode = null,
-            quadVersion = 0,
-            metadata = null,
+        exportFormat: ExportFormat,
+    ): List<ProcessedExportPage> {
+        val overlayInputs = pageOverlays.mapNotNull { (pageId, overlays) ->
+            toExportOverlays(overlays)?.let { pageId to it }
+        }.toMap()
+        val artifacts = prepareProcessedExportPages(
+            imageRepository = imageRepository,
+            requestedQuality = exportQuality,
+            cacheDir = File(preparationDir, "processed-export-cache"),
+            requestedFormat = exportFormat.name,
+            overlays = overlayInputs,
         )
-        return listOf(
-            PageToExport(
-                page = mergedPage,
-                jpeg = JpegProvider {
-                    val frontBmp = front.jpeg.get().toBitmap()
-                    val backBmp = back.jpeg.get().toBitmap()
-                    try {
-                        val frontComposed = nopalito.app.platform.composeOverlaysOnBitmap(
-                            frontBmp, front.overlays
-                        ) ?: frontBmp
-                        val backComposed = nopalito.app.platform.composeOverlaysOnBitmap(
-                            backBmp, back.overlays
-                        ) ?: backBmp
-                        mergeIneBitmaps(
-                            frontComposed,
-                            backComposed,
-                            fillFraction = ine.ineExportScale.fillFraction,
-                        )
-                    } finally {
-                        frontBmp.recycle()
-                        backBmp.recycle()
-                    }
-                },
-            )
-        ) + rest
+        val ine = _uiState.value
+        if (!ine.isIneDocument || artifacts.size < 2) return artifacts
+        val merged = mergeIneProcessedPages(
+            front = artifacts[0],
+            back = artifacts[1],
+            cacheDir = File(preparationDir, "processed-export-cache"),
+            fillFraction = ine.ineExportScale.fillFraction,
+            requestedFormat = exportFormat.name,
+        )
+        return listOf(merged) + artifacts.drop(2)
     }
 
     private suspend fun generatePdf(
@@ -213,8 +190,17 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         password: String?,
         onProgress: (Int) -> Unit,
     ): ExportResult.Pdf = withContext(Dispatchers.IO) {
-        val pageToExports = pageToExportsWithOverlays(exportQuality)
+        val pageToExports = processedPages(exportQuality, ExportFormat.PDF)
+        Log.i(
+            "Export",
+            "generatePdf quality=$exportQuality pages=${pageToExports.size} disableOcr=$disableOcr",
+        )
         val pdf = fileManager.generatePdf(pageToExports, disableOcr, password, onProgress)
+        Log.i(
+            "Export",
+            "generatedPdf quality=$exportQuality file=${pathForLog(pdf.file)} " +
+                    "bytes=${pdf.sizeInBytes} pages=${pdf.pageCount}",
+        )
         return@withContext ExportResult.Pdf(pdf.file, pdf.sizeInBytes, pdf.pageCount)
     }
 
@@ -224,7 +210,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         password: String?,
         onProgress: (Int) -> Unit,
     ): ExportResult.Word = withContext(Dispatchers.IO) {
-        val pageToExports = pageToExportsWithOverlays(exportQuality)
+        val pageToExports = processedPages(exportQuality, ExportFormat.WORD)
         val word = fileManager.generateDocx(pageToExports, disableOcr, password, onProgress)
         return@withContext ExportResult.Word(word.file, word.sizeInBytes, word.pageCount)
     }
@@ -234,8 +220,11 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         val sourceFile = pdf.file
         val targetFile = File(sourceFile.parentFile, defaultFilename() + ".pdf")
         if (sourceFile.absolutePath == targetFile.absolutePath) return pdf
-        if (targetFile.exists() || !sourceFile.renameTo(targetFile)) return pdf
-        return pdf.copy(file = targetFile)
+        if (targetFile.exists()) return pdf
+        return runCatching {
+            publishTempFile(sourceFile, targetFile)
+            pdf.copy(file = targetFile)
+        }.getOrDefault(pdf)
     }
 
     private var lastPreparationKey: ExportPreparationKey? = null
@@ -435,6 +424,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                     val t1 = System.currentTimeMillis()
                     val result = when (exportFormat) {
                         ExportFormat.JPEG -> generateJpegs(exportQuality, onProgress)
+                        ExportFormat.PNG -> generatePngs(exportQuality, onProgress)
                         ExportFormat.WORD -> generateWord(
                             exportQuality,
                             true,
@@ -480,73 +470,59 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
 
     private fun toExportOverlays(
         overlays: nopalito.app.ui.screens.document.PageOverlays
-    ): PageToExport.PageExportOverlays? = overlays.toPageExportOverlays()
+    ): ExportPageOverlays? = overlays.toPageExportOverlays()
 
     private fun overlaysFingerprint(
         overlays: Map<String, nopalito.app.ui.screens.document.PageOverlays>,
-    ): Int {
-        var result = 1
+    ): String {
+        val digest = MessageDigest.getInstance("SHA-256")
         overlays.toSortedMap().forEach { (pageId, pageOverlays) ->
-            result = 31 * result + pageId.hashCode()
-            result = 31 * result + (pageOverlays.signatureState?.hashCode() ?: 0)
-            result = 31 * result + pageOverlays.signatureSource.hashCode()
-            result = 31 * result + (pageOverlays.signaturePositionFraction?.hashCode() ?: 0)
-            result = 31 * result + pageOverlays.signatureScale.hashCode()
-            result = 31 * result + (pageOverlays.signatureBitmap?.let(::bitmapFingerprint) ?: 0)
-            result = 31 * result + pageOverlays.signatureRotationDegrees.hashCode()
-            result = 31 * result + (pageOverlays.dateText?.hashCode() ?: 0)
-            result = 31 * result + (pageOverlays.datePositionFraction?.hashCode() ?: 0)
-            result = 31 * result + pageOverlays.dateScale.hashCode()
-            result = 31 * result + pageOverlays.dateRotationDegrees.hashCode()
-            result = 31 * result + pageOverlays.dateStyle.hashCode()
+            digest.update(pageId.toByteArray(Charsets.UTF_8))
+            digest.update(
+                pageOverlays.copy(signatureBitmap = null).toString().toByteArray(Charsets.UTF_8)
+            )
+            pageOverlays.signatureBitmap?.let { updateDigestWithBitmap(digest, it) }
         }
-        return result
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private fun bitmapFingerprint(bitmap: android.graphics.Bitmap): Int {
+    private fun updateDigestWithBitmap(digest: MessageDigest, bitmap: android.graphics.Bitmap) {
+        digest.update(bitmap.width.toString().toByteArray())
+        digest.update(bitmap.height.toString().toByteArray())
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        var result = 31 * bitmap.width + bitmap.height
-        result = 31 * result + pixels.contentHashCode()
-        return result
+        pixels.forEach { pixel ->
+            digest.update((pixel ushr 24).toByte())
+            digest.update((pixel ushr 16).toByte())
+            digest.update((pixel ushr 8).toByte())
+            digest.update(pixel.toByte())
+        }
     }
 
     private suspend fun generateJpegs(
         exportQuality: ExportQuality,
         onProgress: (Int) -> Unit,
     ): ExportResult.Jpeg = withContext(Dispatchers.IO) {
-        val pageToExports = pageToExportsWithOverlays(exportQuality)
+        val pageToExports = processedPages(exportQuality, ExportFormat.JPEG)
+        Log.i(
+            "Export",
+            "generateJpegs quality=$exportQuality pages=${pageToExports.size}",
+        )
         val multi = pageToExports.size > 1
         val targetDir = if (multi) ExportNames.uniqueSubfolder(preparationDir) else preparationDir
         targetDir.mkdirs()
-        val timestamp = System.currentTimeMillis()
+        val exportToken = UUID.randomUUID().toString()
         val files = pageToExports.mapIndexed { index, page ->
-            val fileName = if (multi) "$timestamp-${index + 1}.jpg" else "$timestamp.jpg"
+            val fileName = if (multi) "$exportToken-${index + 1}.jpg" else "$exportToken.jpg"
             val file = File(targetDir, fileName)
-            if (page.overlays == null) {
-                // No annotations: copy provider bytes directly (ORIGINAL stays
-                // byte-preserving when rotation was already handled upstream).
-                file.writeBytes(page.jpeg.get().bytes)
-            } else {
-                val baseBitmap = page.jpeg.get().toBitmap()
-                try {
-                    val composed =
-                        nopalito.app.platform.composeOverlaysOnBitmap(baseBitmap, page.overlays)
-                    if (composed != null) {
-                        try {
-                            val bos = java.io.ByteArrayOutputStream()
-                            composed.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, bos)
-                            file.writeBytes(bos.toByteArray())
-                        } finally {
-                            if (!composed.isRecycled) composed.recycle()
-                        }
-                    } else {
-                        file.writeBytes(page.jpeg.get().bytes)
-                    }
-                } finally {
-                    if (!baseBitmap.isRecycled) baseBitmap.recycle()
-                }
-            }
+            Log.i(
+                "Export",
+                "jpegInput pageId=${page.pageId} sourceType=${page.sourceType} " +
+                        "artifactType=${page.artifactType} inputPath=${pathForLog(page.file)} " +
+                        "outputPath=${pathForLog(file)} bytes=${page.byteSize} " +
+                        "dimensions=${page.width}x${page.height}",
+            )
+            ProcessedImageFileExporter.writeJpeg(page, file)
             onProgress(index + 1)
             file
         }.toList()
@@ -554,14 +530,43 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         ExportResult.Jpeg(files, sizeInBytes, directory = targetDir.takeIf { multi })
     }
 
+    private suspend fun generatePngs(
+        exportQuality: ExportQuality,
+        onProgress: (Int) -> Unit,
+    ): ExportResult.Png = withContext(Dispatchers.IO) {
+        val pages = processedPages(exportQuality, ExportFormat.PNG)
+        val multi = pages.size > 1
+        val targetDir = if (multi) ExportNames.uniqueSubfolder(preparationDir) else preparationDir
+        targetDir.mkdirs()
+        val exportToken = UUID.randomUUID().toString()
+        val files = pages.mapIndexed { index, page ->
+            val fileName = if (multi) "$exportToken-${index + 1}.png" else "$exportToken.png"
+            val target = File(targetDir, fileName)
+            ProcessedImageFileExporter.writePng(page, target)
+            Log.i(
+                "Export",
+                "pngInput pageId=${page.pageId} sourceType=${page.sourceType} " +
+                        "artifactType=${page.artifactType} inputPath=${pathForLog(page.file)} " +
+                        "outputPath=${pathForLog(target)} inputByteSize=${page.byteSize} " +
+                        "outputByteSize=${target.length()} dimensions=${page.width}x${page.height}",
+            )
+            onProgress(index + 1)
+            target
+        }
+        ExportResult.Png(files, files.sumOf(File::length), directory = targetDir.takeIf { multi })
+    }
+
     private fun renameFile(source: File, target: File) {
         if (source.absolutePath == target.absolutePath) return
-        if (target.exists() && !target.delete()) {
-            throw IOException("Cannot delete existing file ${target.absolutePath}")
-        }
-        if (!source.renameTo(target)) {
-            throw IOException("Failed to rename ${source.name} to ${target.name}")
-        }
+        publishTempFile(source, target)
+    }
+
+    private fun pathForLog(file: File): String = if (BuildConfig.DEBUG) {
+        file.absolutePath
+    } else {
+        "sha256:${
+            nopalito.app.domain.OriginalIntegrity.sha256(file.absolutePath.toByteArray()).take(16)
+        }"
     }
 
     private fun applyRenaming(): ExportResult {
@@ -597,6 +602,18 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                 }
                 result.copy(jpegFiles = renamedFiles)
             }
+
+            is ExportResult.Png -> {
+                val base = filename.removeSuffix(".png")
+                val files = result.files
+                val renamedFiles = files.mapIndexed { index, file ->
+                    val indexSuffix = if (files.size == 1) "" else "_${index + 1}"
+                    val newFile = File(file.parentFile, "${base}${indexSuffix}.png")
+                    renameFile(file, newFile)
+                    newFile
+                }
+                result.copy(pngFiles = renamedFiles)
+            }
         }
         _uiState.update { it.copy(result = updated) }
         return updated
@@ -610,12 +627,14 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         is ExportResult.Pdf -> "pdf"
         is ExportResult.Word -> "docx"
         is ExportResult.Jpeg -> "jpeg"
+        is ExportResult.Png -> "png"
     }
 
     private fun exportPageCount(result: ExportResult): Int = when (result) {
         is ExportResult.Pdf -> result.pageCount
         is ExportResult.Word -> result.pageCount
         is ExportResult.Jpeg -> result.files.size
+        is ExportResult.Png -> result.files.size
     }
 
     /**
@@ -905,7 +924,8 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
 
     private suspend fun save(context: Context, saveDir: SaveDir?, exportFormat: ExportFormat) {
         val result = applyRenaming()
-        val isFolder = result is ExportResult.Jpeg && result.files.size > 1
+        val isFolder = result is ExportResult.Jpeg && result.files.size > 1 ||
+                result is ExportResult.Png && result.files.size > 1
         val folderName = if (isFolder) ExportNames.folderName() else null
 
         val savedItems = mutableListOf<SavedItem>()
@@ -913,43 +933,50 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         // On Android <10 the folder is created as a real File; it is kept to open it.
         var legacyFolderFile: File? = null
 
-        for (file in result.files) {
-            val saved = if (saveDir == null) {
-                // No export dir defined -> save to Downloads
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // Android 10+: use MediaStore API
-                    val uri = saveViaMediaStore(context, file, exportFormat, folderName)
-                    SavedItem(uri, file.name, exportFormat)
-                } else {
-                    // Android 8 and 9: use File API
-                    // (MediaStore doesn't allow to choose Downloads for Android<10)
-                    val out = if (folderName != null) {
-                        val folder = File(
-                            Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_DOWNLOADS
-                            ),
-                            folderName
-                        )
-                        folder.mkdirs()
-                        legacyFolderFile = folder
-                        file.copyTo(File(folder, file.name))
+        try {
+            for (file in result.files) {
+                val saved = if (saveDir == null) {
+                    // No export dir defined -> save to Downloads
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        // Android 10+: use MediaStore API
+                        val uri = saveViaMediaStore(context, file, exportFormat, folderName)
+                        SavedItem(uri, file.name, exportFormat)
                     } else {
-                        fileManager.copyToExternalDir(file)
+                        // Android 8 and 9: use File API
+                        // (MediaStore doesn't allow to choose Downloads for Android<10)
+                        val out = if (folderName != null) {
+                            val folder = File(
+                                Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_DOWNLOADS
+                                ),
+                                folderName
+                            )
+                            folder.mkdirs()
+                            legacyFolderFile = folder
+                            File(folder, file.name).also { copyFileAtomically(file, it) }
+                        } else {
+                            fileManager.copyToExternalDir(file)
+                        }
+                        filesForMediaScan.add(out)
+                        SavedItem(out.toUri(), out.name, exportFormat)
                     }
-                    filesForMediaScan.add(out)
-                    SavedItem(out.toUri(), out.name, exportFormat)
+                } else {
+                    // Use Storage Access Framework to save to the chosen directory
+                    if (!context.contentResolver.persistedUriPermissions.any { perm ->
+                            perm.uri == saveDir.uri && perm.isWritePermission
+                        }) {
+                        throw MissingExportDirPermissionException(saveDir.uri)
+                    }
+                    val safFile = saveViaSaf(context, file, saveDir.uri, exportFormat, folderName)
+                    SavedItem(safFile.uri, safFile.name ?: file.name, exportFormat)
                 }
-            } else {
-                // Use Storage Access Framework to save to the chosen directory
-                if (!context.contentResolver.persistedUriPermissions.any { perm ->
-                        perm.uri == saveDir.uri && perm.isWritePermission
-                    }) {
-                    throw MissingExportDirPermissionException(saveDir.uri)
-                }
-                val safFile = saveViaSaf(context, file, saveDir.uri, exportFormat, folderName)
-                SavedItem(safFile.uri, safFile.name ?: file.name, exportFormat)
+                savedItems += saved
             }
-            savedItems += saved
+        } catch (error: Throwable) {
+            // A multi-page PNG/JPEG export is all-or-fail: do not leave a partial group
+            // visible in Downloads or a chosen SAF tree when a later page cannot be saved.
+            savedItems.asReversed().forEach { item -> deleteSavedItem(context, item) }
+            throw error
         }
 
         val bundle = SavedBundle(
@@ -1033,19 +1060,26 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                 folderName?.let { Environment.DIRECTORY_DOWNLOADS + "/" + it }
                     ?: Environment.DIRECTORY_DOWNLOADS
             )
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
 
         val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
         val uri = resolver.insert(collection, values)
             ?: throw IOException("Failed to create MediaStore entry")
 
-        resolver.openOutputStream(uri)?.use { out ->
-            source.inputStream().use { input ->
-                input.copyTo(out)
+        try {
+            resolver.openOutputStream(uri, "w")?.use { out ->
+                source.inputStream().use { input -> input.copyTo(out) }
+            } ?: throw IOException("Failed to open output stream")
+            val completed = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+            if (resolver.update(uri, completed, null, null) != 1) {
+                throw IOException("Failed to publish MediaStore export")
             }
-        } ?: throw IOException("Failed to open output stream")
-
-        return uri
+            return uri
+        } catch (error: Throwable) {
+            runCatching { resolver.delete(uri, null, null) }
+            throw error
+        }
     }
 
     private fun saveViaSaf(
@@ -1071,13 +1105,24 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
         val target = parent.createFile(exportFormat.mimeType, source.name)
             ?: throw IllegalStateException("Unable to create SAF file")
 
-        resolver.openOutputStream(target.uri)?.use { output ->
-            FileInputStream(source).use { input ->
-                input.copyTo(output)
-            }
-        } ?: throw IllegalStateException("Failed to open SAF output stream")
+        try {
+            resolver.openOutputStream(target.uri, "w")?.use { output ->
+                FileInputStream(source).use { input -> input.copyTo(output) }
+            } ?: throw IllegalStateException("Failed to open SAF output stream")
+            return target
+        } catch (error: Throwable) {
+            runCatching { target.delete() }
+            throw error
+        }
+    }
 
-        return target
+    private fun deleteSavedItem(context: Context, item: SavedItem) {
+        runCatching {
+            when (item.uri.scheme) {
+                "file" -> File(requireNotNull(item.uri.path)).delete()
+                else -> context.contentResolver.delete(item.uri, null, null)
+            }
+        }
     }
 
     private fun folderUri(context: Context, exportDirUri: Uri, folderName: String?): Uri? {
@@ -1107,6 +1152,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                 val format = when (result) {
                     is ExportResult.Pdf -> "PDF"
                     is ExportResult.Jpeg -> "JPEG"
+                    is ExportResult.Png -> "PNG"
                     is ExportResult.Word -> "DOCX"
                 }
                 val quality = state.quality.name
@@ -1133,7 +1179,7 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                             // thumbnail survives the cache cleanup.
                             val thumbFile =
                                 File(exportsBackupDir, "thumb_${System.currentTimeMillis()}.jpg")
-                            thumbFile.writeBytes(jpeg.bytes)
+                            writeByteArrayAtomically(thumbFile, jpeg.bytes)
                             thumbFile.absolutePath
                         }
                     } else null
@@ -1141,7 +1187,8 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                     null
                 }
 
-                val isFolder = result is ExportResult.Jpeg && result.files.size > 1
+                val isFolder = result is ExportResult.Jpeg && result.files.size > 1 ||
+                        result is ExportResult.Png && result.files.size > 1
 
                 // Keep an app-private backup copy of the exported file/folder so
                 // the history has its own record and can preview/restore it even
@@ -1153,18 +1200,16 @@ class ExportViewModel(container: AppContainer, val imageRepository: ImageReposit
                             val dir = File(exportsBackupDir, "export_${System.currentTimeMillis()}")
                             dir.mkdirs()
                             result.files.forEach { file ->
-                                file.copyTo(
-                                    File(dir, file.name),
-                                    overwrite = true
-                                )
+                                copyFileAtomically(file, File(dir, file.name))
                             }
                             dir.absolutePath
                         } else {
                             val file = result.files.firstOrNull()
-                            file?.copyTo(
-                                File(exportsBackupDir, file.name),
-                                overwrite = true
-                            )?.absolutePath
+                            file?.let { source ->
+                                File(exportsBackupDir, source.name).also {
+                                    copyFileAtomically(source, it)
+                                }.absolutePath
+                            }
                         }
                     }.getOrNull()
                 }
@@ -1205,7 +1250,7 @@ data class ExportPreparationKey(
     val format: ExportFormat,
     val quality: ExportQuality,
     val ocrLanguageString: String,
-    val overlaysFingerprint: Int,
+    val overlaysFingerprint: String,
     val password: String?,
     val isIneDocument: Boolean = false,
     val ineExportScale: IneExportScale = IneExportScale.DOUBLE_200,
@@ -1217,7 +1262,7 @@ sealed class ExportResult {
     abstract val pageCount: Int
     abstract val format: ExportFormat
 
-    /** Container subfolder of the multiple export (JPEG only), if it exists. */
+    /** Container subfolder of a multiple image export, if it exists. */
     open val directory: File? get() = null
 
     data class Pdf(
@@ -1247,6 +1292,16 @@ sealed class ExportResult {
         override val files get() = jpegFiles
         override val pageCount get() = jpegFiles.size
         override val format: ExportFormat = ExportFormat.JPEG
+    }
+
+    data class Png(
+        val pngFiles: List<File>,
+        override val sizeInBytes: Long,
+        override val directory: File? = null,
+    ) : ExportResult() {
+        override val files get() = pngFiles
+        override val pageCount get() = pngFiles.size
+        override val format: ExportFormat = ExportFormat.PNG
     }
 }
 

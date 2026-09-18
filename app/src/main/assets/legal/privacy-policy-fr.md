@@ -113,6 +113,20 @@ de diffusion et protection (Cloudflare), notifications push (Firebase Cloud Mess
 géolocalisation des IP
 (ip-api.com, avec un cache local au niveau du pays).
 
+Rapports de plantage (Firebase Crashlytics). L'Application utilise Firebase Crashlytics (Google)
+pour
+enregistrer les
+plantages et les erreurs techniques afin de diagnostiquer et de corriger les problèmes de stabilité.
+Ce service est
+toujours actif, même avant l'acceptation légale, car le subordonner à cette acceptation masquerait
+précisément les
+plantages qui surviennent au démarrage de l'Application. Seuls les traces d'erreur et les
+informations techniques de
+panne sont transmis (par exemple, modèle d'appareil et versions du système et de l'Application) ;
+les messages sont
+expurgés de toute donnée personnelle, et les documents, photos et Contenus de l'Utilisateur ne sont
+jamais envoyés.
+
 Nous ne partageons pas les documents avec des annonceurs ni avec des tiers à des fins commerciales
 propres. Nous pouvons
 divulguer des informations si cela est nécessaire pour se conformer à une obligation légale,

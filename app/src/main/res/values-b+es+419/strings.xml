@@ -128,7 +128,7 @@
     <!-- Settings screen -->
     <string name="export_quality">Calidad de exportación</string>
     <!-- Export screen: compression level options -->
-    <string name="export_quality_original">Sin compresión</string>
+    <string name="export_quality_original">Máxima resolución procesada</string>
     <string name="export_quality_balanced">Equilibrada</string>
     <string name="export_quality_high">Alta resolución, máximo 6 MP en esta versión</string>
     <string name="export_quality_compressed">Comprimida</string>
@@ -390,7 +390,7 @@
     <!-- History screen: empty state -->
     <string name="history_empty">No hay exportaciones registradas</string>
     <!-- History screen: compression labels -->
-    <string name="quality_original">Sin compresión</string>
+    <string name="quality_original">Máxima resolución procesada</string>
     <string name="quality_balanced">Equilibrada</string>
     <string name="quality_high">Alta</string>
     <string name="quality_compressed">Comprimida</string>
@@ -1558,4 +1558,35 @@
     <string name="cloud_link_camera_detected_title">Código de vinculación detectado</string>
     <string name="cloud_link_camera_detected_body">Este QR contiene una solicitud de sesión para entrar a Nopalito Scan Cloud desde un navegador. ¿Autorizarla para vincular ese equipo a tu cuenta?</string>
     <string name="cloud_link_camera_authorize">Autorizar sesión</string>
+    <!-- Synced with values/strings.xml: comparator, capture tiers and debug compare -->
+    <string name="compare_original">Original</string>
+    <string name="compare_processed">Procesada</string>
+    <string name="capture_original_no_space_title">Espacio insuficiente para ORIGINAL</string>
+    <string name="capture_original_no_space_msg">La captura original necesita %1$s libres, pero solo hay %2$s disponibles. Libera espacio o cambia a LOW / BALANCED con una elección explícita. ORIGINAL nunca se reduce en silencio.</string>
+    <string name="capture_tier_low">LOW · ~2 MP</string>
+    <string name="capture_tier_balanced">BALANCED · captura 6 MP / procesada 2 MP</string>
+    <string name="capture_tier_high">HIGH · reprocesado de alta resolución (máximo seguro)</string>
+    <string name="capture_tier_original">ORIGINAL · archivo sin reprocesamiento de la app</string>
+    <string name="processing_variant_comparison_title">Comparación de variantes A/B</string>
+    <string name="processing_variant_active">Activa: %1$s</string>
+    <string name="processing_variant_active_unregistered">resultado actual (sin registrar)</string>
+    <string name="processing_variant_freeze_current">Congelar resultado actual</string>
+    <string name="processing_variant_reprocess_baseline">Reprocesar baseline</string>
+    <string name="processing_dewarp_experimental">Dewarp experimental: solo NoChange</string>
+    <string name="processing_variant_candidate_missing">Candidate: ninguno</string>
+    <string name="processing_variant_not_comparable">Candidate no comparable: la región, orientación o proporción difiere.</string>
+    <string name="processing_variant_delete_candidate">Eliminar candidate</string>
+    <string name="action_reset_zoom">Restablecer zoom</string>
+    <string name="processing_variant_saved">Referencia guardada.</string>
+    <string name="processing_variant_cancelled">Cancelado; se conservó la referencia anterior.</string>
+    <string name="processing_variant_metadata">%1$s: %2$d×%3$d, %4$d bytes; algorithmId=%5$s; region=%6$s; rotation=%7$d; recipeHash=%8$s; sourceSha256=%9$s; outputSha256=%10$s; reproducible=%11$b</string>
+    <string name="processing_dewarp_not_implemented">NoChange: la implementación candidate aún no está disponible.</string>
+    <string name="processing_variant_baseline">Baseline</string>
+    <string name="processing_variant_candidate">Candidate</string>
+    <string name="processing_variant_active_suffix">Activa</string>
+    <string name="processing_compare_original">Comparar original</string>
+    <string name="processing_compare_ab_short">A/B</string>
+    <string name="debug_compare_delete_original">Eliminar original</string>
+    <string name="debug_compare_delete_original_title">¿Eliminar el original conservado?</string>
+    <string name="debug_compare_delete_original_message">La exportación ORIGINAL y el reprocesamiento HIGH desde el máster dejarán de funcionar para esta página. La página procesada se conserva.</string>
 </resources>

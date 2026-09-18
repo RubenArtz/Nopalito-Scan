@@ -128,7 +128,7 @@
     <!-- Settings screen -->
     <string name="export_quality">Export quality</string>
     <!-- Export screen: compression level options -->
-    <string name="export_quality_original">Original file</string>
+    <string name="export_quality_original">Maximum processed resolution</string>
     <string name="export_quality_balanced">Balanced</string>
     <string name="export_quality_high">High-res, max 6 MP in this version</string>
     <string name="export_quality_compressed">Compressed</string>
@@ -404,7 +404,7 @@
     <!-- History screen: empty state -->
     <string name="history_empty">No exports recorded</string>
     <!-- History screen: compression labels -->
-    <string name="quality_original">Uncompressed</string>
+    <string name="quality_original">Maximum processed resolution</string>
     <string name="quality_balanced">Balanced</string>
     <string name="quality_high">High</string>
     <string name="quality_compressed">Compressed</string>
@@ -1583,4 +1583,8 @@
     <string name="processing_variant_active_suffix">Active</string>
     <string name="processing_compare_original">Compare original</string>
     <string name="processing_compare_ab_short">A/B</string>
+    <!-- Debug-only Original vs Processed comparator: delete-preserved-original dialog -->
+    <string name="debug_compare_delete_original">Delete original</string>
+    <string name="debug_compare_delete_original_title">Delete preserved original?</string>
+    <string name="debug_compare_delete_original_message">ORIGINAL export and HIGH reprocessing from the master will stop working for this page. The processed page is kept.</string>
 </resources>

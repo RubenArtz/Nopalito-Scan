@@ -35,6 +35,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import nopalito.app.BuildConfig
 import nopalito.app.domain.Jpeg
 import nopalito.app.domain.PageMetadata
 import nopalito.app.domain.PageViewKey
@@ -80,6 +81,9 @@ class ImageRepository(
 
     private val metadataFile = File(processedDir, "document.json")
     private val json = Json { prettyPrint = false; encodeDefaults = true }
+
+    /** Loaded by [loadPages]; declared first so initialization cannot reset the persisted value. */
+    private var isIne: Boolean = false
     private var pages: PageStore = PageStore(loadPages())
 
     // Lazy, opt-in reference work: no capture-time hashing, decoding or variant allocations.
@@ -105,7 +109,7 @@ class ImageRepository(
                         activeVariantId = selection.activeVariantId
                     )
                 }
-                saveMetadata(atomically = true)
+                saveMetadata()
             }
         }
     }
@@ -166,7 +170,7 @@ class ImageRepository(
                 },
                 { mutex.withLock { check(pages.get(id) == snapshot) { "Page changed during processing" } } })
         } finally {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+            withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
                 val selection = variants.selection(id)
                 val active = selection.activeVariantId?.let { variants.metadata(id, it) }
                 mutex.withLock {
@@ -184,14 +188,11 @@ class ImageRepository(
                             processingError = selection.processingError,
                         )
                     }
-                    saveMetadata(atomically = true)
+                    saveMetadata()
                 }
             }
         }
     }
-
-    /** Persisted flag: the current document is an INE (credential front/back) session. */
-    private var isIne: Boolean = false
 
     /** Whether the current document is an INE (credential front/back) session. */
     fun isIneSession(): Boolean = isIne
@@ -286,17 +287,13 @@ class ImageRepository(
         return PageV2(id, hasOriginal = false, processingStatus = "PROCESSED")
     }
 
-    private fun saveMetadata(atomically: Boolean = false) {
+    private fun saveMetadata() {
         val metadata = DocumentMetadataV2(
             pages = pages.pages(),
             isIne = isIne,
             schemaVersion = "2.1",
             pipelineVersion = nopalito.app.domain.CaptureMetadata.PIPELINE_VERSION,
         )
-        if (!atomically) {
-            metadataFile.writeText(json.encodeToString(metadata))
-            return
-        }
         val temporary =
             File(metadataFile.parentFile, ".tmp-document-${java.util.UUID.randomUUID()}")
         try {
@@ -304,12 +301,7 @@ class ImageRepository(
                 stream.write(json.encodeToString(metadata).toByteArray(Charsets.UTF_8))
                 stream.fd.sync()
             }
-            java.nio.file.Files.move(
-                temporary.toPath(),
-                metadataFile.toPath(),
-                java.nio.file.StandardCopyOption.ATOMIC_MOVE,
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING
-            )
+            publishTempFile(temporary, metadataFile)
         } finally {
             temporary.delete()
         }
@@ -325,16 +317,27 @@ class ImageRepository(
         pages.pages().mapNotNull {
             runCatching {
                 val manualRotation = Rotation.fromDegrees(it.manualRotationDegrees)
-                ScanPage(it.id, manualRotation, it.colorMode, it.quadVersion, it.toMetadata())
+                ScanPage(
+                    id = it.id,
+                    manualRotation = manualRotation,
+                    colorMode = it.colorMode,
+                    quadVersion = it.quadVersion,
+                    metadata = it.toMetadata(),
+                    hasOriginal = it.hasOriginal,
+                    originalRelativePath = it.sourceFile,
+                    sourceSha256 = it.sourceSha256,
+                    safeSha256 = it.safeSha256,
+                    hasSafeCopy = it.safeFile == "safe/${it.id}.jpg",
+                )
             }.getOrNull()
         }
 
     suspend fun add(processed: Jpeg, source: Jpeg, metadata: PageMetadata, colorMode: ColorMode) =
         mutex.withLock {
-            val id = "${System.currentTimeMillis()}"
+            val id = newPageId()
             val key = PageViewKey(id, Rotation.R0, colorMode, 0)
-            processedImageFile(key).writeBytes(processed.bytes)
-            sourceFile(id).writeBytes(source.bytes)
+            writeBytesAtomically(processedImageFile(key), processed.bytes)
+            writeBytesAtomically(sourceFile(id), source.bytes)
             pages.addOrReplace(
                 PageV2(
                     id = id,
@@ -376,7 +379,6 @@ class ImageRepository(
         metadata: PageMetadata,
         colorMode: ColorMode,
         tier: nopalito.app.domain.CaptureTier,
-        originalSha256: String?,
         capturedWidth: Int?,
         capturedHeight: Int?,
         workingWidth: Int?,
@@ -388,12 +390,12 @@ class ImageRepository(
         exifOrientation: Int,
         captureMode: String?,
     ): String = mutex.withLock {
-        val id = "${System.currentTimeMillis()}"
+        val id = newPageId()
         when (val move = OriginalStore.finalizeCapture(originalTemp, originalsDir, id)) {
             is AtomicMoveResult.Success -> {
                 val key = PageViewKey(id, Rotation.R0, colorMode, 0)
                 val processedFile = processedImageFile(key)
-                processedFile.writeBytes(processed.bytes)
+                writeBytesAtomically(processedFile, processed.bytes)
                 // Legacy working source is not duplicated: editor prefers
                 // originals/ when present (see updatePage).
                 pages.addOrReplace(
@@ -434,7 +436,7 @@ class ImageRepository(
                     )
                 )
                 saveMetadata()
-                imageCache.put(key, CompletableDeferred(processed))
+                imageCache[key] = CompletableDeferred(processed)
                 id
             }
 
@@ -452,13 +454,6 @@ class ImageRepository(
         }
     }
 
-    suspend fun markProcessingFailed(id: String, error: String?) {
-        mutex.withLock {
-            pages.update(id) { it.copy(processingStatus = "FAILED", processingError = error) }
-            saveMetadata()
-        }
-    }
-
     suspend fun setColorMode(id: String, colorMode: ColorMode) {
         updatePage(id) { page, metadata ->
             PageUpdate(
@@ -470,6 +465,10 @@ class ImageRepository(
     }
 
     suspend fun setUserQuad(id: String, newQuad: Quad) {
+        android.util.Log.i(
+            "Crop",
+            "setUserQuad page=$id quad=${quadCorners(newQuad)}",
+        )
         updatePage(id) { page, metadata ->
             PageUpdate(
                 updatedPage = page.copy(
@@ -497,8 +496,10 @@ class ImageRepository(
         // Prefer the preserved original; fall back to the legacy working
         // source for documents captured before Phase 1.
         val masterFile = if (originalFile(id).exists()) originalFile(id) else sourceFile(id)
-        if (!masterFile.exists())
+        if (!masterFile.exists()) {
+            android.util.Log.w("Crop", "updatePage page=$id missing master, skip reprocess")
             return
+        }
 
         val update = buildUpdate(page, metadata)
         val key = PageViewKey(
@@ -509,18 +510,30 @@ class ImageRepository(
         )
 
         val processedFile = processedImageFile(key)
+        android.util.Log.i(
+            "Crop",
+            "reprocess page=$id key=$key master=${pathForLog(masterFile)} " +
+                    "processed=${pathForLog(processedFile)} quad=${quadCorners(update.normalizedQuad)} " +
+                    "color=${update.colorMode}",
+        )
         val job = processingJobs.computeIfAbsent(key) {
             scope.async(Dispatchers.IO) {
-                if (!processedFile.exists()) {
-                    val sourceJpeg = Jpeg(masterFile.readBytes())
-                    val processedJpeg =
-                        transformations.process(
-                            sourceJpeg,
-                            metadata = metadata.copy(normalizedQuad = update.normalizedQuad),
-                            colorMode = update.colorMode
-                        )
-                    processedFile.writeBytes(processedJpeg.bytes)
-                }
+                // Always regenerate from the master with the current quad: the
+                // warped file is the single source of truth for editor and
+                // export. Never reuse a stale file for a new quad version.
+                val sourceJpeg = Jpeg(masterFile.readBytes())
+                val processedJpeg =
+                    transformations.process(
+                        sourceJpeg,
+                        metadata = metadata.copy(normalizedQuad = update.normalizedQuad),
+                        colorMode = update.colorMode
+                    )
+                writeBytesAtomically(processedFile, processedJpeg.bytes)
+                android.util.Log.i(
+                    "Crop",
+                    "reprocessed page=$id file=${pathForLog(processedFile)} " +
+                            "bytes=${processedJpeg.bytes.size} dims=${jpegBounds(processedJpeg.bytes)}",
+                )
             }
         }
         try {
@@ -542,6 +555,25 @@ class ImageRepository(
                 )
             }
             saveMetadata()
+        }
+        invalidateCachesForPage(id)
+    }
+
+    private fun quadCorners(quad: Quad): String {
+        fun f(v: Double) = "%.4f".format(v)
+        return "TL(${f(quad.topLeft.x)},${f(quad.topLeft.y)}) " +
+                "TR(${f(quad.topRight.x)},${f(quad.topRight.y)}) " +
+                "BR(${f(quad.bottomRight.x)},${f(quad.bottomRight.y)}) " +
+                "BL(${f(quad.bottomLeft.x)},${f(quad.bottomLeft.y)})"
+    }
+
+    private fun jpegBounds(bytes: ByteArray): String {
+        return try {
+            val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+            "${opts.outWidth}x${opts.outHeight}"
+        } catch (_: Exception) {
+            "unknown"
         }
     }
 
@@ -698,8 +730,30 @@ class ImageRepository(
     private fun processedImageFile(key: PageViewKey): File =
         File(processedDir, processedImageFileName(key.pageId, key.colorMode, key.quadVersion))
 
+    /** Real on-disk processed artifact used only by the central export preparer. */
+    fun processedFileForExport(key: PageViewKey): File = processedImageFile(key)
+
     private fun sourceFile(id: String): File =
         File(sourceDir, "$id.jpg")
+
+    /** Legacy uncropped source used only as a preparation fallback. */
+    fun legacySourceFileForExport(id: String): File = sourceFile(id)
+
+    private fun writeBytesAtomically(target: File, bytes: ByteArray) {
+        require(bytes.isNotEmpty()) { "Refusing to write an empty image: ${target.name}" }
+        target.parentFile?.mkdirs()
+        val temp = File.createTempFile(".${target.name}.", ".tmp", target.parentFile)
+        try {
+            java.io.FileOutputStream(temp).use { output ->
+                output.write(bytes)
+                output.fd.sync()
+            }
+            check(temp.length() == bytes.size.toLong()) { "Incomplete image write: ${target.name}" }
+            publishTempFile(temp, target)
+        } finally {
+            if (temp.exists()) temp.delete()
+        }
+    }
 
     fun source(id: String): Jpeg? {
         val file = sourceFile(id)
@@ -717,12 +771,29 @@ class ImageRepository(
 
     fun safeJpegFile(id: String): File = File(safeDir, "$id.jpg")
 
-    fun hasOriginal(id: String): Boolean =
-        runCatching { originalFile(id).exists() }.getOrDefault(false)
-
     fun originalBytes(id: String): ByteArray? {
         val f = originalFile(id)
         return if (f.exists()) runCatching { f.readBytes() }.getOrNull() else null
+    }
+
+    /**
+     * Export-only original lookup. A stray/orphan file is never accepted merely because its
+     * name matches: persisted provenance must mark it as the original and its checksum (when
+     * available) must still match.
+     */
+    fun verifiedOriginalBytesForExport(
+        id: String,
+        hasOriginal: Boolean,
+        expectedRelativePath: String?,
+        expectedSha256: String?,
+    ): ByteArray? {
+        if (!hasOriginal || expectedRelativePath != "originals/$id.jpg") return null
+        val bytes = originalBytes(id) ?: return null
+        if (expectedSha256 != null && nopalito.app.domain.OriginalIntegrity.sha256(bytes) != expectedSha256) {
+            android.util.Log.w("ExportPrepare", "originalChecksumMismatch pageId=$id")
+            return null
+        }
+        return bytes
     }
 
     /**
@@ -739,7 +810,19 @@ class ImageRepository(
         return if (f.exists()) runCatching { f.readBytes() }.getOrNull() else null
     }
 
-    suspend fun pageRecord(id: String): PageV2? = mutex.withLock { pages.get(id) }
+    fun verifiedSafeBytesForExport(
+        id: String,
+        hasSafeCopy: Boolean,
+        expectedSha256: String?,
+    ): ByteArray? {
+        if (!hasSafeCopy) return null
+        val bytes = safeBytes(id) ?: return null
+        if (expectedSha256 != null && nopalito.app.domain.OriginalIntegrity.sha256(bytes) != expectedSha256) {
+            android.util.Log.w("ExportPrepare", "safeChecksumMismatch pageId=$id")
+            return null
+        }
+        return bytes
+    }
 
     /**
      * Quota cleanup: deletes only regenerable files (safe/, thumbnails,
@@ -765,8 +848,8 @@ class ImageRepository(
 
     /**
      * Explicit user-initiated deletion of a preserved original. Callers must
-     * show confirmation explaining that ORIGINAL export and HIGH reprocessing
-     * from the master will stop working for this page.
+     * show confirmation explaining that maximum-resolution and HIGH processing
+     * from the camera master will fall back to the stored processed page.
      */
     suspend fun deleteOriginalWithConfirmation(id: String, confirmed: Boolean): Boolean {
         if (!confirmed) return false
@@ -835,26 +918,46 @@ class ImageRepository(
     ) =
         mutex.withLock {
             val existing = pages.get(id) ?: return@withLock
-            // Delete old processed files for this id
-            processedDir.listFiles()
-                ?.filter { it.name.startsWith("$id.") || it.name.startsWith("$id-") }
-                ?.forEach { it.delete() }
-            // Delete old source
-            sourceFile(id).delete()
-            // Write new files with same id
-            val key = PageViewKey(id, Rotation.R0, colorMode, existing.quadVersion)
-            processedImageFile(key).writeBytes(processed.bytes)
-            sourceFile(id).writeBytes(source.bytes)
+            // A replacement is a new source revision. A new quad version prevents every
+            // in-memory and on-disk cache from confusing it with the previous page.
+            val newQuadVersion = existing.quadVersion + 1
+            val key = PageViewKey(id, Rotation.R0, colorMode, newQuadVersion)
+            writeBytesAtomically(processedImageFile(key), processed.bytes)
+            val master = if (existing.hasOriginal) originalFile(id) else sourceFile(id)
+            writeBytesAtomically(master, source.bytes)
+            safeJpegFile(id).delete()
             // Update PageV2 in-place
             pages.addOrReplace(
                 existing.copy(
                     quad = metadata.normalizedQuad.toSerializable(),
+                    userQuad = null,
+                    quadVersion = newQuadVersion,
                     baseRotationDegrees = metadata.baseRotation.degrees,
+                    isColored = metadata.autoColorMode == ColorMode.COLOR,
                     colorMode = colorMode,
+                    focalLength = metadata.opticalMeasures?.cameraIntrinsics?.focalLength,
+                    sensorWidth = metadata.opticalMeasures?.cameraIntrinsics?.sensorWidth,
+                    subjectDistance = metadata.opticalMeasures?.subjectDistance,
+                    sourceWidth = metadata.sourceSize?.width?.toInt(),
+                    sourceHeight = metadata.sourceSize?.height?.toInt(),
+                    sourceFile = if (existing.hasOriginal) "originals/$id.jpg" else null,
+                    sourceFileSize = source.bytes.size.toLong(),
+                    sourceSha256 = nopalito.app.domain.OriginalIntegrity.sha256(source.bytes),
+                    processedFile = processedImageFile(key).name,
+                    processedFileSize = processed.bytes.size.toLong(),
+                    timestamp = System.currentTimeMillis(),
                     // preserve manualRotationDegrees
                 )
             )
             saveMetadata()
+            // Only after the new source, processed image and metadata are durable may old
+            // processed variants be removed. A failed replacement keeps the last valid page.
+            processedDir.listFiles()
+                ?.filter {
+                    (it.name.startsWith("$id.") || it.name.startsWith("$id-")) &&
+                            it.canonicalFile != processedImageFile(key).canonicalFile
+                }
+                ?.forEach { it.delete() }
             // Drop stale cached images/thumbnails for this page: the key is unchanged
             // after a retake, so without this the editor preview keeps showing the old photo.
             invalidateCachesForPage(id)
@@ -935,9 +1038,20 @@ class ImageRepository(
      * or null if the file does not exist.
      */
     fun sourceFilePath(id: String): String? {
-        val file = sourceFile(id)
+        val file = originalFile(id).takeIf(File::exists) ?: sourceFile(id)
         return if (file.exists()) file.absolutePath else null
     }
+
+    private fun pathForLog(file: File): String = if (BuildConfig.DEBUG) {
+        file.absolutePath
+    } else {
+        "sha256:${
+            nopalito.app.domain.OriginalIntegrity.sha256(file.absolutePath.toByteArray()).take(16)
+        }"
+    }
+
+    private fun newPageId(): String =
+        "${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().replace("-", "")}"
 }
 
 fun Quad.toSerializable(): NormalizedQuad =

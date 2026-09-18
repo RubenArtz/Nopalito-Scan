@@ -39,4 +39,16 @@
     <string name="processing_variant_active_suffix">Activa</string>
     <string name="processing_compare_original">Comparar original</string>
     <string name="processing_compare_ab_short">A/B</string>
+    <!-- Synced with values/strings.xml: comparator, capture tiers and debug compare -->
+    <string name="compare_original">Original</string>
+    <string name="compare_processed">Procesada</string>
+    <string name="capture_original_no_space_title">Espacio insuficiente para ORIGINAL</string>
+    <string name="capture_original_no_space_msg">La captura original necesita %1$s libres, pero solo hay %2$s disponibles. Libera espacio o cambia a LOW / BALANCED con una elección explícita. ORIGINAL nunca se reduce en silencio.</string>
+    <string name="capture_tier_low">LOW · ~2 MP</string>
+    <string name="capture_tier_balanced">BALANCED · captura 6 MP / procesada 2 MP</string>
+    <string name="capture_tier_high">HIGH · reprocesado de alta resolución (máximo seguro)</string>
+    <string name="capture_tier_original">ORIGINAL · archivo sin reprocesamiento de la app</string>
+    <string name="debug_compare_delete_original">Eliminar original</string>
+    <string name="debug_compare_delete_original_title">¿Eliminar el original conservado?</string>
+    <string name="debug_compare_delete_original_message">La exportación ORIGINAL y el reprocesamiento HIGH desde el máster dejarán de funcionar para esta página. La página procesada se conserva.</string>
 </resources>

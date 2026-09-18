@@ -29,6 +29,7 @@ import nopalito.app.data.ImageTransformations
 import nopalito.app.domain.CapturedPage
 import nopalito.app.domain.ExportQuality
 import nopalito.app.domain.Jpeg
+import nopalito.app.domain.MAX_FULL_RES_EXPORT_PIXELS
 import nopalito.app.domain.PageMetadata
 import nopalito.app.domain.Rotation
 import nopalito.app.ui.screens.settings.DefaultColorMode
@@ -113,7 +114,10 @@ fun processedImage(
     var sourceMat: Mat? = null
     var page: Mat? = null
     try {
-        sourceMat = source.toMat()
+        // Bound the decoded camera Mat independently from output quality.
+        // Using the output cap here would decode a 12 MP source to 0.75 MP
+        // for a 2 MP result, unnecessarily destroying detail before the warp.
+        sourceMat = source.toMat(MAX_FULL_RES_EXPORT_PIXELS)
         val quad = metadata.normalizedQuad.scaledTo(1, 1, sourceMat.width(), sourceMat.height())
         page = extractDocument(
             sourceMat, quad, rotationDegrees, colorMode, exportQuality.maxPixels,

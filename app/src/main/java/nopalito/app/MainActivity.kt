@@ -274,12 +274,12 @@ class MainActivity : FragmentActivity() {
                 initialValue = nopalito.app.domain.ScanPipelineFlags.Phase1Defaults,
             )
             var showOriginalCompare by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(
+                mutableStateOf(
                     false
                 )
             }
             var showVariantCompare by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(
+                mutableStateOf(
                     false
                 )
             }
@@ -510,19 +510,19 @@ class MainActivity : FragmentActivity() {
                                 var confirmDeleteOriginal by androidx.compose.runtime.remember(
                                     comparePageId
                                 ) {
-                                    androidx.compose.runtime.mutableStateOf(false)
+                                    mutableStateOf(false)
                                 }
                                 androidx.compose.material3.AlertDialog(
                                     onDismissRequest = { showOriginalCompare = false },
                                     confirmButton = {
                                         androidx.compose.material3.TextButton(
                                             onClick = { showOriginalCompare = false }
-                                        ) { androidx.compose.material3.Text("OK") }
+                                        ) { androidx.compose.material3.Text(stringResource(R.string.ok)) }
                                     },
                                     dismissButton = {
                                         androidx.compose.material3.TextButton(
                                             onClick = { confirmDeleteOriginal = true }
-                                        ) { androidx.compose.material3.Text("Delete original") }
+                                        ) { androidx.compose.material3.Text(stringResource(R.string.debug_compare_delete_original)) }
                                     },
                                     text = {
                                         if (comparePageId != null) {
@@ -546,18 +546,21 @@ class MainActivity : FragmentActivity() {
                                                     onDismissRequest = {
                                                         confirmDeleteOriginal = false
                                                     },
-                                                    title = { androidx.compose.material3.Text("Delete preserved original?") },
+                                                    title = {
+                                                        androidx.compose.material3.Text(
+                                                            stringResource(R.string.debug_compare_delete_original_title)
+                                                        )
+                                                    },
                                                     text = {
                                                         androidx.compose.material3.Text(
-                                                            "ORIGINAL export and HIGH reprocessing from the master " +
-                                                                    "will stop working for this page. The processed page is kept."
+                                                            stringResource(R.string.debug_compare_delete_original_message)
                                                         )
                                                     },
                                                     confirmButton = {
                                                         androidx.compose.material3.TextButton(
                                                             onClick = {
                                                                 confirmDeleteOriginal = false
-                                                                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                                lifecycleScope.launch(Dispatchers.IO) {
                                                                     runCatching {
                                                                         viewModel.imageRepository.deleteOriginalWithConfirmation(
                                                                             comparePageId,
@@ -566,14 +569,22 @@ class MainActivity : FragmentActivity() {
                                                                     }
                                                                 }
                                                             }
-                                                        ) { androidx.compose.material3.Text("Delete") }
+                                                        ) {
+                                                            androidx.compose.material3.Text(
+                                                                stringResource(R.string.delete)
+                                                            )
+                                                        }
                                                     },
                                                     dismissButton = {
                                                         androidx.compose.material3.TextButton(
                                                             onClick = {
                                                                 confirmDeleteOriginal = false
                                                             }
-                                                        ) { androidx.compose.material3.Text("Cancel") }
+                                                        ) {
+                                                            androidx.compose.material3.Text(
+                                                                stringResource(R.string.cancel)
+                                                            )
+                                                        }
                                                     },
                                                 )
                                             }

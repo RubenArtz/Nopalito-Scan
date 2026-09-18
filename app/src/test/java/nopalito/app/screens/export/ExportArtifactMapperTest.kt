@@ -109,4 +109,18 @@ class ExportArtifactMapperTest {
         val artifact = ExportArtifactMapper.fromHistoryEntity(entity)
         assertEquals(ExportFormat.WORD, artifact?.format)
     }
+
+    @Test
+    fun `fromHistoryEntity maps PNG format`() {
+        val entity = ExportHistoryEntity(
+            documentName = "scan.png",
+            dateTime = 1_700_000_000_000,
+            pageCount = 1,
+            format = "PNG",
+            quality = "BALANCED",
+            fileSizeBytes = 800,
+            exportedFilePath = "content://media/downloads/scan.png",
+        )
+        assertEquals(ExportFormat.PNG, ExportArtifactMapper.fromHistoryEntity(entity)?.format)
+    }
 }

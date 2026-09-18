@@ -96,6 +96,18 @@ email delivery (SMTP), content delivery and protection (Cloudflare), push notifi
 Cloud Messaging) and
 IP geolocation (ip-api.com, with a local country-level cache).
 
+Crash reports (Firebase Crashlytics). The Application uses Firebase Crashlytics (Google) to record
+crashes and
+technical errors in order to diagnose and fix stability issues. This service is always active, even
+before the legal
+acceptance, because gating it on that acceptance would hide the very crashes that occur when
+starting
+the Application.
+It only transmits error traces and technical failure information (for example, device model and OS
+and Application
+versions); messages are sanitized to exclude personal data, and documents, photographs and User
+Content are never sent.
+
 We do not share documents with advertisers or with third parties for their own commercial purposes.
 We may disclose
 information if necessary to comply with a legal obligation, protect rights and security, investigate

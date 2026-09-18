@@ -23,18 +23,18 @@ package nopalito.app.domain
 
 import nopalito.app.R
 
+/** Finite ceiling used before OpenCV allocates a full source Mat. */
+const val MAX_FULL_RES_EXPORT_PIXELS = 12_500_000L
+
 enum class ExportQuality(
     val jpegQuality: Int,
     val maxPixels: Long,
     val labelResource: Int,
 ) {
-    /**
-     * Original file without app reprocessing. Exported by copying
-     * SourceOriginal bytes directly when the output format allows it.
-     */
+    /** Maximum processed resolution. Perspective, rotation and color are applied. */
     ORIGINAL(
         jpegQuality = 100,
-        maxPixels = Long.MAX_VALUE,
+        maxPixels = MAX_FULL_RES_EXPORT_PIXELS,
         R.string.export_quality_original,
     ),
 
