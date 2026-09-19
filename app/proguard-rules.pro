@@ -48,6 +48,14 @@
 -dontwarn org.tensorflow.lite.Delegate
 -dontwarn org.tensorflow.lite.**
 
+# CrashlyticsErrorFilter matches expected session/backend failures by
+# simpleName; without this R8 renames them (e.g. LogoutException -> p94),
+# breaking both the non-fatal filter and Crashlytics grouping.
+-keepnames class nopalito.app.ui.screens.cloud.network.LogoutException
+-keepnames class nopalito.app.ui.screens.cloud.data.LogoutException
+-keepnames class nopalito.app.ui.screens.cloud.data.NeedsBiometricUnlockException
+-keepnames class nopalito.app.ui.screens.cloud.data.ApiException
+
 # Keep native method names for debugging
 -keepclasseswithmembernames class * {
     native <methods>;

@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nopalito.app.AppContainer
 import nopalito.app.data.OcrLanguage
+import nopalito.app.diagnostics.CrashlyticsErrorFilter
 import nopalito.app.i18n.AppLanguage
 import nopalito.app.i18n.LocaleNormalizer
 import nopalito.app.ui.screens.cloud.data.CloudRepository
@@ -227,7 +228,9 @@ class SettingsViewModel(container: AppContainer) : ViewModel() {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            logger.e(TAG, "Language sync to backend failed for $code", e)
+            if (!CrashlyticsErrorFilter.isSessionFlowSignal(e)) {
+                logger.e(TAG, "Language sync to backend failed for $code", e)
+            }
             true
         }
     }

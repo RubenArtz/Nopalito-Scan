@@ -47,6 +47,7 @@ import nopalito.app.data.PermissionsViewModel
 import nopalito.app.data.stats.StatsRepository
 import nopalito.app.diagnostics.AnalyticsTracker
 import nopalito.app.diagnostics.CrashReporter
+import nopalito.app.diagnostics.CrashlyticsErrorFilter
 import nopalito.app.diagnostics.FirebaseConsentManager
 import nopalito.app.diagnostics.FirebaseCrashReporter
 import nopalito.app.domain.ImageSegmentationService
@@ -344,17 +345,32 @@ class AppContainer(private val context: Context) {
                     val result = repo.updateUserLanguage(code)
                     if (result.isFailure) {
                         val err = result.exceptionOrNull()
-                        analyticsTracker.syncFailed(
-                            operation = "language_sync",
-                            errorKind = err?.javaClass?.simpleName ?: "unknown"
-                        )
-                        if (err != null) {
-                            logger.e("LanguageSync", "Startup language sync failed for $code", err)
-                        } else {
+                        if (err != null && CrashlyticsErrorFilter.isSessionFlowSignal(err)) {
+                            // Expected: the refresh token died while the app was
+                            // closed and the interceptor already cleared the
+                            // session — the user signs in again. Routine
+                            // re-login, never a Crashlytics non-fatal.
                             android.util.Log.w(
                                 "LanguageSync",
-                                "Startup language sync failed for $code (unknown error)"
+                                "Startup language sync skipped for $code (session expired)"
                             )
+                            analyticsTracker.syncFailed(
+                                operation = "language_sync",
+                                errorKind = "session_expired"
+                            )
+                        } else {
+                            analyticsTracker.syncFailed(
+                                operation = "language_sync",
+                                errorKind = err?.javaClass?.simpleName ?: "unknown"
+                            )
+                            if (err != null) {
+                                logger.e("LanguageSync", "Startup language sync failed for $code", err)
+                            } else {
+                                android.util.Log.w(
+                                    "LanguageSync",
+                                    "Startup language sync failed for $code (unknown error)"
+                                )
+                            }
                         }
                     } else {
                         android.util.Log.d("LanguageSync", "Startup language sync ok for $code")

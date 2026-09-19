@@ -33,6 +33,9 @@ private class LogoutException(message: String) : Exception(message)
 private class NeedsBiometricUnlockException(message: String) : Exception(message)
 private class ApiException(message: String) : Exception(message)
 
+/** Simulates R8-obfuscated LogoutException: simpleName no longer matches. */
+private class p94(message: String) : IOException(message)
+
 class CrashlyticsErrorFilterTest {
 
     @Test
@@ -87,5 +90,42 @@ class CrashlyticsErrorFilterTest {
     @Test
     fun `filters backend business errors`() {
         assertFalse(CrashlyticsErrorFilter.shouldReport(ApiException("INVALID")).report)
+    }
+
+    @Test
+    fun `filters wrapped logout flow signals`() {
+        val wrapped = RuntimeException("Startup language sync failed for es-419", LogoutException("expired"))
+        val decision = CrashlyticsErrorFilter.shouldReport(wrapped)
+        assertFalse(decision.report)
+    }
+
+    @Test
+    fun `filters obfuscated refresh failures by message`() {
+        val decision = CrashlyticsErrorFilter.shouldReport(
+            p94("Refresh already failed in another thread")
+        )
+        assertFalse(decision.report)
+    }
+
+    @Test
+    fun `reports unrelated IO failures with similar shape`() {
+        val decision = CrashlyticsErrorFilter.shouldReport(IOException("disk full"))
+        assertTrue(decision.report)
+    }
+
+    @Test
+    fun `isSessionFlowSignal matches wrapped and obfuscated signals`() {
+        assertTrue(
+            CrashlyticsErrorFilter.isSessionFlowSignal(
+                RuntimeException("sync failed", LogoutException("expired"))
+            )
+        )
+        assertTrue(
+            CrashlyticsErrorFilter.isSessionFlowSignal(
+                p94("Refresh already failed in another thread")
+            )
+        )
+        assertFalse(CrashlyticsErrorFilter.isSessionFlowSignal(RuntimeException("boom")))
+        assertFalse(CrashlyticsErrorFilter.isSessionFlowSignal(ApiException("INVALID")))
     }
 }

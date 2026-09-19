@@ -32,8 +32,9 @@ import java.net.UnknownHostException
  *
  * The app surfaces many *expected* failures through its normal UX (offline
  * banners, login errors, session expiry, biometric retry): sending those
- * would drown real bugs in noise and leak nothing useful. Only the outermost
- * throwable is evaluated; causes are preserved untouched in the report.
+ * would drown real bugs in noise and leak nothing useful. The outermost
+ * throwable and its causes are evaluated; a wrapped session signal (e.g. a
+ * `RuntimeException` carrying the original as its cause) is still routine.
  * Everything not explicitly listed below is reported.
  *
  * Deliberately decoupled from the cloud module: backend/session exception
@@ -53,9 +54,27 @@ object CrashlyticsErrorFilter {
         "HttpException"
     )
 
+    /**
+     * Forced-logout signals thrown by the auth interceptor
+     * (`AuthInterceptor.forceLogoutAndClear`). Matched by message prefix so the
+     * filter keeps working when R8 obfuscates the exception class name (its
+     * simpleName then becomes e.g. `p94` and the name check above misses).
+     * Prefixes are fixed technical strings, never user data.
+     */
+    private val sessionFlowMessagePrefixes = listOf(
+        "Refresh already failed",
+        "Refresh failed",
+        "Refresh token invalid",
+        "Biometric refresh failed",
+        "No refresh token",
+        "No biometric refresh token",
+        "Account "
+    )
+
+    private const val MAX_CAUSE_DEPTH = 2
+
     fun shouldReport(throwable: Throwable): Decision {
-        if (throwable is kotlin.coroutines.cancellation.CancellationException ||
-            throwable is java.util.concurrent.CancellationException
+        if (throwable is kotlin.coroutines.cancellation.CancellationException
         ) {
             return Decision(false, "coroutine_cancelled")
         }
@@ -67,12 +86,41 @@ object CrashlyticsErrorFilter {
         ) {
             return Decision(false, "network_transient")
         }
+        var cause: Throwable? = throwable
+        var depth = 0
+        while (cause != null && depth <= MAX_CAUSE_DEPTH) {
+            val decision = shouldReportSingle(cause)
+            if (!decision.report) return decision
+            cause = cause.cause
+            depth++
+        }
+        return Decision(true, "unexpected:${throwable.javaClass.simpleName}")
+    }
+
+    /**
+     * True for expected sign-out signals (expired/revoked session). Best-effort
+     * callers such as the startup language sync use this to log at warning
+     * level instead of filing a Crashlytics non-fatal for a routine re-login.
+     */
+    fun isSessionFlowSignal(throwable: Throwable): Boolean {
+        val decision = shouldReport(throwable)
+        return !decision.report && decision.reason == "session_flow"
+    }
+
+    private fun shouldReportSingle(throwable: Throwable): Decision {
         val name = throwable.javaClass.simpleName
         if (name in sessionFlowNames) {
             return Decision(false, "session_flow")
         }
         if (name in backendErrorNames) {
             return Decision(false, "backend_business_error")
+        }
+        if (throwable is java.io.IOException &&
+            sessionFlowMessagePrefixes.any { prefix ->
+                throwable.message?.startsWith(prefix) == true
+            }
+        ) {
+            return Decision(false, "session_flow")
         }
         return Decision(true, "unexpected:$name")
     }
