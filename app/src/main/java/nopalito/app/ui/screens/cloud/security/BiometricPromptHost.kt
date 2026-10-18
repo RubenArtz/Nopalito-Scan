@@ -21,8 +21,6 @@
 
 package nopalito.app.ui.screens.cloud.security
 
-import nopalito.app.ui.screens.cloud.security.BiometricPromptHost.requireController
-
 
 /**
  * Process-wide registry of the single active [BiometricPromptController].

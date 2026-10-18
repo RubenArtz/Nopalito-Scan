@@ -94,7 +94,8 @@ class CrashlyticsErrorFilterTest {
 
     @Test
     fun `filters wrapped logout flow signals`() {
-        val wrapped = RuntimeException("Startup language sync failed for es-419", LogoutException("expired"))
+        val wrapped =
+            RuntimeException("Startup language sync failed for es-419", LogoutException("expired"))
         val decision = CrashlyticsErrorFilter.shouldReport(wrapped)
         assertFalse(decision.report)
     }

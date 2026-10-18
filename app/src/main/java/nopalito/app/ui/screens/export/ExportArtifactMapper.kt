@@ -22,9 +22,9 @@
 package nopalito.app.ui.screens.export
 
 import android.net.Uri
+import androidx.core.net.toUri
 import nopalito.app.ui.screens.history.ExportHistoryEntity
 import java.io.File
-import androidx.core.net.toUri
 
 /**
  * Converts the intermediate export models to the final model

@@ -23,7 +23,6 @@ package nopalito.app.ui.screens.cloud.data
 
 import androidx.annotation.StringRes
 import nopalito.app.R
-import nopalito.app.ui.screens.cloud.data.ErrorCodeMapper.format
 import nopalito.app.ui.screens.cloud.model.ApiDetails
 
 /**

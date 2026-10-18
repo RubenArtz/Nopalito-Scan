@@ -21,10 +21,6 @@
 
 package nopalito.app.domain.ocr
 
-import nopalito.app.domain.ocr.OcrTextExtractor.Companion.MIN_WORD_HEIGHT_FRACTION
-import nopalito.app.domain.ocr.OcrTextExtractor.Companion.PARAGRAPH_GAP_FACTOR
-import nopalito.app.domain.ocr.OcrTextExtractor.Companion.PARAGRAPH_INDENT_FACTOR
-import nopalito.app.domain.ocr.OcrTextExtractor.Companion.SPLIT_COLUMNS
 import nopalito.imageprocessing.OcrTextBox
 import kotlin.math.abs
 

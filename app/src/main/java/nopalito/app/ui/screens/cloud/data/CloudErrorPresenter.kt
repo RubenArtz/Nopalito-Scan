@@ -26,8 +26,6 @@ import androidx.annotation.StringRes
 import nopalito.app.R
 import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.stringFor
-import nopalito.app.ui.screens.cloud.data.CloudErrorPresenter.message
-import nopalito.app.ui.screens.cloud.data.CloudErrorPresenter.resolve
 import nopalito.app.ui.screens.cloud.network.LogoutException
 
 /**

@@ -26,7 +26,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Rect
 import android.util.Log
-import nopalito.app.ui.components.ImportedSignatureProcessor.removeBackground
 import java.io.ByteArrayOutputStream
 import kotlin.math.abs
 import kotlin.math.roundToInt

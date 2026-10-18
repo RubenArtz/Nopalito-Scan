@@ -21,7 +21,6 @@
 
 package nopalito.app.i18n
 
-import nopalito.app.i18n.AppLanguage.Companion.default
 import java.util.Locale
 
 /**

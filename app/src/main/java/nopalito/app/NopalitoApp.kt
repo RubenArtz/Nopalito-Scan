@@ -364,7 +364,11 @@ class AppContainer(private val context: Context) {
                                 errorKind = err?.javaClass?.simpleName ?: "unknown"
                             )
                             if (err != null) {
-                                logger.e("LanguageSync", "Startup language sync failed for $code", err)
+                                logger.e(
+                                    "LanguageSync",
+                                    "Startup language sync failed for $code",
+                                    err
+                                )
                             } else {
                                 android.util.Log.w(
                                     "LanguageSync",

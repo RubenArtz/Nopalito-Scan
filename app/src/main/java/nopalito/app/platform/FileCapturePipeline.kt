@@ -24,7 +24,6 @@ package nopalito.app.platform
 import android.graphics.BitmapFactory
 import androidx.exifinterface.media.ExifInterface
 import nopalito.app.domain.CaptureTier
-import nopalito.app.platform.FileCapturePipeline.decodeBounds
 import java.io.File
 
 /**

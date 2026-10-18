@@ -21,8 +21,6 @@
 
 package nopalito.app.domain
 
-import nopalito.app.domain.CaptureTier.Companion.HIGH_SAFE_MAX_PIXELS
-
 
 /**
  * Capture resolution tiers for Phase 1.

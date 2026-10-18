@@ -21,11 +21,7 @@
 
 package nopalito.app.i18n
 
-import nopalito.app.i18n.LocaleNormalizer.FALLBACK
 import nopalito.app.i18n.LocaleNormalizer.canonicalTag
-import nopalito.app.i18n.LocaleNormalizer.catalogLanguage
-import nopalito.app.i18n.LocaleNormalizer.intlLanguageTag
-import nopalito.app.i18n.LocaleNormalizer.normalizeForBackend
 import java.util.Locale
 
 /**

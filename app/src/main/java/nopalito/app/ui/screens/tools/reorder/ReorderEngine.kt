@@ -24,7 +24,6 @@ package nopalito.app.ui.screens.tools.reorder
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy
-import nopalito.app.ui.screens.tools.reorder.ReorderEngine.reorderPages
 import java.io.File
 
 /**

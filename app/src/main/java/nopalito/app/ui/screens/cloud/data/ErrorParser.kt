@@ -22,7 +22,6 @@
 package nopalito.app.ui.screens.cloud.data
 
 import com.google.gson.Gson
-import nopalito.app.ui.screens.cloud.data.ErrorParser.sanitize
 import nopalito.app.ui.screens.cloud.model.ApiError
 import nopalito.app.ui.screens.cloud.model.ApiResponse
 import nopalito.app.ui.screens.cloud.model.ErrorResponse

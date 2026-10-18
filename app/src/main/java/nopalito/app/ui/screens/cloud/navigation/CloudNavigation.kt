@@ -21,8 +21,6 @@
 
 package nopalito.app.ui.screens.cloud.navigation
 
-import nopalito.app.ui.screens.cloud.navigation.CloudDeepLink.consume
-
 
 /** Which password-recovery flow a [Cloudscreen.Recover] screen runs. */
 enum class CloudRecoverMode {

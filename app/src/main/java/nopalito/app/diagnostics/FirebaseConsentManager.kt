@@ -25,8 +25,6 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
-import nopalito.app.diagnostics.FirebaseConsentManager.apply
-import nopalito.app.diagnostics.FirebaseConsentManager.enableCrashReporting
 import nopalito.app.i18n.LegalConsent
 import nopalito.app.i18n.isComplete
 

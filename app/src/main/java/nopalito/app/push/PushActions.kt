@@ -22,7 +22,6 @@
 package nopalito.app.push
 
 import androidx.core.net.toUri
-import nopalito.app.push.PushActions.OPEN_APP
 
 /**
  * Deep-link actions the panel can attach to a notification. When the user taps

@@ -23,8 +23,6 @@ package nopalito.app.ui.screens.cloud.security
 
 import android.content.Context
 import androidx.biometric.BiometricManager
-import nopalito.app.ui.screens.cloud.security.BiometricCapability.resolve
-import nopalito.app.ui.screens.cloud.security.BiometricCapability.resolveWithWeakFallback
 
 /**
  * Availability of the device for optional biometric Cloud unlock.
