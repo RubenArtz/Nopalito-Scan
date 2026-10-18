@@ -96,6 +96,13 @@ class CloudApiClient private constructor(context: Context) {
             .writeTimeout(WRITE_TIMEOUT_SEC, TimeUnit.SECONDS)
             .connectionPool(okhttp3.ConnectionPool(5, 30, TimeUnit.SECONDS))
 
+        // 0. App identity (User-Agent) FIRST: every request — including the
+        //    inner token-refresh call built by AuthInterceptor on refreshOkHttpClient —
+        //    carries NopalitoScan/<version> (Android <release>) so the backend
+        //    logs, session devices and audit rows never fall back to okhttp's
+        //    generic default.
+        builder.addInterceptor(UserAgentInterceptor())
+
         // 1. Metrics FIRST: covers the whole wall time including auth refresh
         //    and every retry attempt (structured endpoint/duration/status log).
         builder.addInterceptor(HttpMetricsInterceptor())
@@ -164,6 +171,8 @@ class CloudApiClient private constructor(context: Context) {
             .readTimeout(READ_TIMEOUT_SEC, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT_SEC, TimeUnit.SECONDS)
             .connectionPool(okhttp3.ConnectionPool(2, 30, TimeUnit.SECONDS))
+
+        builder.addInterceptor(UserAgentInterceptor())
 
         builder.addInterceptor(HttpMetricsInterceptor())
 

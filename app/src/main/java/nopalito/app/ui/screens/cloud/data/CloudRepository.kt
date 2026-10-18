@@ -68,6 +68,7 @@ import nopalito.app.ui.screens.cloud.network.ScanApi
 import nopalito.app.ui.screens.cloud.network.SessionApi
 import nopalito.app.ui.screens.cloud.network.StorageApi
 import nopalito.app.ui.screens.cloud.network.UserPreferencesApi
+import nopalito.app.ui.screens.cloud.network.UserAgentInterceptor
 import nopalito.app.ui.screens.cloud.security.BiometricRefreshBridge
 import nopalito.app.ui.screens.cloud.security.BiometricSessionManager
 import nopalito.app.ui.screens.cloud.security.BiometricSessionRefresher
@@ -205,10 +206,13 @@ class CloudRepository(private val context: Context) {
     }
 
     // Plain client for fetching generated QR files from the public CDN URL.
+    // Carries the app identity too: the CDN edge logs get the same
+    // NopalitoScan/<version> signature as every backend request.
     private val qrImageClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(40, TimeUnit.SECONDS)
+            .addInterceptor(UserAgentInterceptor())
             .build()
     }
 
