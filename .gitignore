@@ -41,3 +41,7 @@ app/google-services.json
 output-metadata.json
 *.aab
 strix_runs
+*.jks
+*.keystore
+keystore.properties
+app/release.keystore

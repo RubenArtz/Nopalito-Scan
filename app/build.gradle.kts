@@ -71,8 +71,8 @@ android {
         // https://ai.google.dev/edge/litert/android/index
         minSdk = 26
         targetSdk = 36
-        versionCode = 43
-        versionName = "1.0.21"
+        versionCode = 46
+        versionName = "1.0.23"
 
         // Fingerprint current working-tree implementation, including uncommitted capture fixes.
         // Gradle tracks these text inputs; changing an implementation invalidates the recipe identity.
@@ -132,20 +132,26 @@ android {
         }
     }
 
+    // Release signing works both locally (-PRELEASE_*=...) and in CI (env RELEASE_*=...).
+    // No secrets are hardcoded: values come only from Gradle properties or environment.
+    fun releaseProp(name: String): String? =
+        (project.findProperty(name) as String?)?.takeIf { it.isNotBlank() }
+            ?: System.getenv(name)?.takeIf { it.isNotBlank() }
+
     val hasSigning = listOf(
         "RELEASE_STORE_FILE",
         "RELEASE_STORE_PASSWORD",
         "RELEASE_KEY_ALIAS",
         "RELEASE_KEY_PASSWORD"
-    ).all { project.hasProperty(it) }
+    ).all { releaseProp(it) != null }
 
     signingConfigs {
         if (hasSigning) {
             create("release") {
-                storeFile = file(project.property("RELEASE_STORE_FILE") as String)
-                storePassword = project.property("RELEASE_STORE_PASSWORD") as String
-                keyAlias = project.property("RELEASE_KEY_ALIAS") as String
-                keyPassword = project.property("RELEASE_KEY_PASSWORD") as String
+                storeFile = file(releaseProp("RELEASE_STORE_FILE")!!)
+                storePassword = releaseProp("RELEASE_STORE_PASSWORD")
+                keyAlias = releaseProp("RELEASE_KEY_ALIAS")
+                keyPassword = releaseProp("RELEASE_KEY_PASSWORD")
             }
         }
     }
