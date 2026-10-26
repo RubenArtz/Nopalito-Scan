@@ -69,96 +69,96 @@ import retrofit2.http.Query
 import retrofit2.http.Streaming
 
 interface AuthApi {
-    @POST("api/auth/register")
+    @POST(ApiEndpoints.AUTH_REGISTER)
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
-    @POST("api/auth/register/verify-code")
+    @POST(ApiEndpoints.AUTH_REGISTER_VERIFY_CODE)
     suspend fun registerVerifyCode(
         @Body request: VerifyCodeRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/login/password")
+    @POST(ApiEndpoints.AUTH_LOGIN_PASSWORD)
     suspend fun loginWithPassword(
         @Body request: LoginPasswordRequest
     ): Response<ApiResponse<LoginPasswordResponse>>
 
-    @POST("api/auth/login/verify-code")
+    @POST(ApiEndpoints.AUTH_LOGIN_VERIFY_CODE)
     suspend fun loginVerifyCode(
         @Body request: VerifyCodeRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/resend-code")
+    @POST(ApiEndpoints.AUTH_RESEND_CODE)
     suspend fun resendCode(
         @Body request: AuthCodeRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
     // Password flows
 
-    @POST("api/auth/password/forgot")
+    @POST(ApiEndpoints.AUTH_PASSWORD_FORGOT)
     suspend fun forgotPassword(
         @Body request: AuthCodeRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
-    @POST("api/auth/password/reset")
+    @POST(ApiEndpoints.AUTH_PASSWORD_RESET)
     suspend fun resetPassword(
         @Body request: NewPasswordWithCodeRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/password/set-code")
+    @POST(ApiEndpoints.AUTH_PASSWORD_SET_CODE)
     suspend fun setPasswordCode(
         @Body request: AuthCodeRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
-    @POST("api/auth/password/set")
+    @POST(ApiEndpoints.AUTH_PASSWORD_SET)
     suspend fun setPassword(
         @Body request: NewPasswordWithCodeRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/refresh")
+    @POST(ApiEndpoints.AUTH_REFRESH)
     suspend fun refreshToken(
         @Body request: RefreshRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/google")
+    @POST(ApiEndpoints.AUTH_GOOGLE)
     suspend fun googleAuth(
         @Body request: nopalito.app.ui.screens.cloud.model.GoogleAuthRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/auth/session-recovery/request")
+    @POST(ApiEndpoints.AUTH_SESSION_RECOVERY_REQUEST)
     suspend fun requestSessionRecovery(
         @Body request: nopalito.app.ui.screens.cloud.model.SessionRecoveryRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
-    @POST("api/auth/session-recovery/verify")
+    @POST(ApiEndpoints.AUTH_SESSION_RECOVERY_VERIFY)
     suspend fun verifySessionRecovery(
         @Body request: nopalito.app.ui.screens.cloud.model.SessionRecoveryVerifyRequest
     ): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.SessionRecoveryData>>
 
-    @GET("api/auth/me")
+    @GET(ApiEndpoints.AUTH_ME)
     suspend fun getMe(): Response<ApiResponse<MeResponseData>>
 
-    @POST("api/auth/logout")
+    @POST(ApiEndpoints.AUTH_LOGOUT)
     suspend fun logout(
         @Body request: RefreshRequest
     ): Response<ApiResponse<Unit>>
 
     /** Sid-based logout — authenticated by Bearer JWT, body optional/ignored. */
-    @POST("api/auth/logout")
+    @POST(ApiEndpoints.AUTH_LOGOUT)
     suspend fun logoutSid(): Response<ApiResponse<Unit>>
 
-    @POST("api/account/request-email-change")
+    @POST(ApiEndpoints.ACCOUNT_REQUEST_EMAIL_CHANGE)
     suspend fun requestEmailChange(
         @Body request: EmailChangeRequest
     ): Response<ApiResponse<AuthCodeResponseData>>
 
-    @POST("api/account/confirm-email-change")
+    @POST(ApiEndpoints.ACCOUNT_CONFIRM_EMAIL_CHANGE)
     suspend fun confirmEmailChange(
         @Body request: ConfirmEmailChangeRequest
     ): Response<ApiResponse<TokenData>>
 
-    @POST("api/account/link-google")
+    @POST(ApiEndpoints.ACCOUNT_LINK_GOOGLE)
     suspend fun linkGoogle(
         @Body request: nopalito.app.ui.screens.cloud.model.LinkGoogleRequest
     ): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.LinkGoogleResponse>>
@@ -166,13 +166,13 @@ interface AuthApi {
 
 /** Server-authoritative storage usage (the client only displays it). */
 interface StorageApi {
-    @GET("api/storage/usage")
+    @GET(ApiEndpoints.STORAGE_USAGE)
     suspend fun getUsage(): Response<ApiResponse<StorageUsage>>
 }
 
 interface FileApi {
     @Multipart
-    @POST("api/files/upload")
+    @POST(ApiEndpoints.FILES_UPLOAD)
     suspend fun uploadFile(
         @Part file: MultipartBody.Part,
         @Part("category") category: RequestBody? = null,
@@ -187,12 +187,12 @@ interface FileApi {
     ): Response<ApiResponse<FileUploadResponse>>
 
     /** Creates the root row (folder) of a multiple export. */
-    @POST("api/files/folder")
+    @POST(ApiEndpoints.FILES_FOLDER)
     suspend fun createFolderGroup(
         @Body body: CreateFolderRequest
     ): Response<ApiResponse<FileUploadResponse>>
 
-    @GET("api/files")
+    @GET(ApiEndpoints.FILES_LIST)
     suspend fun listFiles(
         @Query("category") category: String? = null,
         @Query("page") page: Int = 1,
@@ -206,30 +206,30 @@ interface FileApi {
 
     /** Bulk ZIP download of ACTIVE items (folders expand to their subtree). */
     @Streaming
-    @GET("api/files/bulk/download")
+    @GET(ApiEndpoints.FILES_BULK_DOWNLOAD)
     suspend fun downloadBulkZip(
         @Query("ids") ids: String
     ): Response<ResponseBody>
 
     @Streaming
-    @GET("api/files/{id}/download")
+    @GET(ApiEndpoints.FILES_DOWNLOAD)
     suspend fun downloadFile(
         @Path("id") fileId: String
     ): Response<ResponseBody>
 
-    @DELETE("api/files/{id}")
+    @DELETE(ApiEndpoints.FILES_ITEM)
     suspend fun deleteFile(
         @Path("id") fileId: String
     ): Response<ApiResponse<Unit>>
 
-    @PATCH("api/files/{id}")
+    @PATCH(ApiEndpoints.FILES_UPDATE)
     suspend fun updateFile(
         @Path("id") fileId: String,
         @Body request: UpdateFileRequest
     ): Response<ApiResponse<FileUploadResponse>>
 
     // Trash
-    @GET("api/files/trash")
+    @GET(ApiEndpoints.FILES_TRASH_LIST)
     suspend fun listDeletedFiles(
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 50,
@@ -237,12 +237,12 @@ interface FileApi {
         @Query("parentId") parentId: String? = null
     ): Response<ApiResponse<FileListData>>
 
-    @POST("api/files/{id}/restore")
+    @POST(ApiEndpoints.FILES_RESTORE)
     suspend fun restoreFile(
         @Path("id") fileId: String
     ): Response<ApiResponse<FileUploadResponse>>
 
-    @DELETE("api/files/{id}/permanent")
+    @DELETE(ApiEndpoints.FILES_PERMANENT)
     suspend fun permanentlyDeleteFile(
         @Path("id") fileId: String
     ): Response<ApiResponse<Unit>>
@@ -251,18 +251,18 @@ interface FileApi {
 /** Server-side document → PDF conversion (LibreOffice backend jobs). */
 interface LibreOfficeApi {
     @Multipart
-    @POST("api/libreoffice/convert/pdf")
+    @POST(ApiEndpoints.LIBREOFFICE_CONVERT)
     suspend fun convertToPdf(
         @Part files: List<MultipartBody.Part>
     ): Response<ApiResponse<ConversionJobData>>
 
-    @GET("api/libreoffice/jobs/{jobId}")
+    @GET(ApiEndpoints.LIBREOFFICE_JOB)
     suspend fun getJob(
         @Path("jobId") jobId: String
     ): Response<ApiResponse<ConversionJobData>>
 
     @Streaming
-    @GET("api/libreoffice/jobs/{jobId}/download/{fileId}")
+    @GET(ApiEndpoints.LIBREOFFICE_DOWNLOAD)
     suspend fun downloadConvertedFile(
         @Path("jobId") jobId: String,
         @Path("fileId") fileId: String
@@ -275,7 +275,7 @@ interface LibreOfficeApi {
      */
     @Multipart
     @Streaming
-    @POST("api/libreoffice/preview/pdf")
+    @POST(ApiEndpoints.LIBREOFFICE_PREVIEW)
     suspend fun previewToPdf(
         @Part file: MultipartBody.Part
     ): Response<ResponseBody>
@@ -283,37 +283,37 @@ interface LibreOfficeApi {
 
 /** Highly customizable QR generation (Python subprocess backend). */
 interface QrApi {
-    @POST("api/qr/generate")
+    @POST(ApiEndpoints.QR_GENERATE)
     suspend fun generate(
         @Body request: QrGenerateRequest
     ): Response<ApiResponse<QrGenerateData>>
 
-    @GET("api/qr/styles")
+    @GET(ApiEndpoints.QR_STYLES)
     suspend fun listStyles(): Response<ApiResponse<QrStylesData>>
 }
 
 /** Cloud scan history (QR/barcode scans pushed from the device). */
 interface ScanApi {
     @Multipart
-    @POST("api/scans")
+    @POST(ApiEndpoints.SCANS_PUSH)
     suspend fun pushScans(
         @Part("metadata") metadata: RequestBody,
         @Part images: List<MultipartBody.Part> = emptyList()
     ): Response<ApiResponse<QrScansData>>
 
-    @GET("api/scans")
+    @GET(ApiEndpoints.SCANS_LIST)
     suspend fun listScans(): Response<ApiResponse<QrScansData>>
 
-    @GET("api/scans/trash")
+    @GET(ApiEndpoints.SCANS_TRASH)
     suspend fun listTrash(): Response<ApiResponse<QrScansData>>
 
-    @POST("api/scans/{id}/restore")
+    @POST(ApiEndpoints.SCANS_RESTORE)
     suspend fun restoreScan(@Path("id") id: String): Response<ApiResponse<Unit>>
 
-    @DELETE("api/scans/{id}/permanent")
+    @DELETE(ApiEndpoints.SCANS_PERMANENT)
     suspend fun permanentlyDeleteScan(@Path("id") id: String): Response<ApiResponse<Unit>>
 
-    @DELETE("api/scans/{id}")
+    @DELETE(ApiEndpoints.SCANS_DELETE)
     suspend fun deleteScan(@Path("id") id: String): Response<ApiResponse<Unit>>
 }
 
@@ -323,7 +323,7 @@ interface ScanApi {
  * The app never contacts Firebase or holds a Firebase secret.
  */
 interface DeviceApi {
-    @POST("api/devices/fcm-token")
+    @POST(ApiEndpoints.DEVICES_FCM_TOKEN)
     suspend fun registerFcmToken(
         @Body request: RegisterFcmTokenRequest
     ): Response<ApiResponse<Unit>>
@@ -332,7 +332,7 @@ interface DeviceApi {
 
 /** Cloud maintenance status (public endpoint, no auth required). */
 interface MaintenanceApi {
-    @GET("api/maintenance/status")
+    @GET(ApiEndpoints.MAINTENANCE_STATUS)
     suspend fun getMaintenanceStatus(): Response<ApiResponse<MaintenanceStatus>>
 }
 
@@ -343,15 +343,15 @@ interface MaintenanceApi {
  * sync with the app.
  */
 interface UserPreferencesApi {
-    @GET("api/user/preferences")
+    @GET(ApiEndpoints.USER_PREFERENCES)
     suspend fun getPreferences(): Response<ApiResponse<UserPreferencesData>>
 
-    @PUT("api/user/preferences/language")
+    @PUT(ApiEndpoints.USER_LANGUAGE)
     suspend fun updateLanguage(
         @Body request: UpdateLanguageRequest
     ): Response<ApiResponse<Unit>>
 
-    @PUT("api/user/preferences/login-code")
+    @PUT(ApiEndpoints.USER_LOGIN_CODE)
     suspend fun updateLoginCodePreference(
         @Body request: UpdateLoginCodeRequest
     ): Response<ApiResponse<UserPreferencesData>>
@@ -361,13 +361,13 @@ interface UserPreferencesApi {
  * Billing (Google Play) — prices are never served; Android uses ProductDetails.formattedPrice only.
  */
 interface BillingApi {
-    @GET("api/billing/plans")
+    @GET(ApiEndpoints.BILLING_PLANS)
     suspend fun getPlans(): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.BillingPlansData>>
 
-    @GET("api/billing/status")
+    @GET(ApiEndpoints.BILLING_STATUS)
     suspend fun getStatus(): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.BillingStatusData>>
 
-    @POST("api/billing/google/verify")
+    @POST(ApiEndpoints.BILLING_GOOGLE_VERIFY)
     suspend fun verifyGooglePlay(
         @Body request: nopalito.app.ui.screens.cloud.model.GooglePlayVerifyRequest
     ): Response<ApiResponse<Map<String, Any>>>
@@ -377,16 +377,16 @@ interface BillingApi {
  * Profile avatar (separate subsystem, public URLs with ?v= version).
  */
 interface AvatarApi {
-    @GET("api/profile/avatar")
+    @GET(ApiEndpoints.AVATAR)
     suspend fun getAvatar(): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.AvatarResponse>>
 
     @Multipart
-    @PUT("api/profile/avatar")
+    @PUT(ApiEndpoints.AVATAR)
     suspend fun uploadAvatar(
         @Part avatar: MultipartBody.Part
     ): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.AvatarResponse>>
 
-    @DELETE("api/profile/avatar")
+    @DELETE(ApiEndpoints.AVATAR)
     suspend fun deleteAvatar(): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.AvatarResponse>>
 }
 
@@ -394,10 +394,10 @@ interface AvatarApi {
  * Active sessions (devices) — JWT protected.
  */
 interface SessionApi {
-    @GET("api/sessions")
+    @GET(ApiEndpoints.SESSIONS_LIST)
     suspend fun listSessions(): Response<ApiResponse<nopalito.app.ui.screens.cloud.model.SessionsData>>
 
-    @POST("api/sessions/{id}/revoke")
+    @POST(ApiEndpoints.SESSIONS_REVOKE)
     suspend fun revokeSession(@Path("id") sessionId: String): Response<ApiResponse<Map<String, Any>>>
 }
 
@@ -408,23 +408,23 @@ interface SessionApi {
  */
 interface CloudLinkApi {
     /** Approve the pairing shown on the PC by scanning its QR code. */
-    @POST("api/cloud-link/intents/approve")
+    @POST(ApiEndpoints.CLOUD_LINK_APPROVE)
     suspend fun approveQr(
         @Body request: ApproveQrRequest
     ): Response<ApiResponse<Unit>>
 
     /** Approve the pairing by typing the 6-digit PIN shown on the PC. */
-    @POST("api/cloud-link/intents/approve-by-pin")
+    @POST(ApiEndpoints.CLOUD_LINK_APPROVE_BY_PIN)
     suspend fun approveByPin(
         @Body request: ApproveByPinRequest
     ): Response<ApiResponse<Unit>>
 
     /** Browsers currently linked to this account. */
-    @GET("api/cloud-link/sessions")
+    @GET(ApiEndpoints.CLOUD_LINK_SESSIONS)
     suspend fun listSessions(): Response<ApiResponse<CloudLinkSessionsData>>
 
     /** Unlink one browser remotely. */
-    @DELETE("api/cloud-link/sessions/{id}")
+    @DELETE(ApiEndpoints.CLOUD_LINK_SESSION)
     suspend fun revokeSession(
         @Path("id") sessionId: String
     ): Response<ApiResponse<Unit>>

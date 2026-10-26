@@ -45,13 +45,15 @@ object EntitlementInvalidationBus {
     fun notifyIfRelevant(code: String?, path: String?) {
         if (code == null || path == null) return
         val normalized = path.lowercase()
-        // Exclude billing/auth/admin endpoints to avoid recursion
+        // Exclude billing/auth/admin endpoints to avoid recursion. Suffixes are
+        // version-agnostic on purpose: they match legacy (/api/...) and every
+        // explicit endpoint version (/api/vN/...).
         val excluded = listOf(
-            "/api/billing/status",
-            "/api/billing/google/verify",
-            "/api/storage/usage",
-            "/api/auth/refresh",
-            "/api/admin"
+            "/billing/status",
+            "/billing/google/verify",
+            "/storage/usage",
+            "/auth/refresh",
+            "/admin"
         ).any { normalized.contains(it) }
         if (excluded) return
         val allowed = setOf(

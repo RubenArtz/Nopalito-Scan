@@ -196,9 +196,10 @@ class AuthInterceptor(
         if (response.code == 401 && canRefresh) {
             response.close()
 
-            // Avoid infinite loop on refresh endpoint
+            // Avoid infinite loop on refresh endpoint (legacy /api/... and
+            // versioned /api/vN/... paths). Matches any explicit version.
             val path = originalRequest.url.encodedPath
-            if (path.contains("/api/auth/refresh")) {
+            if (path.contains("/auth/refresh")) {
                 forceLogoutAndClear("Refresh token invalid or expired")
             }
 

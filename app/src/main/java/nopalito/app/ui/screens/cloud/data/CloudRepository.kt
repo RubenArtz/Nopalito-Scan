@@ -67,8 +67,8 @@ import nopalito.app.ui.screens.cloud.network.QrApi
 import nopalito.app.ui.screens.cloud.network.ScanApi
 import nopalito.app.ui.screens.cloud.network.SessionApi
 import nopalito.app.ui.screens.cloud.network.StorageApi
-import nopalito.app.ui.screens.cloud.network.UserPreferencesApi
 import nopalito.app.ui.screens.cloud.network.UserAgentInterceptor
+import nopalito.app.ui.screens.cloud.network.UserPreferencesApi
 import nopalito.app.ui.screens.cloud.security.BiometricRefreshBridge
 import nopalito.app.ui.screens.cloud.security.BiometricSessionManager
 import nopalito.app.ui.screens.cloud.security.BiometricSessionRefresher
