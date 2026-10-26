@@ -113,7 +113,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.ZoomableBitmapDialog
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.PickedFile
 import nopalito.app.ui.screens.tools.queryDisplayName
@@ -184,7 +184,7 @@ fun ReorderScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.tools_reorder_pdf),
             subtitle = stringResource(R.string.tools_reorder_pdf_desc),
             onBack = onBack,

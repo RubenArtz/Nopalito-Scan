@@ -123,7 +123,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.ZoomableBitmapDialog
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.PickedFile
@@ -201,7 +201,7 @@ fun DeletePagesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.tools_delete_pages),
             subtitle = stringResource(R.string.tools_delete_pages_desc),
             onBack = onBack,

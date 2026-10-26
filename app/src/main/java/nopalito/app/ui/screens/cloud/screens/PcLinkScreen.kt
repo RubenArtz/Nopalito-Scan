@@ -93,7 +93,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -106,6 +105,7 @@ import androidx.core.net.toUri
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nopalito.app.R
+import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.screens.cloud.data.PcLinkErrorStrings
 import nopalito.app.ui.screens.cloud.model.CloudLinkSession
 import nopalito.app.ui.screens.cloud.model.PcLinkState
@@ -180,55 +180,51 @@ fun PcLinkScreen(
                 .padding(scaffoldPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Cloud hero header — identical to CloudHomeScreen (green + purple gradient)
+            // Cloud hero header — purple wave (same language as files/trash)
             // Edge-to-edge: background draws behind status bar / camera cutout
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    )
-                    .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+            PurpleWaveBackground(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
-                    IconButton(onClick = onBack) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.22f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.22f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.cloud_link_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = stringResource(R.string.cloud_link_instructions_detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.9f)
                             )
                         }
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.cloud_link_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = stringResource(R.string.cloud_link_instructions_detail),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
                     }
                 }
             }

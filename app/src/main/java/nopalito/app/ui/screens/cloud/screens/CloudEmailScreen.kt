@@ -204,7 +204,7 @@ fun CloudEmailScreen(
         }
     }
 
-    CloudAuthScaffold(onBack = onBack) {
+    CloudAuthScaffold(onBack = onBack, waveBackground = true) {
         CloudAuthIcon()
 
         Spacer(Modifier.height(20.dp))

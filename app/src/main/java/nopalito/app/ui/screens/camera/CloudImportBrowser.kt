@@ -30,14 +30,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -73,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -90,6 +95,7 @@ import nopalito.app.R
 import nopalito.app.i18n.AppLocaleOverride
 import nopalito.app.i18n.stringFor
 import nopalito.app.ui.Navigation
+import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.screens.cloud.data.CloudSessionManager
 import nopalito.app.ui.screens.cloud.data.CloudSessionState
 import nopalito.app.ui.screens.cloud.model.CloudFile
@@ -220,41 +226,52 @@ internal fun CloudImportBrowser(
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            PurpleWaveBackground(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = {
-                    if (listState.folderStack.isNotEmpty() && importingId == null) {
-                        listViewModel.navigateToLevel(listState.folderStack.size - 2)
-                    } else {
-                        closeSafely()
-                    }
-                }) {
-                    Icon(
-                        imageVector = if (listState.folderStack.isEmpty()) {
-                            Icons.Filled.Close
-                        } else {
-                            Icons.AutoMirrored.Filled.ArrowBack
-                        },
-                        contentDescription = null,
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.import_source_cloud),
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(
-                    onClick = { listViewModel.refresh() },
-                    enabled = importingId == null,
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Filled.Refresh, contentDescription = null)
+                    IconButton(onClick = {
+                        if (listState.folderStack.isNotEmpty() && importingId == null) {
+                            listViewModel.navigateToLevel(listState.folderStack.size - 2)
+                        } else {
+                            closeSafely()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = if (listState.folderStack.isEmpty()) {
+                                Icons.Filled.Close
+                            } else {
+                                Icons.AutoMirrored.Filled.ArrowBack
+                            },
+                            contentDescription = null,
+                            tint = Color.White,
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.import_source_cloud),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = { listViewModel.refresh() },
+                        enabled = importingId == null,
+                    ) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = null,
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
 

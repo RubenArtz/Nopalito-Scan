@@ -58,7 +58,7 @@ fun SessionRecoveryScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    CloudAuthScaffold(onBack = onBack) {
+    CloudAuthScaffold(onBack = onBack, waveBackground = true) {
         CloudAuthIcon()
 
         Spacer(Modifier.height(20.dp))

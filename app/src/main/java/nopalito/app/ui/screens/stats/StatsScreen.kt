@@ -82,7 +82,7 @@ import nopalito.app.data.stats.StatsPeriod
 import nopalito.app.data.stats.StatsSummary
 import nopalito.app.data.stats.ToolCountRow
 import nopalito.app.data.stats.formatWithGrouping
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -114,7 +114,7 @@ fun StatsScreen(
                 daily.any { it.scans > 0 || it.exports > 0 || it.shares > 0 || it.tools > 0 || it.opens > 0 || it.photos > 0 }
 
     Column(modifier = modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.stats_title),
             subtitle = periodSubtitle(summary, period),
             onBack = onBack

@@ -81,7 +81,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.model.QrScan
 import nopalito.app.ui.screens.cloud.viewmodel.CloudQrTrashViewModel
@@ -118,7 +118,7 @@ fun CloudQrTrashScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (inSelection) {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.cloud_n_selected, state.selectedIds.size),
                 onBack = viewModel::clearSelection,
                 actions = {
@@ -132,7 +132,7 @@ fun CloudQrTrashScreen(
                 },
             )
         } else {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.qr_trash_title),
                 subtitle = stringResource(R.string.qr_trash_subtitle),
                 onBack = onBack,

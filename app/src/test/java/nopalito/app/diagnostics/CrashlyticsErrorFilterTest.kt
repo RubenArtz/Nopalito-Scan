@@ -101,6 +101,43 @@ class CrashlyticsErrorFilterTest {
     }
 
     @Test
+    fun `filters bare TLS handshake failures`() {
+        val decision = CrashlyticsErrorFilter.shouldReport(
+            javax.net.ssl.SSLHandshakeException("SSL handshake aborted")
+        )
+        assertFalse(decision.report)
+    }
+
+    @Test
+    fun `filters wrapped trust-anchor failures from startup language sync`() {
+        // Real report shape: RuntimeException -> SSLHandshakeException ->
+        // CertPathValidatorException ("Trust anchor for certification path
+        // not found"). Environmental (proxy / captive portal / clock /
+        // chain), never an app bug: analytics keeps the counter, Crashlytics
+        // stays quiet.
+        val trustFailure = java.security.cert.CertPathValidatorException(
+            "Trust anchor for certification path not found."
+        )
+        val tlsFailure = javax.net.ssl.SSLHandshakeException("Handshake failed")
+        tlsFailure.initCause(trustFailure)
+        val wrapped = RuntimeException(
+            "Startup language sync failed for es-419",
+            tlsFailure
+        )
+        val decision = CrashlyticsErrorFilter.shouldReport(wrapped)
+        assertFalse(decision.report)
+    }
+
+    @Test
+    fun `tls failures are not session flow signals`() {
+        assertFalse(
+            CrashlyticsErrorFilter.isSessionFlowSignal(
+                javax.net.ssl.SSLHandshakeException("Handshake failed")
+            )
+        )
+    }
+
+    @Test
     fun `filters obfuscated refresh failures by message`() {
         val decision = CrashlyticsErrorFilter.shouldReport(
             p94("Refresh already failed in another thread")

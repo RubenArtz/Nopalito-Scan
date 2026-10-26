@@ -1,4 +1,4 @@
-﻿/*
+/*
  *
  * Copyright 2025-2026 The FairScan authors
  * Copyright 2026 Ruben Matias
@@ -129,7 +129,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import nopalito.app.R
 import nopalito.app.ui.Navigation
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.TopActionButtons
 import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.export.formatFileSize
@@ -159,7 +159,7 @@ fun ToolsScreen(
     // returns to the same scroll position instead of jumping to the top.
     val toolsScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.tools),
             subtitle = stringResource(R.string.tools_subtitle),
             onBack = { navigation.back() },
@@ -742,7 +742,7 @@ fun ToolCompressScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(tool.titleRes),
             subtitle = stringResource(R.string.tools_compress_desc),
             onBack = { navigation.back() },

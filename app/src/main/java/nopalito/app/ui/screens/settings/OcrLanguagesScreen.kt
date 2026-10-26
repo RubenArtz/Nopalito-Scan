@@ -75,7 +75,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
 import nopalito.app.R
 import nopalito.app.data.OcrLanguage
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 
 enum class LanguageState {
     ACTIVE,
@@ -94,7 +94,7 @@ fun OcrLanguagesScreen(
     BackHandler { onBack() }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.settings_ocr_languages),
             subtitle = stringResource(R.string.settings_ocr_languages_subtitle),
             onBack = onBack,

@@ -120,6 +120,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import kotlinx.coroutines.launch
 import nopalito.app.BuildConfig
 import nopalito.app.R
+import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.screens.cloud.data.GoogleSignInHelper
 import nopalito.app.ui.screens.cloud.model.StorageUsage
 import nopalito.app.ui.screens.cloud.security.AndroidBiometricPromptController
@@ -226,63 +227,58 @@ fun CloudStorageScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                        MaterialTheme.colorScheme.background,
-                    )
-                )
-            )
+        modifier = Modifier.fillMaxSize()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                // Top + horizontal only: the IME bottom inset must never pad
-                // this header, otherwise it grows when the keyboard opens and
-                // pushes/collapses everything below it.
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        PurpleWaveBackground(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Surface(
-                onClick = onBack,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                shadowElevation = 2.dp,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Top + horizontal only: the IME bottom inset must never pad
+                    // this header, otherwise it grows when the keyboard opens and
+                    // pushes/collapses everything below it.
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    modifier = Modifier.padding(12.dp),
-                    tint = Color.White
-                )
-            }
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.cloud_storage_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = stringResource(R.string.cloud_storage_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (state.usage != null) {
-                IconButton(onClick = viewModel::refresh, enabled = !state.isLoading) {
+                Surface(
+                    onClick = onBack,
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.22f),
+                    shadowElevation = 2.dp,
+                ) {
                     Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.cloud_retry),
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.padding(12.dp),
                         tint = Color.White
                     )
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.cloud_storage_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = stringResource(R.string.cloud_storage_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
+                if (state.usage != null) {
+                    IconButton(onClick = viewModel::refresh, enabled = !state.isLoading) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.cloud_retry),
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

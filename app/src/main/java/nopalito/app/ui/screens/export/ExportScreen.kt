@@ -138,8 +138,8 @@ import nopalito.app.THUMBNAIL_SIZE_DP
 import nopalito.app.domain.ExportQuality
 import nopalito.app.domain.ExportQuality.MAX_COMPRESSION
 import nopalito.app.ui.Navigation
-import nopalito.app.ui.components.GradientHeroHeader
 import nopalito.app.ui.components.NewDocumentDialog
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.TopActionButtons
 import nopalito.app.ui.components.isLandscape
 import nopalito.app.ui.components.rememberHapticManager
@@ -279,7 +279,7 @@ fun ExportScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.export_as, uiState.format.displayName),
             subtitle = stringResource(R.string.export_subtitle),
             onBack = navigation.back,
@@ -1650,7 +1650,7 @@ private fun ErrorBar(error: ExportError) {
                             // overloads), so use the method form. Single-arg variant is
                             // deprecated on API 33+ but still functional.
                             @Suppress("DEPRECATION")
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Export error", text))
+                            (clipboard.primaryClip = ClipData.newPlainText("Export error", text))
                         },
                     ) {
                         Icon(

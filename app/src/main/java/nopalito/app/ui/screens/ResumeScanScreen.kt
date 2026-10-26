@@ -75,6 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import nopalito.app.R
 import nopalito.app.ui.components.HeroHeaderLayout
+import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.components.isLandscape
 import nopalito.app.ui.components.pageCountText
 import nopalito.app.ui.screens.document.DocumentUiState
@@ -91,27 +92,29 @@ fun ResumeScanScreen(
     val isLandscape = isLandscape(LocalConfiguration.current)
 
     Column(modifier = Modifier.fillMaxSize()) {
-        HeroHeaderLayout(
-            onBack = null,
-            background = Brush.linearGradient(
-                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
-            ),
-            leading = {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.scan_current),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = pageCountText(pageCount),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.85f)
-                    )
+        PurpleWaveBackground(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            HeroHeaderLayout(
+                onBack = null,
+                background = null,
+                leading = {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.scan_current),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = pageCountText(pageCount),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
                 }
-            }
-        )
+            )
+        }
 
         Column(
             modifier = Modifier

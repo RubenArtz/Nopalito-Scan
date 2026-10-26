@@ -104,7 +104,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -126,7 +125,8 @@ import nopalito.app.ui.DocumentPagesPreview
 import nopalito.app.ui.ZoomableBitmapDialog
 import nopalito.app.ui.components.AnimatedCountdownSnackbar
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveBackground
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.decodeDocxPages
 import nopalito.app.ui.isEncryptedOle2
 import nopalito.app.ui.isPdfEncrypted
@@ -196,7 +196,7 @@ fun CloudTrashScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) { data -> AnimatedCountdownSnackbar(data) } },
         topBar = {
             if (inSelection) {
-                GradientHeroHeader(
+                PurpleWaveHeader(
                     title = stringResource(R.string.cloud_n_selected, state.selectedIds.size),
                     onBack = { viewModel.clearSelection() },
                     actions = {
@@ -1039,47 +1039,43 @@ private fun TrashHeader(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary,
-                    )
-                )
-            )
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+    PurpleWaveBackground(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         ) {
-            TrashHeaderAction(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                description = stringResource(R.string.back),
-                onClick = onBack,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.cloud_trash_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TrashHeaderAction(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    description = stringResource(R.string.back),
+                    onClick = onBack,
                 )
-                Text(
-                    text = stringResource(R.string.cloud_trash_subtitle),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.85f),
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.cloud_trash_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    Text(
+                        text = stringResource(R.string.cloud_trash_subtitle),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
+                TrashHeaderAction(
+                    icon = Icons.Default.Refresh,
+                    description = stringResource(R.string.cloud_refresh),
+                    onClick = onRefresh,
                 )
             }
-            TrashHeaderAction(
-                icon = Icons.Default.Refresh,
-                description = stringResource(R.string.cloud_refresh),
-                onClick = onRefresh,
-            )
         }
     }
 }

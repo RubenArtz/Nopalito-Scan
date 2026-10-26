@@ -115,7 +115,7 @@ import nopalito.app.ui.DocPagePreview
 import nopalito.app.ui.DocumentPagesPreview
 import nopalito.app.ui.components.FileTypeBadge
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.decodeDocxMedia
 import nopalito.app.ui.decodeDocxPages
@@ -202,7 +202,7 @@ fun HistoryScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (selectionMode) {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.history_selected_count, selectedIds.size),
                 onBack = { exitSelection() },
                 actions = {
@@ -230,7 +230,7 @@ fun HistoryScreen(
                 },
             )
         } else {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.export_history),
                 subtitle = stringResource(R.string.history_subtitle),
                 onBack = onBack,
@@ -797,7 +797,7 @@ private fun HistoryFolderDetail(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = item.documentName,
             subtitle = stringResource(
                 R.string.history_folder_info,
@@ -1171,7 +1171,7 @@ private fun HistoryFilePreview(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = title,
             onBack = onDismiss,
         )

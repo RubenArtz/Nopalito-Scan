@@ -115,6 +115,23 @@ object CrashlyticsErrorFilter {
         if (name in backendErrorNames) {
             return Decision(false, "backend_business_error")
         }
+        // Transport-level failures anywhere in the cause chain (a TLS trust
+        // failure typically arrives wrapped: RuntimeException ->
+        // SSLHandshakeException -> CertPathValidatorException). Proxy MITMs,
+        // captive portals, wrong device clocks and incomplete server chains
+        // all surface here: environmental, non-actionable per device, and the
+        // affected syncs are best-effort background work. Analytics keeps a
+        // counter; Crashlytics stays quiet.
+        if (throwable is javax.net.ssl.SSLException ||
+            throwable is java.security.cert.CertificateException ||
+            throwable is UnknownHostException ||
+            throwable is ConnectException ||
+            throwable is NoRouteToHostException ||
+            throwable is SocketException ||
+            throwable is InterruptedIOException
+        ) {
+            return Decision(false, "network_transient")
+        }
         if (throwable is java.io.IOException &&
             sessionFlowMessagePrefixes.any { prefix ->
                 throwable.message?.startsWith(prefix) == true

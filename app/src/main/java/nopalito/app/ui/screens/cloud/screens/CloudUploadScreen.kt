@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import nopalito.app.R
+import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.screens.cloud.viewmodel.CloudUploadViewModel
 import nopalito.app.ui.screens.cloud.viewmodel.SelectedFile
 
@@ -468,41 +469,37 @@ private fun fileIcon(name: String): ImageVector = when {
 
 @Composable
 private fun CloudUploadHeader(onBack: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary,
-                    )
-                )
-            )
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+    PurpleWaveBackground(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         ) {
-            UploadHeaderAction(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                description = stringResource(R.string.back),
-                onClick = onBack,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.cloud_upload_file),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                UploadHeaderAction(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    description = stringResource(R.string.back),
+                    onClick = onBack,
                 )
-                Text(
-                    text = stringResource(R.string.cloud_upload_subtitle),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.85f),
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.cloud_upload_file),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    Text(
+                        text = stringResource(R.string.cloud_upload_subtitle),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
             }
         }
     }

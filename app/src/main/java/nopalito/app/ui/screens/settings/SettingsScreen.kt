@@ -83,7 +83,7 @@ import nopalito.app.R
 import nopalito.app.data.OcrLanguage
 import nopalito.app.i18n.AppLanguage
 import nopalito.app.ui.Navigation
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.TopActionButtons
 
 @Composable
@@ -97,7 +97,7 @@ fun SettingsScreen(
 ) {
     BackHandler { navigation.back() }
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.settings),
             subtitle = stringResource(R.string.settings_subtitle),
             onBack = navigation.back,

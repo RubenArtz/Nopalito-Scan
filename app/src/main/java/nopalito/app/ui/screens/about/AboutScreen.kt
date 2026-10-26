@@ -84,7 +84,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import nopalito.app.BuildConfig
 import nopalito.app.R
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 
 /**
  * About screen: app info, developer, contact, support, license and libraries,
@@ -105,7 +105,7 @@ fun AboutScreen(
     BackHandler { onBack() }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.about),
             onBack = onBack,
         )

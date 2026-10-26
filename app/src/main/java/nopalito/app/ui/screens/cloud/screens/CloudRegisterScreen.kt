@@ -74,7 +74,7 @@ fun CloudRegisterScreen(
         }
     }
 
-    CloudAuthScaffold(onBack = onBack) {
+    CloudAuthScaffold(onBack = onBack, waveBackground = true) {
         CloudAuthIcon(icon = Icons.Default.Lock)
 
         Spacer(Modifier.height(20.dp))

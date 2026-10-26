@@ -78,44 +78,57 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import nopalito.app.R
+import nopalito.app.ui.components.PurpleWaveBackground
 
 /**
- * Modern auth backdrop shared by the email login/register and OTP screens: a soft
- * gradient wash with decorative blobs, a floating top bar (back + brand) and a
- * centered rounded card for the form.
+ * Modern auth backdrop shared by the email login/register, OTP and session
+ * recovery screens: a soft gradient wash with decorative blobs (or the purple
+ * wave when [waveBackground] is true), a floating top bar (back + brand) and
+ * a centered rounded card for the form.
  */
 @Composable
 fun CloudAuthScaffold(
     onBack: () -> Unit,
+    waveBackground: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                        MaterialTheme.colorScheme.background,
+            .then(
+                if (waveBackground) Modifier
+                else Modifier.background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                            MaterialTheme.colorScheme.background,
+                        )
                     )
                 )
             )
     ) {
-        // Decorative soft blobs.
-        Box(
-            modifier = Modifier
-                .size(260.dp)
-                .align(Alignment.TopEnd)
-                .offset(x = 90.dp, y = (-70).dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .align(Alignment.BottomStart)
-                .offset(x = (-70).dp, y = 60.dp)
-                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f), CircleShape)
-        )
+        if (waveBackground) {
+            PurpleWaveBackground(modifier = Modifier.fillMaxSize()) {}
+        } else {
+            // Decorative soft blobs.
+            Box(
+                modifier = Modifier
+                    .size(260.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 90.dp, y = (-70).dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f), CircleShape)
+            )
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-70).dp, y = 60.dp)
+                    .background(
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                        CircleShape
+                    )
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -140,7 +153,8 @@ fun CloudAuthScaffold(
                 Surface(
                     onClick = onBack,
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    color = if (waveBackground) Color.White.copy(alpha = 0.22f)
+                    else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
                     shadowElevation = 2.dp,
                 ) {
                     Icon(
@@ -153,7 +167,8 @@ fun CloudAuthScaffold(
                 Text(
                     text = stringResource(R.string.cloud_brand),
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (waveBackground) Color.White
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.size(44.dp))
             }
@@ -184,13 +199,13 @@ fun CloudAuthScaffold(
             }
 
             // Footer with support email
-            CloudAuthFooter()
+            CloudAuthFooter(onWave = waveBackground)
         }
     }
 }
 
 @Composable
-private fun CloudAuthFooter() {
+private fun CloudAuthFooter(onWave: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -199,7 +214,8 @@ private fun CloudAuthFooter() {
         Text(
             text = stringResource(R.string.cloud_footer_support),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (onWave) Color.White.copy(alpha = 0.85f)
+            else MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Normal,
             maxLines = 2,

@@ -82,7 +82,7 @@ fun CloudRecoverPasswordScreen(
 
     val isForgot = state.mode == CloudRecoverMode.FORGOT
 
-    CloudAuthScaffold(onBack = onBack) {
+    CloudAuthScaffold(onBack = onBack, waveBackground = true) {
         CloudAuthIcon(icon = Icons.Default.Key)
 
         Spacer(Modifier.height(20.dp))

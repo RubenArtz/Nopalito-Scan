@@ -64,7 +64,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -79,7 +78,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveBackground
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.cloud.model.StorageUsage
 import nopalito.app.ui.screens.cloud.viewmodel.CloudFileListViewModel
 import nopalito.app.ui.screens.cloud.viewmodel.CloudHomeViewModel
@@ -154,7 +154,7 @@ fun CloudHomeScreen(
         onRefreshStorageUsage = { viewModel.refreshStorageUsage() },
         topBar = { inSelection ->
             if (inSelection) {
-                GradientHeroHeader(
+                PurpleWaveHeader(
                     title = stringResource(
                         R.string.cloud_n_selected,
                         fileListViewModel.state.collectAsState().value.selectedIds.size
@@ -215,58 +215,54 @@ private fun CloudHeroHeader(
     onLogout: () -> Unit
 ) {
     Column {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary,
-                        )
-                    )
-                )
-                // Status bar + cutout ONLY: safeDrawing also carries the IME
-                // inset, which grew the banner's bottom padding when the
-                // keyboard opened (create-folder dialog) and squeezed it.
-                .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+        PurpleWaveBackground(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Status bar + cutout ONLY: safeDrawing also carries the IME
+                    // inset, which grew the banner's bottom padding when the
+                    // keyboard opened (create-folder dialog) and squeezed it.
+                    .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
-                HeaderAction(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    description = stringResource(R.string.back),
-                    onClick = onBack,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    AvatarHeaderAction(
-                        avatarUrl = avatarUrl,
-                        description = stringResource(R.string.cloud_storage_title),
-                        onClick = onNavigateToStorage,
-                    )
-                    PcLinkHeaderAction(
-                        badge = pcLinkBadge,
-                        onClick = onNavigateToPcLink,
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     HeaderAction(
-                        icon = Icons.Default.QrCode,
-                        description = stringResource(R.string.qr_cloud_history),
-                        onClick = onNavigateToQrHistory,
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        description = stringResource(R.string.back),
+                        onClick = onBack,
                     )
-                    HeaderAction(
-                        icon = Icons.Default.Delete,
-                        description = stringResource(R.string.cloud_trash),
-                        onClick = onNavigateToTrash,
-                    )
-                    HeaderAction(
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        description = stringResource(R.string.cloud_logout),
-                        onClick = onLogout,
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        AvatarHeaderAction(
+                            avatarUrl = avatarUrl,
+                            description = stringResource(R.string.cloud_storage_title),
+                            onClick = onNavigateToStorage,
+                        )
+                        PcLinkHeaderAction(
+                            badge = pcLinkBadge,
+                            onClick = onNavigateToPcLink,
+                        )
+                        HeaderAction(
+                            icon = Icons.Default.QrCode,
+                            description = stringResource(R.string.qr_cloud_history),
+                            onClick = onNavigateToQrHistory,
+                        )
+                        HeaderAction(
+                            icon = Icons.Default.Delete,
+                            description = stringResource(R.string.cloud_trash),
+                            onClick = onNavigateToTrash,
+                        )
+                        HeaderAction(
+                            icon = Icons.AutoMirrored.Filled.Logout,
+                            description = stringResource(R.string.cloud_logout),
+                            onClick = onLogout,
+                        )
+                    }
                 }
             }
         }

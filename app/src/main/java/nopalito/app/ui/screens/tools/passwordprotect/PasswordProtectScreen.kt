@@ -98,7 +98,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.export.formatFileSize
 import nopalito.app.ui.screens.tools.BatchMode
 import nopalito.app.ui.screens.tools.OriginalFileAction
@@ -188,7 +188,7 @@ fun PasswordProtectScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.tools_protect_password),
             subtitle = stringResource(R.string.tools_protect_password_subtitle),
             onBack = onBack,

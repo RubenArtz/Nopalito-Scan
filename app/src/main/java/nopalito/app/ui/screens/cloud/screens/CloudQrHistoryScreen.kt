@@ -86,7 +86,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.model.QrScan
 import nopalito.app.ui.screens.cloud.viewmodel.CloudQrHistoryViewModel
@@ -117,7 +117,7 @@ fun CloudQrHistoryScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (inSelection) {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.cloud_n_selected, state.selectedIds.size),
                 onBack = viewModel::clearSelection,
                 actions = {
@@ -131,7 +131,7 @@ fun CloudQrHistoryScreen(
                 },
             )
         } else {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.qr_cloud_history),
                 subtitle = stringResource(R.string.qr_cloud_history_subtitle),
                 onBack = onBack,

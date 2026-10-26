@@ -92,7 +92,7 @@ import kotlinx.coroutines.withContext
 import nopalito.app.NopalitoApp
 import nopalito.app.R
 import nopalito.app.ui.Navigation
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.TopActionButtons
 import nopalito.app.ui.screens.qr.mimeFor
 import nopalito.app.ui.screens.qr.moduleShapeLabel
@@ -152,7 +152,7 @@ fun QrGeneratorScreen(navigation: Navigation) {
     BackHandler { navigation.back() }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeroHeader(
+        PurpleWaveHeader(
             title = stringResource(R.string.qr_generate),
             subtitle = stringResource(R.string.qr_generate_desc),
             onBack = { navigation.back() },

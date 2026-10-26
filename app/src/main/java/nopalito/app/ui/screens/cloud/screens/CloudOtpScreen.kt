@@ -74,7 +74,7 @@ fun CloudOtpScreen(
         }
     }
 
-    CloudAuthScaffold(onBack = onBack) {
+    CloudAuthScaffold(onBack = onBack, waveBackground = true) {
         CloudAuthIcon(icon = Icons.Default.MarkEmailRead)
 
         Spacer(Modifier.height(20.dp))

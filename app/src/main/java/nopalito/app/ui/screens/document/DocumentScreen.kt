@@ -128,9 +128,9 @@ import nopalito.app.R
 import nopalito.app.domain.ocr.TextExtractionState
 import nopalito.app.ui.Navigation
 import nopalito.app.ui.components.ConfirmationDialog
-import nopalito.app.ui.components.GradientHeroHeader
 import nopalito.app.ui.components.ImportedSignatureEditor
 import nopalito.app.ui.components.MyScaffold
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.SignatureMethodSheet
 import nopalito.app.ui.components.SimpleSignatureDialog
 import nopalito.app.ui.components.TopActionButtons
@@ -232,14 +232,14 @@ fun DocumentScreen(
     MyScaffold(
         navigation = navigation,
         heroHeader = {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.document_title),
                 subtitle = stringResource(R.string.document_subtitle),
                 onBack = { navigation.back() },
                 actions = {
                     if (debugCompareVisible) {
                         androidx.compose.material3.TextButton(onClick = onCompareVariantsClick) {
-                            androidx.compose.material3.Text(
+                            Text(
                                 stringResource(R.string.processing_compare_ab_short),
                                 color = Color.White
                             )
@@ -263,7 +263,7 @@ fun DocumentScreen(
     ) { modifier ->
         if (debugCompareVisible) {
             androidx.compose.material3.TextButton(onClick = onCompareOriginalClick) {
-                androidx.compose.material3.Text(stringResource(R.string.processing_compare_original))
+                Text(stringResource(R.string.processing_compare_original))
             }
         }
         DocumentPreview(

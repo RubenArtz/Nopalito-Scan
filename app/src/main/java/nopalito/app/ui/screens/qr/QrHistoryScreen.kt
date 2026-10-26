@@ -102,7 +102,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
-import nopalito.app.ui.components.GradientHeroHeader
+import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import java.io.File
 import java.text.SimpleDateFormat
@@ -153,7 +153,7 @@ fun QrHistoryScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (selectionMode) {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.qr_n_selected, selectedIds.size),
                 onBack = exitSelection,
                 actions = {
@@ -175,7 +175,7 @@ fun QrHistoryScreen(
                 },
             )
         } else {
-            GradientHeroHeader(
+            PurpleWaveHeader(
                 title = stringResource(R.string.qr_history),
                 subtitle = stringResource(R.string.qr_history_subtitle),
                 onBack = onBack,
@@ -270,7 +270,7 @@ fun QrHistoryScreen(
                 onCopy = {
                     val clipboard =
                         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("QR", item.content))
+                    clipboard.primaryClip = ClipData.newPlainText("QR", item.content)
                     Toast.makeText(context, R.string.qr_copied, Toast.LENGTH_SHORT).show()
                 },
                 onShare = {
@@ -579,7 +579,7 @@ private fun QrHistoryCard(
                                 menuOpen = false
                                 val clipboard =
                                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("QR", item.content))
+                                clipboard.primaryClip = ClipData.newPlainText("QR", item.content)
                                 Toast.makeText(context, R.string.qr_copied, Toast.LENGTH_SHORT)
                                     .show()
                             },
