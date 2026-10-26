@@ -69,8 +69,7 @@ suspend fun regenerateAndSaveQr(
  * that have no generation recipe (designJson == null).
  */
 suspend fun saveScanImageToDownloads(context: Context, imageFile: File?): Boolean {
-    if (imageFile == null || !imageFile.exists()) return false
-    return runCatching {
+    return !(imageFile == null || !imageFile.exists()) && runCatching {
         val ext = imageFile.extension.lowercase()
             .takeIf { it in setOf("png", "jpg", "jpeg", "webp") } ?: "png"
         saveQrToDownloads(context, imageFile.readBytes(), ext) != null

@@ -852,8 +852,7 @@ class ImageRepository(
      * from the camera master will fall back to the stored processed page.
      */
     suspend fun deleteOriginalWithConfirmation(id: String, confirmed: Boolean): Boolean {
-        if (!confirmed) return false
-        return mutex.withLock {
+        return confirmed && mutex.withLock {
             val page = pages.get(id) ?: return@withLock false
             runCatching { originalFile(id).delete() }
             pages.update(id) {

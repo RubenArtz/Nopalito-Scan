@@ -556,11 +556,11 @@ fun CameraScreen(
         val err = fileCaptureError as? CaptureFileError.InsufficientStorage ?: return
         fun mb(bytes: Long): String =
             String.format(java.util.Locale.US, "%.1f MB", bytes / 1048576.0)
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { cameraViewModel.dismissCaptureError() },
-            title = { androidx.compose.material3.Text(stringResource(R.string.capture_original_no_space_title)) },
+            title = { Text(stringResource(R.string.capture_original_no_space_title)) },
             text = {
-                androidx.compose.material3.Text(
+                Text(
                     stringResource(
                         R.string.capture_original_no_space_msg,
                         mb(err.requiredBytes),
@@ -569,24 +569,24 @@ fun CameraScreen(
                 )
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { cameraViewModel.dismissCaptureError() }) {
-                    androidx.compose.material3.Text(stringResource(R.string.ok))
+                TextButton(onClick = { cameraViewModel.dismissCaptureError() }) {
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.TextButton(
+                    TextButton(
                         onClick = {
                             cameraViewModel.setCaptureTier(nopalito.app.domain.CaptureTier.LOW)
                             cameraViewModel.dismissCaptureError()
                         }
-                    ) { androidx.compose.material3.Text("LOW") }
-                    androidx.compose.material3.TextButton(
+                    ) { Text("LOW") }
+                    TextButton(
                         onClick = {
                             cameraViewModel.setCaptureTier(nopalito.app.domain.CaptureTier.BALANCED)
                             cameraViewModel.dismissCaptureError()
                         }
-                    ) { androidx.compose.material3.Text("BALANCED") }
+                    ) { Text("BALANCED") }
                 }
             },
         )
@@ -1442,7 +1442,7 @@ private fun TierDebugRow(
                 selected = keepOriginal,
                 onClick = { onKeepOriginalChange(!keepOriginal) },
                 label = {
-                    androidx.compose.material3.Text(
+                    Text(
                         "Keep original",
                         style = MaterialTheme.typography.labelSmall,
                     )

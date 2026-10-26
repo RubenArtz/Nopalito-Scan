@@ -55,7 +55,7 @@ object FirebaseConsentManager {
      */
     fun enableCrashReporting() {
         try {
-            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = true
         } catch (e: Exception) {
             Log.d(TAG, "crashlytics enable failed: ${e.javaClass.simpleName}")
         }

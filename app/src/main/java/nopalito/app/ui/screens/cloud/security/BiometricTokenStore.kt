@@ -101,12 +101,12 @@ sealed class BiometricTokenError : Throwable() {
     // static analysis cannot see a call site. Deliberately kept.
     @Suppress("unused")
     private fun readResolve(): Any = when (this) {
-        NotEnabled -> NotEnabled
-        KeyInvalidated -> KeyInvalidated
-        KeyLocked -> KeyLocked
-        NoSecureLockScreen -> NoSecureLockScreen
-        NotAvailable -> NotAvailable
-        StorageUnavailable -> StorageUnavailable
+        is NotEnabled -> NotEnabled
+        is KeyInvalidated -> KeyInvalidated
+        is KeyLocked -> KeyLocked
+        is NoSecureLockScreen -> NoSecureLockScreen
+        is NotAvailable -> NotAvailable
+        is StorageUnavailable -> StorageUnavailable
     }
 
     /** No key or no stored blob exists yet. */

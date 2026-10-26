@@ -176,8 +176,7 @@ object MaintenanceStateLogic {
 
     /** True when there is no usable state ([lastFetchedAt]==0) or it expired. */
     fun isStale(state: LocalMaintenanceState, nowMs: Long): Boolean {
-        if (state.lastFetchedAt <= 0L) return true
-        return nowMs - state.lastFetchedAt > maxAgeMs(state, nowMs)
+        return state.lastFetchedAt <= 0L || nowMs - state.lastFetchedAt > maxAgeMs(state, nowMs)
     }
 
     /**

@@ -1403,7 +1403,7 @@ private fun PremiumPlanCard(
                 // Purchase button — FREE always disabled + block while verifying/success (double-tap guard)
                 val isPurchaseBlocking = viewModel.isPurchaseBlocking()
                 val buttonEnabled =
-                    if (plan.id == "free") false else (isAvailable && !isCurrent && !isPurchaseBlocking)
+                    plan.id != "free" && (isAvailable && !isCurrent && !isPurchaseBlocking)
                 if (plan.id != "free") {
                     val reason = when {
                         isCurrent -> "isCurrent"

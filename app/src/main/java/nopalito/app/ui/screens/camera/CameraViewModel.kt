@@ -485,7 +485,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         frame: CameraCaptureController.FrameSnapshot?,
         tCaptureMs: Long?,
         requestedResolution: String,
-    ): nopalito.app.domain.CapturedPage {
+    ): CapturedPage {
         currentCoroutineContext().ensureActive()
         val bounds = nopalito.app.platform.FileCapturePipeline.decodeBounds(file)
             ?: throw IOException("invalid capture file")
@@ -577,7 +577,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
                 val deferredSource = kotlinx.coroutines.CompletableDeferred(
                     nopalito.app.domain.Jpeg(file.readBytes())
                 )
-                return nopalito.app.domain.CapturedPage(
+                return CapturedPage(
                     pageJpeg = fileResult.pageJpeg,
                     sourceJpeg = deferredSource,
                     metadata = fileResult.metadata,
