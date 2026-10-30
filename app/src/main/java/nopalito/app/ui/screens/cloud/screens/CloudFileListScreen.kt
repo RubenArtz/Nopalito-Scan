@@ -22,7 +22,6 @@
 package nopalito.app.ui.screens.cloud.screens
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -124,6 +123,7 @@ import nopalito.app.ui.DocPagePreview
 import nopalito.app.ui.DocumentPagesPreview
 import nopalito.app.ui.components.AnimatedCountdownSnackbar
 import nopalito.app.ui.decodeDocxPages
+import nopalito.app.ui.decodeThumbnail
 import nopalito.app.ui.isEncryptedOle2
 import nopalito.app.ui.isPdfEncrypted
 import nopalito.app.ui.renderPdfPages
@@ -921,9 +921,7 @@ private fun FullScreenPreview(
                     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
                     LaunchedEffect(cachedFile) {
                         bitmap = withContext(Dispatchers.IO) {
-                            BitmapFactory.decodeFile(
-                                cachedFile.absolutePath,
-                                BitmapFactory.Options().apply { inScaled = false })
+                            decodeThumbnail(cachedFile.absolutePath, 2048)
                         }
                     }
                     bitmap?.let { ZoomableImage(bmp = it) }

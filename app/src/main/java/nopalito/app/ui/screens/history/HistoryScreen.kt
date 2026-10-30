@@ -27,11 +27,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
-import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.text.format.Formatter
-import android.util.Size
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -113,6 +111,8 @@ import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.DocPagePreview
 import nopalito.app.ui.DocumentPagesPreview
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.components.FileTypeBadge
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
@@ -151,9 +151,9 @@ fun HistoryScreen(
         selectedIds = emptySet()
     }
 
-    // Shared thumbnail cache: survives the preview (which removes the list from
-    // composition), so returning does not reload/render every card.
-    val thumbnailCache = remember { mutableMapOf<Long, Bitmap>() }
+    // Shared, memory-bounded thumbnail cache (see ThumbnailCache). It survives
+    // the preview (which removes the list from composition), so returning does
+    // not reload/render every card.
 
     // System back: dismiss the selection/preview/folder first, then leave the screen.
     // Without this BackHandler the back button/gesture would close the app.
@@ -398,7 +398,6 @@ fun HistoryScreen(
                     ) { item ->
                         HistoryItemCard(
                             item = item,
-                            thumbnailCache = thumbnailCache,
                             selected = item.id in selectedIds,
                             selectionMode = selectionMode,
                             onClick = {
@@ -498,7 +497,6 @@ fun HistoryScreen(
 @Composable
 private fun HistoryItemCard(
     item: ExportHistoryEntity,
-    thumbnailCache: MutableMap<Long, Bitmap>,
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
@@ -509,8 +507,15 @@ private fun HistoryItemCard(
 ) {
     val context = LocalContext.current
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
-    val exportArtifact = remember(item) { ExportArtifactMapper.fromHistoryEntity(item) }
-    val thumbnailBitmap = rememberHistoryThumbnail(context, item, thumbnailCache)
+    // Mapping a folder entry may list its backup directory on disk: never do
+    // that during composition, or scrolling stutters on every folder card.
+    var exportArtifact by remember(item) { mutableStateOf<ExportArtifact?>(null) }
+    LaunchedEffect(item) {
+        exportArtifact = withContext(Dispatchers.IO) {
+            ExportArtifactMapper.fromHistoryEntity(item)
+        }
+    }
+    val thumbnailBitmap = rememberHistoryThumbnail(context, item)
     val isAvailable = item.status == ExportHistoryEntity.STATUS_AVAILABLE
 
     Card(
@@ -701,11 +706,12 @@ private fun HistoryItemCard(
                             leadingIcon = { Icon(Icons.Default.Share, null) },
                             onClick = { menuOpen = false; onShare() },
                         )
-                        if (exportArtifact != null) {
+                        val artifactToOpen = exportArtifact
+                        if (artifactToOpen != null) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.open)) },
                                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) },
-                                onClick = { menuOpen = false; onOpenResult(exportArtifact) },
+                                onClick = { menuOpen = false; onOpenResult(artifactToOpen) },
                             )
                         }
                         if (isAvailable) {
@@ -1081,20 +1087,13 @@ private fun exportHistoryChild(context: Context, child: HistoryChild) {
 
 @Composable
 private fun rememberHistoryChildThumbnail(context: Context, child: HistoryChild): Bitmap? {
-    var thumb by remember(child.uri, child.file) { mutableStateOf<Bitmap?>(null) }
-    LaunchedEffect(child.uri, child.file) {
-        thumb = withContext(Dispatchers.IO) {
-            runCatching {
-                child.file?.let { BitmapFactory.decodeFile(it.absolutePath) }
-                    ?: child.uri?.let { uri ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            context.contentResolver.loadThumbnail(uri, Size(256, 256), null)
-                        } else null
-                    }
-            }.getOrNull()
-        }
+    val key = remember(child.uri, child.file) {
+        "history-child:${child.file?.absolutePath ?: child.uri}"
     }
-    return thumb
+    return rememberThumbnail(key) {
+        child.file?.let { decodeThumbnail(it.absolutePath, HISTORY_CHILD_THUMBNAIL_PX) }
+            ?: child.uri?.let { decodeThumbnail(context, it, HISTORY_CHILD_THUMBNAIL_PX) }
+    }
 }
 
 private suspend fun resolveHistoryChildren(
@@ -1255,21 +1254,26 @@ private fun renderImagePages(context: Context, file: File?, uri: Uri?): List<Doc
 
 // CARD THUMBNAIL — derived from the private backup
 
+/** Thumbnail size for the 64dp history cards (xxhdpi needs ~192px). */
+private const val HISTORY_THUMBNAIL_PX = 256
+
+/** Thumbnail size for the 44dp rows of a folder detail. */
+private const val HISTORY_CHILD_THUMBNAIL_PX = 128
+
 @Composable
-private fun rememberHistoryThumbnail(
-    context: Context,
-    item: ExportHistoryEntity,
-    cache: MutableMap<Long, Bitmap>,
-): Bitmap? {
-    var thumb by remember(item.id) { mutableStateOf(cache[item.id]) }
-    LaunchedEffect(item.id) {
-        if (thumb == null) {
-            val loaded = withContext(Dispatchers.IO) { loadHistoryThumbnail(context, item) }
-            if (loaded != null) cache[item.id] = loaded
-            thumb = loaded
-        }
+private fun rememberHistoryThumbnail(context: Context, item: ExportHistoryEntity): Bitmap? {
+    val key = remember(
+        item.id,
+        item.backupPath,
+        item.thumbnailPath,
+        item.backupDirPath,
+        item.exportedFilePath,
+        item.format,
+    ) {
+        "export:${item.id}:${item.backupPath}:${item.thumbnailPath}:" +
+                "${item.backupDirPath}:${item.exportedFilePath}:${item.format}"
     }
-    return thumb
+    return rememberThumbnail(key) { loadHistoryThumbnail(context, item) }
 }
 
 private fun loadHistoryThumbnail(context: Context, item: ExportHistoryEntity): Bitmap? {
@@ -1278,29 +1282,36 @@ private fun loadHistoryThumbnail(context: Context, item: ExportHistoryEntity): B
         val backupDir = File(dir)
         if (backupDir.isDirectory) {
             return backupDir.listFiles()
-                ?.sortedBy { it.name.lowercase() }
-                ?.firstOrNull()
-                ?.let { decodeScaled(it.absolutePath) }
+                ?.minByOrNull { it.name.lowercase() }
+                ?.let { decodeThumbnail(it.absolutePath, HISTORY_THUMBNAIL_PX) }
         }
     }
     // Single file: private backup -> stored thumbnail -> exported file (MediaStore/SAF).
     val source = item.backupPath?.let { File(it) }?.takeIf { it.exists() }
         ?: item.thumbnailPath?.let { File(it) }?.takeIf { it.exists() }
-        ?: previewSourceFile(context, item.backupPath, item.exportedFilePath?.toUri())
-    if (source == null) return null
-    return when (item.format) {
-        "PDF" -> renderPdfFirstPage(source)
-        "DOCX" -> runCatching { decodeDocxMedia(source, maxDim = 512).firstOrNull() }.getOrNull()
-        else -> decodeScaled(source.absolutePath)
+    if (source != null) {
+        return when (item.format) {
+            "PDF" -> renderPdfFirstPage(source, HISTORY_THUMBNAIL_PX)
+            "DOCX" -> runCatching {
+                decodeDocxMedia(source, maxDim = HISTORY_THUMBNAIL_PX).firstOrNull()
+            }.getOrNull()
+
+            else -> decodeThumbnail(source.absolutePath, HISTORY_THUMBNAIL_PX)
+        }
     }
+    // Last resort: decode straight from the exported uri. Copying the whole
+    // export to a temp file just for a 64dp thumbnail was slow and left stale
+    // copies behind in the cache directory.
+    val uri = item.exportedFilePath?.toUri() ?: return null
+    return decodeThumbnail(context, uri, HISTORY_THUMBNAIL_PX)
 }
 
-private fun renderPdfFirstPage(file: File): Bitmap? = try {
+private fun renderPdfFirstPage(file: File, maxDim: Int): Bitmap? = try {
     val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     val renderer = PdfRenderer(pfd)
     val bmp = if (renderer.pageCount > 0) {
         val page = renderer.openPage(0)
-        val scale = minOf(1f, 512f / maxOf(page.width, page.height))
+        val scale = minOf(1f, maxDim.toFloat() / maxOf(page.width, page.height))
         val out = createBitmap(
             maxOf(1, (page.width * scale).toInt()),
             maxOf(1, (page.height * scale).toInt())
@@ -1316,11 +1327,3 @@ private fun renderPdfFirstPage(file: File): Bitmap? = try {
 } catch (_: Exception) {
     null
 }
-
-private fun decodeScaled(path: String): Bitmap? = runCatching {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(path, bounds)
-    var sample = 1
-    while (bounds.outWidth / (sample * 2) >= 512) sample *= 2
-    BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
-}.getOrNull()

@@ -27,6 +27,8 @@ class HistoryRepository(private val dao: ExportHistoryDao) {
 
     fun getAllHistory(): Flow<List<ExportHistoryEntity>> = dao.getAllHistory()
 
+    fun getAllSortedByDateAsc(): Flow<List<ExportHistoryEntity>> = dao.getAllSortedByDateAsc()
+
     suspend fun getById(id: Long): ExportHistoryEntity? = dao.getById(id)
 
     suspend fun insert(entity: ExportHistoryEntity): Long = dao.insert(entity)

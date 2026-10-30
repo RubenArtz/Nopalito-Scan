@@ -26,7 +26,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -86,6 +85,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -101,6 +101,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.R
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.screens.cloud.data.CloudRepository
@@ -253,9 +255,7 @@ fun QrHistoryScreen(
     detailItem?.let { item ->
         val bitmap by produceState<Bitmap?>(null, item.imagePath) {
             value = withContext(Dispatchers.IO) {
-                item.imagePath?.let { path ->
-                    File(path).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(path) }
-                }
+                item.imagePath?.let { decodeThumbnail(it, QR_PREVIEW_PX) }
             }
         }
         bitmap?.let { bmp ->
@@ -391,9 +391,9 @@ private fun QrRedownloadDialog(
     onDismiss: () -> Unit,
 ) {
     val preview by produceState<Bitmap?>(null, item.imagePath) {
-        value = item.imagePath
-            ?.let { File(it).takeIf { f -> f.exists() } }
-            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+        value = withContext(Dispatchers.IO) {
+            item.imagePath?.let { decodeThumbnail(it, QR_PREVIEW_PX) }
+        }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -472,6 +472,22 @@ private fun qrTypeIcon(type: QrDetected.Type): ImageVector = when (type) {
     is QrDetected.Type.Text -> Icons.Default.QrCode
 }
 
+/** Thumbnail size for the 64dp QR history cards (xxhdpi needs ~192px). */
+private const val QR_THUMBNAIL_PX = 256
+
+/** Size used by the detail/redownload dialogs: big enough to read the code. */
+private const val QR_PREVIEW_PX = 1024
+
+@Composable
+private fun rememberQrThumbnail(item: QrScanEntity): ImageBitmap? {
+    val path = item.imagePath
+    val key = path?.let { "qr:$it@$QR_THUMBNAIL_PX" }
+    // Downsample: scan screenshots are full resolution and decoding them whole
+    // for every visible card made the list slower the further it was scrolled.
+    val bitmap = rememberThumbnail(key) { path?.let { decodeThumbnail(it, QR_THUMBNAIL_PX) } }
+    return remember(bitmap) { bitmap?.asImageBitmap() }
+}
+
 @Composable
 private fun QrHistoryCard(
     item: QrScanEntity,
@@ -481,15 +497,7 @@ private fun QrHistoryCard(
     onLongClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val thumbnail by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, item.imagePath) {
-        value = withContext(Dispatchers.IO) {
-            item.imagePath?.let { path ->
-                File(path).takeIf { it.exists() }?.let {
-                    BitmapFactory.decodeFile(path)?.asImageBitmap()
-                }
-            }
-        }
-    }
+    val thumbnail = rememberQrThumbnail(item)
     val context = LocalContext.current
     val date = remember(item.dateTime) {
         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(item.dateTime))

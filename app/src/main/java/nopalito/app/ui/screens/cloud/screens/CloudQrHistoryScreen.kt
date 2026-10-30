@@ -21,8 +21,6 @@
 
 package nopalito.app.ui.screens.cloud.screens
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -65,7 +63,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -87,6 +84,8 @@ import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.model.QrScan
 import nopalito.app.ui.screens.cloud.viewmodel.CloudQrHistoryViewModel
@@ -346,10 +345,10 @@ private fun CloudScanCard(
     onLongClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val thumbnail by produceState<Bitmap?>(null, scan.id) {
-        value = runCatching { thumbnailLoader().getOrNull() }
+    val thumbnail = rememberThumbnail(key = scan.imageFileId?.let { "cloud-qr-thumb:$it" }) {
+        runCatching { thumbnailLoader().getOrNull() }
             .getOrNull()
-            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+            ?.let { decodeThumbnail(it.absolutePath, 256) }
     }
     val date = remember(scan.scannedAt) { formatDate(scan.scannedAt) }
 
@@ -442,10 +441,10 @@ private fun CloudQrExportDialog(
 ) {
     val context = LocalContext.current
     val repository = remember { CloudRepository(context) }
-    val preview by produceState<Bitmap?>(null, scan.id) {
-        value = scan.imageFileId
+    val preview = rememberThumbnail(key = scan.imageFileId?.let { "cloud-qr-preview:$it" }) {
+        scan.imageFileId
             ?.let { runCatching { repository.getScanThumbnail(it).getOrNull() }.getOrNull() }
-            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+            ?.let { decodeThumbnail(it.absolutePath, 1024) }
     }
     AlertDialog(
         onDismissRequest = onDismiss,

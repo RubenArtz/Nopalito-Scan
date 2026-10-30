@@ -29,11 +29,16 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.AppContainer
@@ -76,6 +81,7 @@ class HistoryViewModel(appContainer: AppContainer) : ViewModel() {
         observeHistory()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeHistory() {
         viewModelScope.launch {
             combine(
@@ -83,22 +89,30 @@ class HistoryViewModel(appContainer: AppContainer) : ViewModel() {
                 _sortBy,
                 _filterFormat
             ) { query, sort, format -> Triple(query, sort, format) }
-                .collect { (query, sort, format) ->
-                    _uiState.value = _uiState.value.copy(isLoading = true)
+                .distinctUntilChanged()
+                // flatMapLatest cancels the previous Room flow: without it the
+                // collector stayed inside the first flow and every later search,
+                // filter or sort change was queued and never applied.
+                .flatMapLatest { (query, sort, format) ->
                     val flow = when {
                         query.isNotBlank() -> repository.searchByName(query)
                         format != null -> repository.filterByFormat(format)
                         else -> getSortedFlow(sort)
                     }
-                    flow.collect { list ->
-                        _uiState.value = _uiState.value.copy(
+                    flow.map { list ->
+                        _uiState.value.copy(
                             history = list,
                             searchQuery = query,
                             sortBy = sort,
                             filterFormat = format,
                             isLoading = false
                         )
+                    }.onStart {
+                        _uiState.value = _uiState.value.copy(isLoading = true)
                     }
+                }
+                .collect { state ->
+                    _uiState.value = state
                 }
         }
     }
@@ -106,7 +120,7 @@ class HistoryViewModel(appContainer: AppContainer) : ViewModel() {
     private fun getSortedFlow(sort: SortOption): Flow<List<ExportHistoryEntity>> {
         return when (sort) {
             SortOption.DATE_DESC -> repository.getAllHistory()
-            SortOption.DATE_ASC -> error("No direct DAO, fallback to all")
+            SortOption.DATE_ASC -> repository.getAllSortedByDateAsc()
             SortOption.NAME_ASC -> repository.getAllSortedByNameAsc()
             SortOption.NAME_DESC -> repository.getAllSortedByNameDesc()
             SortOption.SIZE_ASC -> repository.getAllSortedBySizeAsc()

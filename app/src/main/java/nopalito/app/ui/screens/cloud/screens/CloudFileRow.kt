@@ -22,10 +22,8 @@
 package nopalito.app.ui.screens.cloud.screens
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,19 +77,14 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import nopalito.app.R
+import nopalito.app.ui.ThumbnailCache
 import nopalito.app.ui.components.FileTypeBadge
 import nopalito.app.ui.decodeDocxMedia
+import nopalito.app.ui.decodeThumbnail
 import nopalito.app.ui.screens.cloud.model.CloudFile
 import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.material.icons.filled.Image as ImageIcon
-
-/**
- * Process-wide thumbnail cache: the same file scrolls in/out many times, so
- * decoded thumbnails survive recomposition (keyed by id + version). Shared by
- * the cloud file list and the camera import browser.
- */
-private val thumbnailCache = LruCache<String, Bitmap>(96)
 
 /** Budget for one thumbnail decode (download + render). */
 private const val THUMB_DECODE_TIMEOUT_MS = 15_000L
@@ -121,12 +114,12 @@ internal fun CloudFileRow(
     trailingContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
 ) {
-    // Thumbnail bitmap (memory-cached across scrolls and recompositions).
+    // Thumbnail bitmap (shared memory-bounded cache across scrolls and recompositions).
     val cacheKey = remember(file.id, file.updatedAt, file.createdAt) {
-        "${file.id}|${file.updatedAt ?: file.createdAt}"
+        "cloud-file:${file.id}|${file.updatedAt ?: file.createdAt}"
     }
-    var thumb by remember { mutableStateOf(thumbnailCache.get(cacheKey)) }
-    var loadingThumb by remember { mutableStateOf(thumb == null) }
+    var thumb by remember(cacheKey) { mutableStateOf(ThumbnailCache.get(cacheKey)) }
+    var loadingThumb by remember(cacheKey) { mutableStateOf(thumb == null) }
 
     val isDocx = file.originalName.endsWith(".docx") || file.originalName.endsWith(".doc")
     val canThumb = file.mimeType?.startsWith("image/") == true ||
@@ -134,12 +127,12 @@ internal fun CloudFileRow(
             file.originalName.endsWith(".pdf") ||
             isDocx
 
-    LaunchedEffect(file.id) {
+    LaunchedEffect(cacheKey) {
         if (!canThumb) {
             loadingThumb = false
             return@LaunchedEffect
         }
-        thumbnailCache.get(cacheKey)?.let { cached ->
+        ThumbnailCache.get(cacheKey)?.let { cached ->
             thumb = cached
             loadingThumb = false
             return@LaunchedEffect
@@ -158,7 +151,7 @@ internal fun CloudFileRow(
                 }
             }
             if (decoded != null) {
-                thumbnailCache.put(cacheKey, decoded)
+                ThumbnailCache.put(cacheKey, decoded)
                 thumb = decoded
             }
         } catch (e: TimeoutCancellationException) {
@@ -302,10 +295,8 @@ private suspend fun decodeThumb(
 ): Bitmap? = try {
     val cached = downloadForCache(file).getOrNull() ?: return null
     when {
-        file.mimeType?.startsWith("image/") == true -> {
-            val opts = BitmapFactory.Options().apply { inSampleSize = 4 }
-            BitmapFactory.decodeFile(cached.absolutePath, opts)
-        }
+        file.mimeType?.startsWith("image/") == true ->
+            decodeThumbnail(cached.absolutePath, 256)
 
         file.mimeType == "application/pdf" || file.originalName.endsWith(".pdf") -> {
             val pfd = ParcelFileDescriptor.open(

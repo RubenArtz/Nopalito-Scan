@@ -21,8 +21,6 @@
 
 package nopalito.app.ui.screens.cloud.screens
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,7 +63,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,6 +79,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import nopalito.app.R
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.model.QrScan
 import nopalito.app.ui.screens.cloud.viewmodel.CloudQrTrashViewModel
@@ -322,10 +321,10 @@ private fun TrashScanCard(
     onRestore: () -> Unit,
     onPermanentDelete: () -> Unit,
 ) {
-    val thumbnail by produceState<Bitmap?>(null, scan.id) {
-        value = runCatching { thumbnailLoader().getOrNull() }
+    val thumbnail = rememberThumbnail(key = scan.imageFileId?.let { "cloud-qr-thumb:$it" }) {
+        runCatching { thumbnailLoader().getOrNull() }
             .getOrNull()
-            ?.let { BitmapFactory.decodeFile(it.absolutePath) }
+            ?.let { decodeThumbnail(it.absolutePath, 256) }
     }
 
     Card(

@@ -21,7 +21,6 @@
 
 package nopalito.app.ui.screens.cloud.screens
 
-import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.activity.compose.BackHandler
@@ -122,12 +121,14 @@ import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.DocPagePreview
 import nopalito.app.ui.DocumentPagesPreview
+import nopalito.app.ui.ThumbnailCache
 import nopalito.app.ui.ZoomableBitmapDialog
 import nopalito.app.ui.components.AnimatedCountdownSnackbar
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveBackground
 import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.decodeDocxPages
+import nopalito.app.ui.decodeThumbnail
 import nopalito.app.ui.isEncryptedOle2
 import nopalito.app.ui.isPdfEncrypted
 import nopalito.app.ui.renderPdfPages
@@ -504,25 +505,31 @@ private fun TrashFileItem(
     onPermanentDelete: () -> Unit,
     onRename: () -> Unit
 ) {
-    // Thumbnail bitmap
-    var thumb by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var loadingThumb by remember { mutableStateOf(false) }
+    // Thumbnail bitmap (shared memory-bounded cache across scrolls).
+    val cacheKey = remember(file.id, file.updatedAt, file.createdAt) {
+        "cloud-trash:${file.id}|${file.updatedAt ?: file.createdAt}"
+    }
+    var thumb by remember(cacheKey) { mutableStateOf(ThumbnailCache.get(cacheKey)) }
+    var loadingThumb by remember(cacheKey) { mutableStateOf(thumb == null) }
 
     val canThumb = file.mimeType?.startsWith("image/") == true ||
             file.mimeType == "application/pdf" ||
             file.originalName.endsWith(".pdf")
 
-    LaunchedEffect(file.id) {
+    LaunchedEffect(cacheKey) {
         if (canThumb) {
+            ThumbnailCache.get(cacheKey)?.let { cached ->
+                thumb = cached
+                loadingThumb = false
+                return@LaunchedEffect
+            }
             loadingThumb = true
-            thumb = withContext(Dispatchers.IO) {
+            val decoded = withContext(Dispatchers.IO) {
                 try {
                     val cached = downloadForCache(file).getOrNull() ?: return@withContext null
                     when {
-                        file.mimeType?.startsWith("image/") == true -> {
-                            val opts = BitmapFactory.Options().apply { inSampleSize = 4 }
-                            BitmapFactory.decodeFile(cached.absolutePath, opts)
-                        }
+                        file.mimeType?.startsWith("image/") == true ->
+                            decodeThumbnail(cached.absolutePath, 256)
 
                         file.mimeType == "application/pdf" || file.originalName.endsWith(".pdf") -> {
                             val pfd = ParcelFileDescriptor.open(
@@ -560,6 +567,10 @@ private fun TrashFileItem(
                 } catch (_: Exception) {
                     null
                 }
+            }
+            if (decoded != null) {
+                ThumbnailCache.put(cacheKey, decoded)
+                thumb = decoded
             }
             loadingThumb = false
         }
@@ -795,9 +806,7 @@ private fun TrashFullScreenPreview(
                     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
                     LaunchedEffect(cachedFile) {
                         bitmap = withContext(Dispatchers.IO) {
-                            BitmapFactory.decodeFile(
-                                cachedFile.absolutePath,
-                                BitmapFactory.Options().apply { inScaled = false })
+                            decodeThumbnail(cachedFile.absolutePath, 2048)
                         }
                     }
                     bitmap?.let { TrashZoomableImage(bmp = it) }

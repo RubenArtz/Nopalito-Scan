@@ -34,6 +34,9 @@ interface ExportHistoryDao {
     @Query("SELECT * FROM export_history ORDER BY dateTime DESC")
     fun getAllHistory(): Flow<List<ExportHistoryEntity>>
 
+    @Query("SELECT * FROM export_history ORDER BY dateTime ASC")
+    fun getAllSortedByDateAsc(): Flow<List<ExportHistoryEntity>>
+
     @Query("SELECT * FROM export_history ORDER BY dateTime DESC")
     suspend fun getAllHistoryList(): List<ExportHistoryEntity>
 
