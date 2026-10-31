@@ -197,7 +197,7 @@ class BiometricRefreshBridgeTest {
         override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> =
             if (shouldFail) {
                 shouldFail = false
-                Result.failure(BiometricTokenError.KeyInvalidated())
+                Result.failure(BiometricTokenError.KeyInvalidated)
             } else {
                 delegate.createCipher(mode, alias, iv)
             }

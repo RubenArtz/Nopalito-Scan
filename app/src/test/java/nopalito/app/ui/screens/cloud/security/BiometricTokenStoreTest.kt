@@ -77,7 +77,7 @@ class BiometricTokenStoreTest {
         val result = store.createEncryptCipher()
 
         assertThat(result.isFailure).isTrue()
-        assertThat(result.exceptionOrNull()).isEqualTo(BiometricTokenError.NotEnabled())
+        assertThat(result.exceptionOrNull()).isEqualTo(BiometricTokenError.NotEnabled)
     }
 
     @Test
@@ -98,7 +98,7 @@ class BiometricTokenStoreTest {
         val result = store.createDecryptCipher()
 
         assertThat(result.isFailure).isTrue()
-        assertThat(result.exceptionOrNull()).isEqualTo(BiometricTokenError.NotEnabled())
+        assertThat(result.exceptionOrNull()).isEqualTo(BiometricTokenError.NotEnabled)
     }
 
     @Test
@@ -179,7 +179,7 @@ class BiometricTokenStoreTest {
         assertThat(store.hasKey()).isFalse()
         assertThat(store.isEnabled).isFalse()
         assertThat(store.createEncryptCipher().exceptionOrNull())
-            .isEqualTo(BiometricTokenError.NotEnabled())
+            .isEqualTo(BiometricTokenError.NotEnabled)
     }
 
     @Test
@@ -196,31 +196,31 @@ class BiometricTokenStoreTest {
         assertThat(store.hasBlob()).isFalse()
         assertThat(store.isEnabled).isFalse()
         assertThat(store.createDecryptCipher().exceptionOrNull())
-            .isEqualTo(BiometricTokenError.NotEnabled())
+            .isEqualTo(BiometricTokenError.NotEnabled)
     }
 
     @Test
     fun `permanently invalidated key maps to KeyInvalidated`() {
         assertThat(mapCipherInitFailure(KeyPermanentlyInvalidatedException()))
-            .isEqualTo(BiometricTokenError.KeyInvalidated())
+            .isEqualTo(BiometricTokenError.KeyInvalidated)
     }
 
     @Test
     fun `unreleased key maps to KeyLocked`() {
         assertThat(mapCipherInitFailure(UserNotAuthenticatedException()))
-            .isEqualTo(BiometricTokenError.KeyLocked())
+            .isEqualTo(BiometricTokenError.KeyLocked)
     }
 
     @Test
     fun `unknown keystore failure maps to StorageUnavailable`() {
         assertThat(mapCipherInitFailure(IOException("boom")))
-            .isEqualTo(BiometricTokenError.StorageUnavailable())
+            .isEqualTo(BiometricTokenError.StorageUnavailable)
     }
 
     @Test
     fun `keystore without the required cipher maps to NotAvailable`() {
         assertThat(mapCipherInitFailure(java.security.NoSuchAlgorithmException("Provider AndroidKeyStore does not provide AES/GCM/NoPadding")))
-            .isEqualTo(BiometricTokenError.NotAvailable())
+            .isEqualTo(BiometricTokenError.NotAvailable)
     }
 }
 
@@ -247,7 +247,7 @@ internal class JvmCryptoKeyStore : CryptoKeyStore {
     }
 
     override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> {
-        val key = keys[alias] ?: return Result.failure(BiometricTokenError.NotEnabled())
+        val key = keys[alias] ?: return Result.failure(BiometricTokenError.NotEnabled)
         return try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             if (iv != null) {

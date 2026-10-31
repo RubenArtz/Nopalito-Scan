@@ -534,7 +534,7 @@ private fun QrHistoryCard(
                                 menuOpen = false
                                 val clipboard =
                                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.primaryClip = ClipData.newPlainText("QR", item.content)
+                                clipboard.setPrimaryClip(ClipData.newPlainText("QR", item.content))
                                 Toast.makeText(context, R.string.qr_copied, Toast.LENGTH_SHORT)
                                     .show()
                             },

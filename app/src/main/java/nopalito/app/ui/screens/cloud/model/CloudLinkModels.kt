@@ -177,13 +177,13 @@ enum class PcLinkSyncStatus { IDLE, UPLOADING, SYNCED, ERROR }
  * by exhaustive when in PcLinkRepository and the UI.
  */
 sealed class PcLinkError : Exception() {
-    data class IntentNotFound : PcLinkError()
-    data class IntentExpired : PcLinkError()
-    data class IntentBlocked : PcLinkError()
-    data class IntentInvalidState : PcLinkError()
-    data class UserMismatch : PcLinkError()
-    data class RateLimited : PcLinkError()
-    data class NetworkError : PcLinkError()
-    data class Unauthorized : PcLinkError()
+    data object IntentNotFound : PcLinkError()
+    data object IntentExpired : PcLinkError()
+    data object IntentBlocked : PcLinkError()
+    data object IntentInvalidState : PcLinkError()
+    data object UserMismatch : PcLinkError()
+    data object RateLimited : PcLinkError()
+    data object NetworkError : PcLinkError()
+    data object Unauthorized : PcLinkError()
     data class Unknown(val debugCode: String? = null) : PcLinkError()
 }

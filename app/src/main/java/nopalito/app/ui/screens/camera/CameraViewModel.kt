@@ -307,7 +307,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         val payload = _linkQrDetected.value ?: return
         if (_linkApproving.value || _linkApproved.value) return
         if (payload.isExpired()) {
-            _linkApprovalError.value = PcLinkError.IntentExpired()
+            _linkApprovalError.value = PcLinkError.IntentExpired
             return
         }
         linkApproveJob?.cancel()

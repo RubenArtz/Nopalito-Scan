@@ -101,59 +101,59 @@ sealed class BiometricTokenError : Throwable() {
     // static analysis cannot see a call site. Deliberately kept.
     @Suppress("unused")
     private fun readResolve(): Any = when (this) {
-        is NotEnabled -> NotEnabled()
-        is KeyInvalidated -> KeyInvalidated()
-        is KeyLocked -> KeyLocked()
-        is NoSecureLockScreen -> NoSecureLockScreen()
-        is NotAvailable -> NotAvailable()
-        is StorageUnavailable -> StorageUnavailable()
+        is NotEnabled -> NotEnabled
+        is KeyInvalidated -> KeyInvalidated
+        is KeyLocked -> KeyLocked
+        is NoSecureLockScreen -> NoSecureLockScreen
+        is NotAvailable -> NotAvailable
+        is StorageUnavailable -> StorageUnavailable
     }
 
     /** No key or no stored blob exists yet. */
-    data class NotEnabled : BiometricTokenError()
+    data object NotEnabled : BiometricTokenError()
 
     /**
      * The key was permanently invalidated (fingerprint/face enrolled changed).
      * The existing encrypted blob can never be decrypted again: the biometric
      * mode must be reset and the token re-encrypted from a fresh login.
      */
-    data class KeyInvalidated : BiometricTokenError()
+    data object KeyInvalidated : BiometricTokenError()
 
     /** The key exists but the OS would not release it without fresh auth. */
-    data class KeyLocked : BiometricTokenError()
+    data object KeyLocked : BiometricTokenError()
 
     /**
      * The device has no secure lock screen (no PIN/pattern/password): the
      * Keystore refuses to create a key that requires user authentication.
      */
-    data class NoSecureLockScreen : BiometricTokenError()
+    data object NoSecureLockScreen : BiometricTokenError()
 
     /**
      * The Keystore cannot provide the required cipher at all (e.g. emulators
      * whose Keymint does not implement AES/GCM). Biometric unlock can never
      * work on this device: report it as unavailable instead of failing.
      */
-    data class NotAvailable : BiometricTokenError()
+    data object NotAvailable : BiometricTokenError()
 
     /** Unexpected Keystore/provider failure (IO, algorithm, ...). */
-    data class StorageUnavailable : BiometricTokenError()
+    data object StorageUnavailable : BiometricTokenError()
 }
 
 private const val SECURE_LOCK_SCREEN_MESSAGE =
     "Secure lock screen must be enabled to create keys requiring user authentication"
 
 internal fun mapCipherInitFailure(e: Throwable): BiometricTokenError = when (e) {
-    is KeyPermanentlyInvalidatedException -> BiometricTokenError.KeyInvalidated()
-    is UserNotAuthenticatedException -> BiometricTokenError.KeyLocked()
-    is java.security.NoSuchAlgorithmException -> BiometricTokenError.NotAvailable()
+    is KeyPermanentlyInvalidatedException -> BiometricTokenError.KeyInvalidated
+    is UserNotAuthenticatedException -> BiometricTokenError.KeyLocked
+    is java.security.NoSuchAlgorithmException -> BiometricTokenError.NotAvailable
     else -> when {
         e.message?.contains(SECURE_LOCK_SCREEN_MESSAGE) == true ->
-            BiometricTokenError.NoSecureLockScreen()
+            BiometricTokenError.NoSecureLockScreen
 
         e.cause?.message?.contains(SECURE_LOCK_SCREEN_MESSAGE) == true ->
-            BiometricTokenError.NoSecureLockScreen()
+            BiometricTokenError.NoSecureLockScreen
 
-        else -> BiometricTokenError.StorageUnavailable()
+        else -> BiometricTokenError.StorageUnavailable
     }
 }
 
@@ -241,7 +241,7 @@ internal class AndroidCryptoKeyStore(
     }
 
     override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> {
-        if (!hasKey(alias)) return Result.failure(BiometricTokenError.NotEnabled())
+        if (!hasKey(alias)) return Result.failure(BiometricTokenError.NotEnabled)
         return try {
             val cipher = newCipher()
             val key = keyStore.getKey(alias, null) as SecretKey
@@ -346,7 +346,7 @@ class BiometricTokenStore internal constructor(
     fun createDecryptCipher(): Result<Cipher> {
         val iv = preferences.getString(KEY_IV_KEY, null)
             ?.let(::base64Decode)
-            ?: return Result.failure(BiometricTokenError.NotEnabled())
+            ?: return Result.failure(BiometricTokenError.NotEnabled)
         return crypto.createCipher(Cipher.DECRYPT_MODE, KEY_ALIAS, iv)
     }
 

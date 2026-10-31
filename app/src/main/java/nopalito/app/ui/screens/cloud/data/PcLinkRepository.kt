@@ -100,7 +100,7 @@ class PcLinkRepository(
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (_: IOException) {
-            Result.failure(PcLinkError.NetworkError())
+            Result.failure(PcLinkError.NetworkError)
         } catch (_: Exception) {
             Result.failure(PcLinkError.Unknown(null))
         }
@@ -122,7 +122,7 @@ class PcLinkRepository(
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (_: IOException) {
-            Result.failure(PcLinkError.NetworkError())
+            Result.failure(PcLinkError.NetworkError)
         } catch (_: Exception) {
             Result.failure(PcLinkError.Unknown(null))
         }
@@ -144,20 +144,20 @@ class PcLinkRepository(
         fun mapHttpError(statusCode: Int, rawBody: String?): PcLinkError {
             val parsed = ErrorParser.parse(statusCode, rawBody)
             return when (parsed.code) {
-                "LINK_INTENT_NOT_FOUND", "LINK_SESSION_NOT_FOUND" -> PcLinkError.IntentNotFound()
-                "LINK_INTENT_EXPIRED", "LINK_SESSION_EXPIRED" -> PcLinkError.IntentExpired()
-                "LINK_INTENT_BLOCKED" -> PcLinkError.IntentBlocked()
+                "LINK_INTENT_NOT_FOUND", "LINK_SESSION_NOT_FOUND" -> PcLinkError.IntentNotFound
+                "LINK_INTENT_EXPIRED", "LINK_SESSION_EXPIRED" -> PcLinkError.IntentExpired
+                "LINK_INTENT_BLOCKED" -> PcLinkError.IntentBlocked
                 "LINK_INTENT_INVALID_STATE", "LINK_PIN_INVALID", "LINK_NONCE_MISMATCH",
-                "LINK_REFRESH_INVALID" -> PcLinkError.IntentInvalidState()
+                "LINK_REFRESH_INVALID" -> PcLinkError.IntentInvalidState
 
-                "LINK_OWNER_MISMATCH" -> PcLinkError.UserMismatch()
-                "LINK_SESSION_REVOKED" -> PcLinkError.Unauthorized()
+                "LINK_OWNER_MISMATCH" -> PcLinkError.UserMismatch
+                "LINK_SESSION_REVOKED" -> PcLinkError.Unauthorized
                 else -> when (statusCode) {
-                    401 -> PcLinkError.Unauthorized()
-                    403 -> PcLinkError.UserMismatch()
-                    404 -> PcLinkError.IntentNotFound()
-                    410 -> PcLinkError.IntentExpired()
-                    429 -> PcLinkError.RateLimited()
+                    401 -> PcLinkError.Unauthorized
+                    403 -> PcLinkError.UserMismatch
+                    404 -> PcLinkError.IntentNotFound
+                    410 -> PcLinkError.IntentExpired
+                    429 -> PcLinkError.RateLimited
                     else -> PcLinkError.Unknown(parsed.code)
                 }
             }
