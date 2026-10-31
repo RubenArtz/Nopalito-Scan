@@ -37,6 +37,8 @@ object OriginalIntegrity {
     fun sha256(file: java.io.File): String = sha256(file.readBytes())
 
     fun matches(file: java.io.File, expectedSha256: String?): Boolean {
-        return !(expectedSha256.isNullOrBlank() || !file.exists()) && runCatching { sha256(file) == expectedSha256.lowercase() }.getOrDefault(false)
+        return !(expectedSha256.isNullOrBlank() || !file.exists()) && runCatching { sha256(file) == expectedSha256.lowercase() }.getOrDefault(
+            false
+        )
     }
 }

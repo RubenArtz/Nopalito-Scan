@@ -37,6 +37,10 @@
     <string name="capture_mode_batch">Lote</string>
     <!-- Camera screen: auto-detect toggle label -->
     <string name="auto_detect">Detecção automática</string>
+    <!-- Camera screen: automatic capture toggle (bottom deck, next to ID) -->
+    <string name="auto_mode">Auto</string>
+    <string name="auto_capture_on">Captura automática ATIVADA — segure firme e a foto é tirada sozinha.</string>
+    <string name="auto_capture_off">Captura automática DESATIVADA — tire fotos com o botão de captura.</string>
     <!-- Appears on the Camera screen -->
     <string name="camera_permission_rationale">O aplicativo precisa de acesso à câmera para escanear documentos. As
         imagens capturadas são armazenadas apenas neste dispositivo e serão excluídas quando você fechar o escaneamento
@@ -140,6 +144,29 @@
     <string name="qr_type_phone">Telefone</string>
     <string name="qr_type_sms">SMS</string>
     <string name="qr_type_geo">Localização</string>
+    <string name="qr_type_contact">Contato</string>
+    <string name="qr_type_event">Evento</string>
+    <!-- QR live scanner: compact popup and expanded sheet -->
+    <string name="qr_sheet_expand">Expandir resultado</string>
+    <string name="qr_other_codes">Outros códigos</string>
+    <string name="qr_open_link">Abrir link</string>
+    <string name="qr_compose_email">Escrever e-mail</string>
+    <string name="qr_call">Ligar</string>
+    <string name="qr_send_sms">Enviar SMS</string>
+    <string name="qr_add_calendar">Adicionar ao calendário</string>
+    <!-- QR result dialog: contact fields -->
+    <string name="qr_contact_name">Nome</string>
+    <string name="qr_contact_phones">Telefones</string>
+    <string name="qr_contact_emails">E-mails</string>
+    <string name="qr_contact_organization">Organização</string>
+    <string name="qr_contact_title">Cargo</string>
+    <!-- QR result dialog: event fields -->
+    <string name="qr_event_summary">Evento</string>
+    <string name="qr_event_start">Início</string>
+    <string name="qr_event_end">Fim</string>
+    <string name="qr_event_location">Local</string>
+    <string name="qr_event_description">Descrição</string>
+    <string name="qr_import_as_page">Importar como página</string>
     <string name="qr_wifi_ssid">Rede</string>
     <string name="qr_wifi_password">Senha</string>
     <string name="qr_wifi_security">Segurança</string>

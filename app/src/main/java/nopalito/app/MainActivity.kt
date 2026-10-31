@@ -384,7 +384,6 @@ class MainActivity : FragmentActivity() {
                             ) { uris ->
                                 cameraViewModel.importPhotos(uris)
                             }
-                            val qrScanMode by cameraViewModel.qrScanMode.collectAsStateWithLifecycle()
                             val ineMode by viewModel.ineMode.collectAsStateWithLifecycle()
                             CameraScreen(
                                 viewModel,
@@ -401,8 +400,8 @@ class MainActivity : FragmentActivity() {
                                 cameraPermission = cameraPermission,
                                 onImportClicked = {
                                     cameraViewModel.onImportClicked()
-                                    if (qrScanMode || ineMode) {
-                                        // QR and INE modes only make sense with photos.
+                                    if (ineMode) {
+                                        // INE only makes sense with photos.
                                         pickMultiple.launch(arrayOf("image/*"))
                                     } else {
                                         pickMultiple.launch(CAMERA_IMPORT_MIME_TYPES)

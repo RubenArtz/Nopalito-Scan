@@ -106,5 +106,7 @@ class CloudScanUploader(context: Context) {
         is QrDetected.Type.Phone -> "phone"
         is QrDetected.Type.Sms -> "sms"
         is QrDetected.Type.Geo -> "geo"
+        is QrDetected.Type.Contact -> "contact"
+        is QrDetected.Type.Event -> "event"
     }
 }

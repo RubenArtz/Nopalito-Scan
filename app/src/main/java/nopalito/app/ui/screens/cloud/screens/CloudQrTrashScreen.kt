@@ -345,7 +345,7 @@ private fun TrashScanCard(
         ) {
             if (thumbnail != null) {
                 Image(
-                    bitmap = thumbnail!!.asImageBitmap(),
+                    bitmap = thumbnail.asImageBitmap(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

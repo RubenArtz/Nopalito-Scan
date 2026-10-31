@@ -329,12 +329,12 @@ class BiometricAuthManager(
                     "cipher create: fail, exception=${error?.javaClass?.simpleName ?: "unknown"}"
                 )
                 when (error) {
-                    BiometricTokenError.NoSecureLockScreen ->
+                    BiometricTokenError.NoSecureLockScreen() ->
                         PreparedCipher.Aborted(BiometricAuthResult.NoSecureLockScreen)
 
                     // The Keystore cannot provide the cipher on this device
                     // (e.g. emulator Keymint without AES/GCM): never workable.
-                    BiometricTokenError.NotAvailable ->
+                    BiometricTokenError.NotAvailable() ->
                         PreparedCipher.Aborted(BiometricAuthResult.NotAvailable)
 
                     // KeyLocked (user not authenticated) / StorageUnavailable:
@@ -352,16 +352,16 @@ class BiometricAuthManager(
                     PreparedCipher.Ready(result.getOrThrow())
                 }
 
-                BiometricTokenError.NotEnabled -> PreparedCipher.Aborted(BiometricAuthResult.NotEnabled)
-                BiometricTokenError.KeyInvalidated -> PreparedCipher.Aborted(BiometricAuthResult.KeyInvalidated)
-                BiometricTokenError.NoSecureLockScreen ->
+                BiometricTokenError.NotEnabled() -> PreparedCipher.Aborted(BiometricAuthResult.NotEnabled)
+                BiometricTokenError.KeyInvalidated() -> PreparedCipher.Aborted(BiometricAuthResult.KeyInvalidated)
+                BiometricTokenError.NoSecureLockScreen() ->
                     PreparedCipher.Aborted(BiometricAuthResult.NoSecureLockScreen)
 
-                BiometricTokenError.NotAvailable ->
+                BiometricTokenError.NotAvailable() ->
                     PreparedCipher.Aborted(BiometricAuthResult.NotAvailable)
 
-                BiometricTokenError.KeyLocked,
-                BiometricTokenError.StorageUnavailable,
+                BiometricTokenError.KeyLocked(),
+                BiometricTokenError.StorageUnavailable(),
                     -> {
                     Log.w(
                         TAG,
@@ -395,10 +395,10 @@ class BiometricAuthManager(
                     Log.w(TAG, "cipher create: fail after auth, exception=${e::class.simpleName}")
                     listener(
                         when (e) {
-                            BiometricTokenError.NoSecureLockScreen ->
+                            BiometricTokenError.NoSecureLockScreen() ->
                                 BiometricAuthResult.NoSecureLockScreen
 
-                            BiometricTokenError.NotAvailable ->
+                            BiometricTokenError.NotAvailable() ->
                                 BiometricAuthResult.NotAvailable
 
                             else -> BiometricAuthResult.Failed
@@ -425,10 +425,10 @@ class BiometricAuthManager(
                     )
                     listener(
                         when (e) {
-                            BiometricTokenError.KeyInvalidated ->
+                            BiometricTokenError.KeyInvalidated() ->
                                 BiometricAuthResult.KeyInvalidated
 
-                            BiometricTokenError.NotAvailable ->
+                            BiometricTokenError.NotAvailable() ->
                                 BiometricAuthResult.NotAvailable
 
                             else -> BiometricAuthResult.Failed

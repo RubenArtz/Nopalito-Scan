@@ -133,6 +133,11 @@ data class QrLinkPayload(
         /** Returns null when the payload is not a Cloud Link QR code. */
         fun parse(raw: String?): QrLinkPayload? {
             if (raw.isNullOrBlank()) return null
+            // Fast shape guard: real payloads are JSON objects. Without this,
+            // every plain QR (URL, text, ...) pays a full JSON parse that
+            // throws on the calling thread — with N codes per frame that is
+            // N exceptions per frame just to learn "not a link".
+            if (!raw.trimStart().startsWith("{")) return null
             return try {
                 // kotlinx.serialization (not org.json): the parser also runs
                 // on plain JVM unit tests where android.jar is stubbed.
@@ -172,13 +177,13 @@ enum class PcLinkSyncStatus { IDLE, UPLOADING, SYNCED, ERROR }
  * by exhaustive when in PcLinkRepository and the UI.
  */
 sealed class PcLinkError : Exception() {
-    data object IntentNotFound : PcLinkError()
-    data object IntentExpired : PcLinkError()
-    data object IntentBlocked : PcLinkError()
-    data object IntentInvalidState : PcLinkError()
-    data object UserMismatch : PcLinkError()
-    data object RateLimited : PcLinkError()
-    data object NetworkError : PcLinkError()
-    data object Unauthorized : PcLinkError()
+    data class IntentNotFound : PcLinkError()
+    data class IntentExpired : PcLinkError()
+    data class IntentBlocked : PcLinkError()
+    data class IntentInvalidState : PcLinkError()
+    data class UserMismatch : PcLinkError()
+    data class RateLimited : PcLinkError()
+    data class NetworkError : PcLinkError()
+    data class Unauthorized : PcLinkError()
     data class Unknown(val debugCode: String? = null) : PcLinkError()
 }

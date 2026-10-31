@@ -93,28 +93,28 @@ class PcLinkRepositoryTest {
     fun `approveQr owner mismatch maps to UserMismatch`() = runTest {
         enqueueJson(403, envelope("null", "LINK_OWNER_MISMATCH"))
         val result = repository.approveQr("intent-id", "nonce")
-        assertEquals(PcLinkError.UserMismatch, result.exceptionOrNull())
+        assertEquals(PcLinkError.UserMismatch(), result.exceptionOrNull())
     }
 
     @Test
     fun `approveQr rate limit maps to RateLimited`() = runTest {
         enqueueJson(429, envelope("null", "RATE_LIMIT_EXCEEDED"))
         val result = repository.approveQr("intent-id", "nonce")
-        assertEquals(PcLinkError.RateLimited, result.exceptionOrNull())
+        assertEquals(PcLinkError.RateLimited(), result.exceptionOrNull())
     }
 
     @Test
     fun `approveByPin blocked maps to IntentBlocked`() = runTest {
         enqueueJson(403, envelope("null", "LINK_INTENT_BLOCKED"))
         val result = repository.approveByPin("000000", "intent-id")
-        assertEquals(PcLinkError.IntentBlocked, result.exceptionOrNull())
+        assertEquals(PcLinkError.IntentBlocked(), result.exceptionOrNull())
     }
 
     @Test
     fun `approveByPin expired maps to IntentExpired`() = runTest {
         enqueueJson(410, envelope("null", "LINK_INTENT_EXPIRED"))
         val result = repository.approveByPin("000000", "intent-id")
-        assertEquals(PcLinkError.IntentExpired, result.exceptionOrNull())
+        assertEquals(PcLinkError.IntentExpired(), result.exceptionOrNull())
     }
 
     @Test
@@ -157,32 +157,32 @@ class PcLinkRepositoryTest {
     fun `revokeSession unknown maps to IntentNotFound`() = runTest {
         enqueueJson(404, envelope("null", "LINK_SESSION_NOT_FOUND"))
         val result = repository.revokeSession("missing")
-        assertEquals(PcLinkError.IntentNotFound, result.exceptionOrNull())
+        assertEquals(PcLinkError.IntentNotFound(), result.exceptionOrNull())
     }
 
     @Test
     fun `unreachable backend maps to NetworkError`() = runTest {
         server.close()
         val result = repository.approveQr("intent-id", "nonce")
-        assertEquals(PcLinkError.NetworkError, result.exceptionOrNull())
+        assertEquals(PcLinkError.NetworkError(), result.exceptionOrNull())
     }
 
     @Test
     fun `mapHttpError prefers backend code over status`() {
         assertEquals(
-            PcLinkError.UserMismatch,
+            PcLinkError.UserMismatch(),
             PcLinkRepository.mapHttpError(403, envelope("null", "LINK_OWNER_MISMATCH"))
         )
         assertEquals(
-            PcLinkError.RateLimited,
+            PcLinkError.RateLimited(),
             PcLinkRepository.mapHttpError(429, null)
         )
         assertEquals(
-            PcLinkError.IntentExpired,
+            PcLinkError.IntentExpired(),
             PcLinkRepository.mapHttpError(410, null)
         )
         assertEquals(
-            PcLinkError.Unauthorized,
+            PcLinkError.Unauthorized(),
             PcLinkRepository.mapHttpError(401, null)
         )
     }

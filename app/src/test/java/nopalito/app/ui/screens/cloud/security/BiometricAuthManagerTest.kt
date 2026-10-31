@@ -243,7 +243,7 @@ class BiometricAuthManagerTest {
         val store = newStore(
             FailingEncryptOnceCryptoKeyStore(
                 JvmCryptoKeyStore(),
-                BiometricTokenError.KeyLocked
+                BiometricTokenError.KeyLocked()
             )
         )
         val controller = FakeController()
@@ -271,7 +271,7 @@ class BiometricAuthManagerTest {
         val store = newStore(
             AlwaysFailingEncryptCryptoKeyStore(
                 JvmCryptoKeyStore(),
-                BiometricTokenError.KeyLocked
+                BiometricTokenError.KeyLocked()
             )
         )
         val controller = FakeController()
@@ -293,7 +293,7 @@ class BiometricAuthManagerTest {
         val store = newStore(
             AlwaysFailingEncryptCryptoKeyStore(
                 JvmCryptoKeyStore(),
-                BiometricTokenError.KeyInvalidated
+                BiometricTokenError.KeyInvalidated()
             )
         )
         val controller = FakeController()
@@ -330,7 +330,7 @@ class BiometricAuthManagerTest {
         // the user authenticates (PIN-only device, no enrolled biometrics).
         val store2 = BiometricTokenStore(
             prefs,
-            FailingDecryptOnceCryptoKeyStore(shared, BiometricTokenError.KeyLocked)
+            FailingDecryptOnceCryptoKeyStore(shared, BiometricTokenError.KeyLocked())
         )
         val controller2 = FakeController()
         val manager2 = BiometricAuthManager(store2) { controller2 }
@@ -371,7 +371,7 @@ class BiometricAuthManagerTest {
         val store = newStore(
             AlwaysFailingEncryptCryptoKeyStore(
                 JvmCryptoKeyStore(),
-                BiometricTokenError.NotAvailable
+                BiometricTokenError.NotAvailable()
             )
         )
         val controller = FakeController()
@@ -421,17 +421,17 @@ class BiometricAuthManagerTest {
         override fun hasKey(alias: String): Boolean = false
 
         override fun createKey(alias: String) {
-            throw BiometricTokenError.NoSecureLockScreen
+            throw BiometricTokenError.NoSecureLockScreen()
         }
 
         override fun createKey(alias: String, allowWeak: Boolean) {
-            throw BiometricTokenError.NoSecureLockScreen
+            throw BiometricTokenError.NoSecureLockScreen()
         }
 
         override fun deleteKey(alias: String) = Unit
 
         override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> =
-            Result.failure(BiometricTokenError.NotEnabled)
+            Result.failure(BiometricTokenError.NotEnabled())
     }
 
     /** Fails the first cipher creation with KeyInvalidated, then delegates. */
@@ -452,7 +452,7 @@ class BiometricAuthManagerTest {
         override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> =
             if (shouldFail) {
                 shouldFail = false
-                Result.failure(BiometricTokenError.KeyInvalidated)
+                Result.failure(BiometricTokenError.KeyInvalidated())
             } else {
                 delegate.createCipher(mode, alias, iv)
             }

@@ -43,7 +43,6 @@ class SettingsRepository(
     private val DOWNLOAD_DIR_URI = stringPreferencesKey("download_dir_uri")
     private val AUTO_DETECT = booleanPreferencesKey("auto_detect")
     private val CAPTURE_MODE = stringPreferencesKey("capture_mode")
-    private val QR_SCAN_MODE = booleanPreferencesKey("qr_scan_mode")
     private val CAPTURE_TIER = stringPreferencesKey("capture_tier")
     private val KEEP_ORIGINAL = booleanPreferencesKey("keep_original")
     private val HIGH_QUALITY_CAPTURE = booleanPreferencesKey("high_quality_capture")
@@ -129,17 +128,6 @@ class SettingsRepository(
     suspend fun setCaptureMode(mode: CaptureMode) {
         dataStore.edit { prefs ->
             prefs[CAPTURE_MODE] = mode.name
-        }
-    }
-
-    val qrScanModeEnabled: Flow<Boolean> =
-        dataStore.data.map { prefs ->
-            prefs[QR_SCAN_MODE] ?: false
-        }
-
-    suspend fun setQrScanModeEnabled(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[QR_SCAN_MODE] = enabled
         }
     }
 

@@ -194,6 +194,33 @@
     <string name="qr_type_phone">Phone</string>
     <string name="qr_type_sms">SMS</string>
     <string name="qr_type_geo">Location</string>
+    <string name="qr_type_contact">Contact</string>
+    <string name="qr_type_event">Event</string>
+    <!-- QR live scanner: compact popup and expanded sheet -->
+    <string name="qr_sheet_expand">Expand result</string>
+    <string name="qr_other_codes">Other codes</string>
+    <string name="qr_open_link">Open link</string>
+    <string name="qr_compose_email">Compose email</string>
+    <string name="qr_call">Call</string>
+    <string name="qr_send_sms">Send SMS</string>
+    <string name="qr_add_calendar">Add to calendar</string>
+    <string name="qr_import_as_page">Import as page</string>
+    <!-- Camera screen: automatic capture toggle (bottom deck, next to ID) -->
+    <string name="auto_mode">Auto</string>
+    <string name="auto_capture_on">Automatic capture ON — hold steady and the photo is taken by itself.</string>
+    <string name="auto_capture_off">Automatic capture OFF — take photos with the capture button.</string>
+    <!-- QR result dialog: contact fields -->
+    <string name="qr_contact_name">Name</string>
+    <string name="qr_contact_phones">Phones</string>
+    <string name="qr_contact_emails">Emails</string>
+    <string name="qr_contact_organization">Organization</string>
+    <string name="qr_contact_title">Title</string>
+    <!-- QR result dialog: event fields -->
+    <string name="qr_event_summary">Event</string>
+    <string name="qr_event_start">Starts</string>
+    <string name="qr_event_end">Ends</string>
+    <string name="qr_event_location">Location</string>
+    <string name="qr_event_description">Description</string>
     <!-- QR result dialog: WiFi fields -->
     <string name="qr_wifi_ssid">Network</string>
     <string name="qr_wifi_password">Password</string>

@@ -221,7 +221,7 @@ class BiometricSessionManagerTest {
     fun `enable falls back to a crypto-less prompt when cipher creation fails and still enables`() {
         val store = BiometricTokenStore(
             freshPrefs(),
-            FailingEncryptOnceCryptoKeyStore(JvmCryptoKeyStore(), BiometricTokenError.KeyLocked)
+            FailingEncryptOnceCryptoKeyStore(JvmCryptoKeyStore(), BiometricTokenError.KeyLocked())
         )
         val controller = FakeController()
         val manager = BiometricSessionManager(store) { controller }
@@ -385,7 +385,7 @@ class BiometricSessionManagerTest {
         override fun createCipher(mode: Int, alias: String, iv: ByteArray?): Result<Cipher> =
             if (shouldFail) {
                 shouldFail = false
-                Result.failure(BiometricTokenError.KeyInvalidated)
+                Result.failure(BiometricTokenError.KeyInvalidated())
             } else {
                 delegate.createCipher(mode, alias, iv)
             }

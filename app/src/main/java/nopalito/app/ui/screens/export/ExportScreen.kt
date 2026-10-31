@@ -1650,7 +1650,7 @@ private fun ErrorBar(error: ExportError) {
                             // overloads), so use the method form. Single-arg variant is
                             // deprecated on API 33+ but still functional.
                             @Suppress("DEPRECATION")
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Export error", text))
+                            (clipboard.primaryClip = ClipData.newPlainText("Export error", text))
                         },
                     ) {
                         Icon(

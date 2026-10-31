@@ -127,11 +127,11 @@ class PcLinkViewModel(
         if (_state.value.isApproving || _state.value.approvedIntentId != null) return
         val payload = QrLinkPayload.parse(raw)
         if (payload == null) {
-            _state.value = _state.value.copy(approveError = PcLinkError.IntentNotFound)
+            _state.value = _state.value.copy(approveError = PcLinkError.IntentNotFound())
             return
         }
         if (payload.isExpired()) {
-            _state.value = _state.value.copy(approveError = PcLinkError.IntentExpired)
+            _state.value = _state.value.copy(approveError = PcLinkError.IntentExpired())
             return
         }
         approveJob?.cancel()

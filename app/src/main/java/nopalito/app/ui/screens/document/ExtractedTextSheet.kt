@@ -221,7 +221,7 @@ fun ExtractedTextSheet(
 
 private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("extracted_text", text))
+    clipboard.primaryClip = ClipData.newPlainText("extracted_text", text)
 }
 
 private fun shareText(context: Context, text: String) {

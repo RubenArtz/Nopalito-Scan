@@ -31,13 +31,10 @@ import androidx.camera.core.ImageProxy
 import androidx.core.graphics.scale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +42,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import nopalito.app.AppContainer
 import nopalito.app.BuildConfig
@@ -60,10 +59,16 @@ import nopalito.app.ui.screens.cloud.data.CloudConversionRepository
 import nopalito.app.ui.screens.cloud.data.PcLinkRepository
 import nopalito.app.ui.screens.cloud.model.PcLinkError
 import nopalito.app.ui.screens.cloud.model.QrLinkPayload
+import nopalito.app.ui.screens.qr.QrAnalyzer
+import nopalito.app.ui.screens.qr.QrCandidate
 import nopalito.app.ui.screens.qr.QrDetected
+import nopalito.app.ui.screens.qr.QrDetectionState
+import nopalito.app.ui.screens.qr.QrDetectionTracker
+import nopalito.app.ui.screens.qr.QrFrame
 import nopalito.app.ui.screens.qr.QrScanEntity
+import nopalito.app.ui.screens.qr.QrSheetItem
+import nopalito.app.ui.screens.qr.StillQrResult
 import nopalito.app.ui.screens.qr.encodeQrType
-import nopalito.app.ui.screens.qr.formatName
 import nopalito.app.ui.screens.settings.DefaultColorMode
 import nopalito.app.ui.screens.tools.queryDisplayName
 import nopalito.app.ui.screens.tools.shared.PdfPreviewRenderer
@@ -74,6 +79,7 @@ import nopalito.imageprocessing.detectDocumentQuad
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.CancellationException
+import java.util.concurrent.ConcurrentHashMap
 
 /** File types offered by the camera import picker in normal mode (images, PDF and Word). */
 val CAMERA_IMPORT_MIME_TYPES: Array<String> = arrayOf(
@@ -191,12 +197,54 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     private val _isTorchEnabled = MutableStateFlow(false)
     val isTorchEnabled: StateFlow<Boolean> = _isTorchEnabled
 
-    // QR / barcode scan mode: in-place on the home camera (like INE mode)
-    private val _qrScanMode = MutableStateFlow(false)
-    val qrScanMode: StateFlow<Boolean> = _qrScanMode.asStateFlow()
+    // QR / barcode detection runs always-on over the live camera: no mode
+    // toggle, brackets and the compact popup appear whenever codes are in
+    // view, next to the normal document pipeline.
+    private val _qrDetectionState = MutableStateFlow(QrDetectionState())
+    val qrDetectionState: StateFlow<QrDetectionState> = _qrDetectionState.asStateFlow()
 
-    private val _qrDetected = MutableStateFlow<QrDetected?>(null)
-    val qrDetected: StateFlow<QrDetected?> = _qrDetected.asStateFlow()
+    /** QR codes found in imported photos; non-null opens the info sheet. */
+    private val _stillQrResults = MutableStateFlow<List<StillQrResult>?>(null)
+    val stillQrResults: StateFlow<List<StillQrResult>?> = _stillQrResults.asStateFlow()
+
+    /** Closes the imported-photo QR sheet. */
+    fun dismissStillQr() {
+        _stillQrResults.value = null
+    }
+
+    /**
+     * Imports one QR-carrying photo as a document page anyway (a sheet with
+     * a QR on it is both things at once). Removes it from the pending sheet
+     * list; the rest stay open.
+     */
+    fun importStillAsPage(item: QrSheetItem) {
+        val results = _stillQrResults.value ?: return
+        val target = results.firstOrNull { it.item == item } ?: return
+        _stillQrResults.value = (results - target).ifEmpty { null }
+        viewModelScope.launch {
+            _importState.value = ImportState.Importing(0, 1)
+            try {
+                importPhotoAsPage(target.sourceUri)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.e("Import", "Failed to import QR photo as page: ${target.sourceUri}", e)
+                _events.emit(
+                    CameraEvent.ImportError(
+                        applicationContext.stringFor(
+                            R.string.import_error,
+                            AppLocaleOverride.locale
+                        )
+                    )
+                )
+            }
+            _importState.value = ImportState.Idle
+        }
+    }
+
+    private val qrTracker = QrDetectionTracker()
+    private val savedQrContents = ConcurrentHashMap.newKeySet<String>()
+    private var qrTickerJob: Job? = null
 
     // Cloud Link: a scanned QR that authorizes a web session, not a scan
     // Payload parsed from the QR content; non-null shows the approval dialog.
@@ -215,39 +263,31 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
 
     private var linkApproveJob: Job? = null
 
-    private val qrScanner = BarcodeScanning.getClient(
-        BarcodeScannerOptions.Builder()
-            .setBarcodeFormats(
-                Barcode.FORMAT_QR_CODE,
-                Barcode.FORMAT_DATA_MATRIX,
-                Barcode.FORMAT_AZTEC,
-                Barcode.FORMAT_PDF417,
-                Barcode.FORMAT_CODE_39,
-                Barcode.FORMAT_CODE_93,
-                Barcode.FORMAT_CODE_128,
-                Barcode.FORMAT_CODABAR,
-                Barcode.FORMAT_EAN_8,
-                Barcode.FORMAT_EAN_13,
-                Barcode.FORMAT_ITF,
-                Barcode.FORMAT_UPC_A,
-                Barcode.FORMAT_UPC_E,
-            ).build()
+    private val qrAnalyzer = QrAnalyzer(
+        shouldCaptureBitmap = { candidate ->
+            QrLinkPayload.parse(candidate.content) == null &&
+                    candidate.content !in savedQrContents
+        },
+        onFrame = { frame, bitmap ->
+            // Heavy per-frame work (link scan over N candidates, tracker
+            // matching/scoring) runs on Default: 10 codes must never block
+            // the main thread. StateFlow emission is thread-safe.
+            viewModelScope.launch(Dispatchers.Default) { onQrFrame(frame, bitmap) }
+        },
+        onError = { error ->
+            logger.e("Camera", "QR analysis failed", error)
+        },
     )
     private val qrScansDir = File(appContainer.applicationContext.filesDir, "qr_scans")
     private val qrScanRepository = appContainer.qrScanRepository
     private val cloudScanUploader = appContainer.cloudScanUploader
 
-    fun setQrScanMode(enabled: Boolean) {
-        _qrScanMode.value = enabled
-        if (enabled) resetLiveAnalysis()
-        if (!enabled) _qrDetected.value = null
-        viewModelScope.launch {
-            settingsRepository.setQrScanModeEnabled(enabled)
-        }
-    }
-
-    fun dismissQrResult() {
-        _qrDetected.value = null
+    /** Clears every live QR track, e.g. when rotating the screen. */
+    fun resetQrDetection() {
+        qrTracker.reset()
+        _qrDetectionState.value = QrDetectionState()
+        qrTickerJob?.cancel()
+        qrTickerJob = null
     }
 
     /** Closes the Cloud Link approval dialog (blocked while a request is in flight). */
@@ -267,7 +307,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         val payload = _linkQrDetected.value ?: return
         if (_linkApproving.value || _linkApproved.value) return
         if (payload.isExpired()) {
-            _linkApprovalError.value = PcLinkError.IntentExpired
+            _linkApprovalError.value = PcLinkError.IntentExpired()
             return
         }
         linkApproveJob?.cancel()
@@ -313,9 +353,6 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     val lastCaptureDiag: StateFlow<String?> = _lastCaptureDiag.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            _qrScanMode.value = settingsRepository.qrScanModeEnabled.first()
-        }
         viewModelScope.launch {
             _captureTier.value = settingsRepository.captureTier.first()
         }
@@ -606,7 +643,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
 
     override fun onCleared() {
         fileCaptureJob?.cancel()
-        qrScanner.close()
+        qrAnalyzer.close()
         liveAnalyzer.release()
     }
 
@@ -624,92 +661,82 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     }
 
     /**
-     * Runs on the dedicated ImageAnalysis executor. The analyzer is
-     * synchronous so CameraX `STRATEGY_KEEP_ONLY_LATEST` coalesces frames
-     * while this one is processed (stale frames are dropped, not queued).
-     * The ImageProxy is always closed, on every path.
+     * Runs on the dedicated ImageAnalysis executor. One frame feeds both
+     * pipelines: the QR analyzer borrows the pixels first (detached bitmap
+     * copy, never closes), then the document analyzer runs synchronously and
+     * always closes the proxy, so CameraX `STRATEGY_KEEP_ONLY_LATEST`
+     * coalesces frames while this one is processed.
      */
     fun liveAnalysis(imageProxy: ImageProxy) {
         if (_captureState.value !is CaptureState.Idle || _importState.value !is ImportState.Idle) {
             imageProxy.close()
             return
         }
-        if (_qrScanMode.value) {
-            analyzeQrFrame(imageProxy)
-            return
+        if (_linkQrDetected.value == null && !_linkApproving.value) {
+            qrAnalyzer.analyze(imageProxy)
         }
         _liveAnalysisState.value = liveAnalyzer.analyzeFrame(imageProxy)
     }
 
-    private fun analyzeQrFrame(imageProxy: ImageProxy) {
-        if (_qrDetected.value != null || _linkQrDetected.value != null || _linkApproving.value) {
-            imageProxy.close()
+    /**
+     * Applies one live analysis frame to the tracker. Runs on Default, never
+     * on the main thread (see [qrAnalyzer] onFrame): StateFlow writes and the
+     * concurrent saved-set are thread-safe, and the UI reads snapshots.
+     * A Cloud Link QR short-circuits the normal scan flow; otherwise the
+     * primary tracked code is persisted once per content.
+     */
+    private fun onQrFrame(frame: QrFrame, bitmap: Bitmap?) {
+        if (_linkQrDetected.value != null ||
+            _linkApproving.value
+        ) {
+            bitmap?.recycle()
             return
         }
-        val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
-            return
+
+        val link = frame.candidates.firstNotNullOfOrNull { candidate ->
+            QrLinkPayload.parse(candidate.content)
         }
-        val input = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        qrScanner.process(input)
-            .addOnSuccessListener { barcodes ->
-                val barcode = barcodes.firstOrNull() ?: return@addOnSuccessListener
-                val content =
-                    barcode.rawValue ?: barcode.displayValue ?: return@addOnSuccessListener
-                // A Cloud Link QR authorizes a web session instead of being
-                // stored as a scan (mirrors the dedicated PcLinkQrScanner).
-                QrLinkPayload.parse(content)?.let { linkPayload ->
-                    if (_linkQrDetected.value == null) {
-                        _linkApprovalError.value = null
-                        _linkQrDetected.value = linkPayload
-                    }
-                    return@addOnSuccessListener
-                }
-                if (_qrDetected.value == null) {
-                    val detected = toDetected(barcode, content, imageProxy.toBitmap())
-                    _qrDetected.value = detected
-                    saveQrScan(detected)
-                }
+        if (link != null) {
+            if (_linkQrDetected.value == null) {
+                _linkApprovalError.value = null
+                _linkQrDetected.value = link
             }
-            .addOnCompleteListener { imageProxy.close() }
+            resetQrDetection()
+            bitmap?.recycle()
+            return
+        }
+
+        val state = qrTracker.update(frame)
+        _qrDetectionState.value = state
+        ensureQrTicker()
+
+        val primary = state.primary
+        if (primary == null || primary.content in savedQrContents) {
+            bitmap?.recycle()
+            return
+        }
+        if (bitmap == null) return
+        savedQrContents.add(primary.content)
+        saveQrScan(QrDetected(primary.content, primary.format, bitmap, primary.type))
     }
 
-    private fun toDetected(barcode: Barcode, content: String, bitmap: Bitmap): QrDetected {
-        val wifi = barcode.wifi
-        val url = barcode.url
-        val email = barcode.email
-        val phone = barcode.phone
-        val sms = barcode.sms
-        val geo = barcode.geoPoint
-        val type = when {
-            wifi != null -> QrDetected.Type.Wifi(
-                ssid = wifi.ssid,
-                password = wifi.password,
-                security = when (wifi.encryptionType) {
-                    Barcode.WiFi.TYPE_WPA -> "WPA"
-                    Barcode.WiFi.TYPE_WEP -> "WEP"
-                    else -> "Abierta"
-                },
-            )
-
-            url != null -> QrDetected.Type.Url(url.url ?: content)
-            email != null -> QrDetected.Type.Email(
-                address = email.address ?: content,
-                subject = email.subject,
-                body = email.body,
-            )
-
-            phone != null -> QrDetected.Type.Phone(phone.number ?: content)
-            sms != null -> QrDetected.Type.Sms(
-                number = sms.phoneNumber ?: content,
-                message = sms.message,
-            )
-
-            geo != null -> QrDetected.Type.Geo(geo.lat, geo.lng)
-            else -> QrDetected.Type.Text
+    /**
+     * Keeps age-dependent state fresh (primary selection, fade/removal) while
+     * no new camera frame arrives. 5 Hz is plenty: the overlay springs
+     * interpolate to display rate and fades are Compose-animated, so ticking
+     * faster only burns composition with many codes.
+     */
+    private fun ensureQrTicker() {
+        if (qrTickerJob?.isActive == true) return
+        qrTickerJob = viewModelScope.launch {
+            while (isActive) {
+                delay(200)
+                val state = qrTracker.snapshot(android.os.SystemClock.elapsedRealtime())
+                _qrDetectionState.value = state
+                if (state.tracks.isEmpty()) break
+            }
+            qrTickerJob = null
         }
-        return QrDetected(content, formatName(barcode.format), bitmap, type)
     }
 
     private fun saveQrScan(detected: QrDetected) {
@@ -737,29 +764,44 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         }
     }
 
-    /** QR detection on a still bitmap (imported image), same save + result flow as live frames. */
-    private fun detectQrFromImage(bitmap: Bitmap) {
-        if (_qrDetected.value != null || _linkQrDetected.value != null || _linkApproving.value) return
-        val input = InputImage.fromBitmap(bitmap, 0)
-        qrScanner.process(input)
-            .addOnSuccessListener { barcodes ->
-                val barcode = barcodes.firstOrNull() ?: return@addOnSuccessListener
-                val content =
-                    barcode.rawValue ?: barcode.displayValue ?: return@addOnSuccessListener
-                if (_qrDetected.value == null) {
-                    // Same Cloud Link interception as the live analyzer.
-                    QrLinkPayload.parse(content)?.let { linkPayload ->
-                        if (_linkQrDetected.value == null) {
-                            _linkApprovalError.value = null
-                            _linkQrDetected.value = linkPayload
-                        }
-                        return@addOnSuccessListener
-                    }
-                    val detected = toDetected(barcode, content, bitmap)
-                    _qrDetected.value = detected
-                    saveQrScan(detected)
-                }
+    /**
+     * QR-first import: an imported photo is checked for codes before anything
+     * else. A Cloud Link payload opens the approval dialog; plain codes open
+     * the info sheet directly ([stillQrItems]) and are saved to history.
+     * Anything without codes keeps the old path into the document editor.
+     */
+    private suspend fun detectQrInBitmap(bitmap: Bitmap): List<QrCandidate> =
+        suspendCancellableCoroutine { cont ->
+            qrAnalyzer.analyzeStill(bitmap) { candidates ->
+                if (!cont.isCompleted) cont.resume(candidates) { cause, _, _ -> }
             }
+        }
+
+    private fun handleStillQr(candidates: List<QrCandidate>, bitmap: Bitmap, uri: Uri) {
+        if (_linkQrDetected.value != null || _linkApproving.value) return
+        val link = candidates.firstNotNullOfOrNull { candidate ->
+            QrLinkPayload.parse(candidate.content)
+        }
+        if (link != null) {
+            if (_linkQrDetected.value == null) {
+                _linkApprovalError.value = null
+                _linkQrDetected.value = link
+            }
+            return
+        }
+        val items = candidates
+            .filter { it.content.isNotBlank() }
+            .distinctBy { it.content }
+            .map { QrSheetItem(it.content, it.format, it.type) }
+        if (items.isEmpty()) return
+        _stillQrResults.value = (
+                _stillQrResults.value.orEmpty() +
+                        items.map { StillQrResult(it, uri) }
+                ).distinctBy { it.item.content }
+        val primary = items.first()
+        if (savedQrContents.add(primary.content)) {
+            saveQrScan(QrDetected(primary.content, primary.format, bitmap, primary.type))
+        }
     }
 
     fun onImageCaptured(imageProxy: ImageProxy?, opticalMeasures: OpticalMeasures?) {
@@ -884,7 +926,7 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
         val name = queryDisplayName(applicationContext, uri) ?: ""
         val mime = applicationContext.contentResolver.getType(uri) ?: ""
         when {
-            _qrScanMode.value || isImageFile(mime, name) -> importImage(uri)
+            isImageFile(mime, name) -> importImage(uri)
             isPdfFile(mime, name) -> importPdf(uri)
             else -> importDocument(uri, name)
         }
@@ -901,16 +943,25 @@ class CameraViewModel(appContainer: AppContainer) : ViewModel() {
     private suspend fun importImage(uri: Uri) {
         val photoToImport = imageLoader.load(uri)
         currentCoroutineContext().ensureActive()
-        if (_qrScanMode.value) {
-            // In QR mode, imported images are QR-detected instead of
-            // added to the document.
-            detectQrFromImage(photoToImport)
+        // QR-first: a photo with codes opens the QR info sheet instead of
+        // landing in the document; anything else is imported as a page.
+        val candidates = detectQrInBitmap(photoToImport)
+        currentCoroutineContext().ensureActive()
+        if (candidates.isNotEmpty()) {
+            handleStillQr(candidates, photoToImport, uri)
         } else {
-            val page = processCapturedImage(photoToImport, 0, null, Mode.IMPORT)
-            currentCoroutineContext().ensureActive()
-            _events.emit(CameraEvent.ImageCaptured(page))
-            runCatching { statsRepository.logPhotoCaptured(source = "import") }
+            importPhotoAsPage(uri, photoToImport)
         }
+    }
+
+    /** Shared document-page import path (used with a pre-loaded bitmap). */
+    private suspend fun importPhotoAsPage(uri: Uri, preloaded: Bitmap? = null) {
+        val photo = preloaded ?: imageLoader.load(uri)
+        currentCoroutineContext().ensureActive()
+        val page = processCapturedImage(photo, 0, null, Mode.IMPORT)
+        currentCoroutineContext().ensureActive()
+        _events.emit(CameraEvent.ImageCaptured(page))
+        runCatching { statsRepository.logPhotoCaptured(source = "import") }
     }
 
     /** Imports a PDF as document pages (one rendered bitmap per PDF page). */

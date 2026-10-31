@@ -73,10 +73,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,7 +87,12 @@ import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import nopalito.app.ui.screens.cloud.model.QrScan
 import nopalito.app.ui.screens.cloud.viewmodel.CloudQrHistoryViewModel
+import nopalito.app.ui.screens.qr.QrResultSheet
+import nopalito.app.ui.screens.qr.QrSheetItem
+import nopalito.app.ui.screens.qr.decodeQrType
 import nopalito.app.ui.screens.qr.regenerateAndSaveQr
+import nopalito.app.ui.screens.qr.rememberQrSheetActions
+import nopalito.app.ui.screens.qr.rememberWifiConnect
 import nopalito.app.ui.screens.qr.saveScanImageToDownloads
 import java.io.File
 import java.text.DateFormat
@@ -111,6 +114,7 @@ fun CloudQrHistoryScreen(
     var downloadingFormat by remember { mutableStateOf<String?>(null) }
     var batchTrashConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val onConnectWifi = rememberWifiConnect()
     val inSelection = state.selectedIds.isNotEmpty()
     val allSelected = state.scans.isNotEmpty() && state.scans.all { it.id in state.selectedIds }
 
@@ -305,11 +309,23 @@ fun CloudQrHistoryScreen(
     }
 
     exportItem?.let { scan ->
-        CloudQrExportDialog(
-            scan = scan,
+        val sheetItem = remember(scan) {
+            QrSheetItem(scan.content, scan.format, decodeQrType(scan.typeData))
+        }
+        QrResultSheet(
+            item = sheetItem,
+            others = emptyList(),
+            onSelectOther = {},
+            actions = rememberQrSheetActions(sheetItem, onConnectWifi),
+            onDismiss = { exportItem = null },
+            downloadFormats = if (scan.design != null) listOf(
+                "png",
+                "svg",
+                "pdf"
+            ) else listOf("png"),
             downloadingFormat = downloadingFormat,
-            onDownload = { fmt ->
-                if (downloadingFormat != null) return@CloudQrExportDialog
+            onDownloadFormat = { fmt ->
+                if (downloadingFormat != null) return@QrResultSheet
                 downloadingFormat = fmt
                 scope.launch(Dispatchers.IO) {
                     val ok = if (scan.design != null) {
@@ -330,7 +346,6 @@ fun CloudQrHistoryScreen(
                     }
                 }
             },
-            onDismiss = { exportItem = null },
         )
     }
 }
@@ -370,7 +385,7 @@ private fun CloudScanCard(
         ) {
             if (thumbnail != null) {
                 Image(
-                    bitmap = thumbnail!!.asImageBitmap(),
+                    bitmap = thumbnail.asImageBitmap(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -429,88 +444,4 @@ private fun formatDate(iso: String?): String {
     } catch (_: Exception) {
         iso
     }
-}
-
-/** Detail dialog for a generated QR stored in the cloud: preview + PNG/SVG/PDF export. */
-@Composable
-private fun CloudQrExportDialog(
-    scan: QrScan,
-    downloadingFormat: String?,
-    onDownload: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val context = LocalContext.current
-    val repository = remember { CloudRepository(context) }
-    val preview = rememberThumbnail(key = scan.imageFileId?.let { "cloud-qr-preview:$it" }) {
-        scan.imageFileId
-            ?.let { runCatching { repository.getScanThumbnail(it).getOrNull() }.getOrNull() }
-            ?.let { decodeThumbnail(it.absolutePath, 1024) }
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.qr_redownload_title)) },
-        modifier = Modifier.fillMaxWidth(0.94f),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-        text = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                preview?.let { bmp ->
-                    Image(
-                        bitmap = bmp.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(320.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                }
-                Text(
-                    text = scan.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.qr_redownload_hint),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    val formats =
-                        if (scan.design != null) listOf("png", "svg", "pdf") else listOf("png")
-                    formats.forEach { fmt ->
-                        Button(
-                            onClick = { onDownload(fmt) },
-                            enabled = downloadingFormat == null || downloadingFormat == fmt,
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            if (downloadingFormat == fmt) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Text(fmt.uppercase())
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.qr_close)) }
-        },
-    )
 }

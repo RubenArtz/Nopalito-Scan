@@ -37,6 +37,10 @@
     <string name="capture_mode_batch">Lot</string>
     <!-- Camera screen: auto-detect toggle label -->
     <string name="auto_detect">Détection automatique</string>
+    <!-- Camera screen: automatic capture toggle (bottom deck, next to ID) -->
+    <string name="auto_mode">Auto</string>
+    <string name="auto_capture_on">Capture automatique ACTIVÉE — restez stable et la photo se prend toute seule.</string>
+    <string name="auto_capture_off">Capture automatique DÉSACTIVÉE — prenez les photos avec le bouton.</string>
     <!-- Appears on the Camera screen -->
     <string name="camera_permission_rationale">L\'application a besoin de l\'accès à la caméra pour numériser des
         documents. Les images capturées sont stockées uniquement sur cet appareil et seront supprimées lorsque vous
@@ -140,6 +144,29 @@
     <string name="qr_type_phone">Téléphone</string>
     <string name="qr_type_sms">SMS</string>
     <string name="qr_type_geo">Localisation</string>
+    <string name="qr_type_contact">Contact</string>
+    <string name="qr_type_event">Événement</string>
+    <!-- QR live scanner: compact popup and expanded sheet -->
+    <string name="qr_sheet_expand">Agrandir le résultat</string>
+    <string name="qr_other_codes">Autres codes</string>
+    <string name="qr_open_link">Ouvrir le lien</string>
+    <string name="qr_compose_email">Rédiger un e-mail</string>
+    <string name="qr_call">Appeler</string>
+    <string name="qr_send_sms">Envoyer un SMS</string>
+    <string name="qr_add_calendar">Ajouter au calendrier</string>
+    <!-- QR result dialog: contact fields -->
+    <string name="qr_contact_name">Nom</string>
+    <string name="qr_contact_phones">Téléphones</string>
+    <string name="qr_contact_emails">E-mails</string>
+    <string name="qr_contact_organization">Organisation</string>
+    <string name="qr_contact_title">Titre</string>
+    <!-- QR result dialog: event fields -->
+    <string name="qr_event_summary">Événement</string>
+    <string name="qr_event_start">Début</string>
+    <string name="qr_event_end">Fin</string>
+    <string name="qr_event_location">Lieu</string>
+    <string name="qr_event_description">Description</string>
+    <string name="qr_import_as_page">Importer comme page</string>
     <string name="qr_wifi_ssid">Réseau</string>
     <string name="qr_wifi_password">Mot de passe</string>
     <string name="qr_wifi_security">Sécurité</string>

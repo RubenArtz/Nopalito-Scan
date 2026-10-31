@@ -38,8 +38,48 @@ data class QrDetected(
         data class Phone(val number: String) : Type
         data class Sms(val number: String, val message: String?) : Type
         data class Geo(val lat: Double, val lng: Double) : Type
+        data class Contact(
+            val name: String?,
+            val phones: List<String>,
+            val emails: List<String>,
+            val organization: String?,
+            val title: String?,
+        ) : Type
+
+        data class Event(
+            val summary: String?,
+            val start: String?,
+            val end: String?,
+            val location: String?,
+            val description: String?,
+        ) : Type
     }
 }
+
+/**
+ * Lightweight view model for the compact popup and the expanded sheet.
+ * Unlike [QrDetected] it carries no bitmap, so it can be built for every
+ * active track without copying camera frames.
+ */
+data class QrSheetItem(
+    val content: String,
+    val format: String?,
+    val type: QrDetected.Type,
+)
+
+fun QrDetected.toSheetItem(): QrSheetItem = QrSheetItem(content, format, type)
+
+fun QrTrack.toSheetItem(): QrSheetItem = QrSheetItem(content, format, type)
+
+/**
+ * A QR found in an imported photo, kept together with the photo it came
+ * from so the user can still import that photo as a document page
+ * (a sheet with a QR on it is both things at once).
+ */
+data class StillQrResult(
+    val item: QrSheetItem,
+    val sourceUri: android.net.Uri,
+)
 
 fun formatName(format: Int): String? = when (format) {
     Barcode.FORMAT_QR_CODE -> "QR Code"
@@ -58,15 +98,50 @@ fun formatName(format: Int): String? = when (format) {
     else -> null
 }
 
+/** Separator for repeated fields (phones, emails) inside a tab-separated record. */
+private const val LIST_SEPARATOR = '\u001F'
+
+private fun String.asRecordField(): String = replace('\t', ' ').replace('\n', ' ')
+
+private fun List<String>.asRecordList(): String =
+    joinToString(LIST_SEPARATOR.toString()) { it.asRecordField() }
+
+private fun String.recordList(): List<String> =
+    split(LIST_SEPARATOR).filter { it.isNotBlank() }
+
 /** Compact tab-separated serialization of the parsed type, persisted with each scan. */
 fun encodeQrType(type: QrDetected.Type): String? = when (type) {
     is QrDetected.Type.Text -> null
-    is QrDetected.Type.Url -> "U\t${type.url}"
-    is QrDetected.Type.Wifi -> "W\t${type.ssid.orEmpty()}\t${type.password.orEmpty()}\t${type.security}"
-    is QrDetected.Type.Email -> "E\t${type.address}\t${type.subject.orEmpty()}\t${type.body.orEmpty()}"
-    is QrDetected.Type.Phone -> "P\t${type.number}"
-    is QrDetected.Type.Sms -> "S\t${type.number}\t${type.message.orEmpty()}"
+    is QrDetected.Type.Url -> "U\t${type.url.asRecordField()}"
+    is QrDetected.Type.Wifi ->
+        "W\t${type.ssid.orEmpty().asRecordField()}\t${
+            type.password.orEmpty().asRecordField()
+        }\t${type.security}"
+
+    is QrDetected.Type.Email ->
+        "E\t${type.address.asRecordField()}\t${
+            type.subject.orEmpty().asRecordField()
+        }\t${type.body.orEmpty().asRecordField()}"
+
+    is QrDetected.Type.Phone -> "P\t${type.number.asRecordField()}"
+    is QrDetected.Type.Sms -> "S\t${type.number.asRecordField()}\t${
+        type.message.orEmpty().asRecordField()
+    }"
+
     is QrDetected.Type.Geo -> "G\t${type.lat}\t${type.lng}"
+    is QrDetected.Type.Contact -> "C\t" +
+            "${type.name.orEmpty().asRecordField()}\t" +
+            "${type.phones.asRecordList()}\t" +
+            "${type.emails.asRecordList()}\t" +
+            "${type.organization.orEmpty().asRecordField()}\t" +
+            "${type.title.orEmpty().asRecordField()}"
+
+    is QrDetected.Type.Event -> "V\t" +
+            "${type.summary.orEmpty().asRecordField()}\t" +
+            "${type.start.orEmpty().asRecordField()}\t" +
+            "${type.end.orEmpty().asRecordField()}\t" +
+            "${type.location.orEmpty().asRecordField()}\t" +
+            "${type.description.orEmpty().asRecordField()}"
 }
 
 fun decodeQrType(data: String?): QrDetected.Type {
@@ -94,6 +169,22 @@ fun decodeQrType(data: String?): QrDetected.Type {
         "G" -> QrDetected.Type.Geo(
             lat = parts.getOrNull(1)?.toDoubleOrNull() ?: 0.0,
             lng = parts.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
+        )
+
+        "C" -> QrDetected.Type.Contact(
+            name = parts.getOrNull(1)?.takeIf { it.isNotEmpty() },
+            phones = parts.getOrNull(2).orEmpty().recordList(),
+            emails = parts.getOrNull(3).orEmpty().recordList(),
+            organization = parts.getOrNull(4)?.takeIf { it.isNotEmpty() },
+            title = parts.getOrNull(5)?.takeIf { it.isNotEmpty() },
+        )
+
+        "V" -> QrDetected.Type.Event(
+            summary = parts.getOrNull(1)?.takeIf { it.isNotEmpty() },
+            start = parts.getOrNull(2)?.takeIf { it.isNotEmpty() },
+            end = parts.getOrNull(3)?.takeIf { it.isNotEmpty() },
+            location = parts.getOrNull(4)?.takeIf { it.isNotEmpty() },
+            description = parts.getOrNull(5)?.takeIf { it.isNotEmpty() },
         )
 
         else -> QrDetected.Type.Text

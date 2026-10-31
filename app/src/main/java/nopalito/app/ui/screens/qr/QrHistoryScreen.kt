@@ -48,19 +48,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -87,7 +81,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -95,16 +88,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nopalito.app.R
-import nopalito.app.ui.decodeThumbnail
-import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.screens.cloud.data.CloudRepository
 import java.io.File
 import java.text.SimpleDateFormat
@@ -251,68 +243,33 @@ fun QrHistoryScreen(
         }
     }
 
-    // Detail dialog: reopens the scan with all its actions (copy, share, open, connect).
+    // Detail sheet: compact bottom sheet instead of the old full-screen
+    // dialog, with the same actions (copy, share, open, map, connect,
+    // save image) plus the type-specific ones (call, email, calendar…).
     detailItem?.let { item ->
-        val bitmap by produceState<Bitmap?>(null, item.imagePath) {
-            value = withContext(Dispatchers.IO) {
-                item.imagePath?.let { decodeThumbnail(it, QR_PREVIEW_PX) }
-            }
+        val sheetItem = remember(item) {
+            QrSheetItem(item.content, item.format, decodeQrType(item.typeData))
         }
-        bitmap?.let { bmp ->
-            val detected = QrDetected(
-                content = item.content,
-                format = item.format,
-                bitmap = bmp,
-                type = decodeQrType(item.typeData),
-            )
-            QrResultDialog(
-                detected = detected,
-                onCopy = {
-                    val clipboard =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("QR", item.content))
-                    Toast.makeText(context, R.string.qr_copied, Toast.LENGTH_SHORT).show()
-                },
-                onShare = {
-                    val send = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, item.content)
+        QrResultSheet(
+            item = sheetItem,
+            others = emptyList(),
+            onSelectOther = {},
+            actions = rememberQrSheetActions(sheetItem, onConnectWifi),
+            onDismiss = { detailItem = null },
+            onSaveImage = {
+                scope.launch(Dispatchers.IO) {
+                    val ok = item.imagePath?.let { File(it) }
+                        ?.let { saveScanImageToDownloads(context, it) } == true
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            if (ok) R.string.qr_saved else R.string.qr_save_error,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     }
-                    runCatching { context.startActivity(Intent.createChooser(send, null)) }
-                },
-                onOpen = {
-                    runCatching {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, item.content.toUri()))
-                    }
-                },
-                onOpenMap = {
-                    val geo = (detected.type as? QrDetected.Type.Geo) ?: return@QrResultDialog
-                    runCatching {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                "geo:${geo.lat},${geo.lng}?q=${geo.lat},${geo.lng}".toUri()
-                            )
-                        )
-                    }
-                },
-                onConnect = onConnectWifi,
-                onClose = { detailItem = null },
-                onSaveImage = {
-                    scope.launch(Dispatchers.IO) {
-                        val ok = item.imagePath?.let { File(it) }
-                            ?.let { saveScanImageToDownloads(context, it) } == true
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                if (ok) R.string.qr_saved else R.string.qr_save_error,
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        }
-                    }
-                },
-            )
-        }
+                }
+            },
+        )
     }
 
     deleteItem?.let { item ->
@@ -462,16 +419,6 @@ private fun QrRedownloadDialog(
     )
 }
 
-private fun qrTypeIcon(type: QrDetected.Type): ImageVector = when (type) {
-    is QrDetected.Type.Wifi -> Icons.Default.Wifi
-    is QrDetected.Type.Url -> Icons.Default.Link
-    is QrDetected.Type.Email -> Icons.Default.Email
-    is QrDetected.Type.Phone -> Icons.Default.Phone
-    is QrDetected.Type.Sms -> Icons.AutoMirrored.Filled.Message
-    is QrDetected.Type.Geo -> Icons.Default.LocationOn
-    is QrDetected.Type.Text -> Icons.Default.QrCode
-}
-
 /** Thumbnail size for the 64dp QR history cards (xxhdpi needs ~192px). */
 private const val QR_THUMBNAIL_PX = 256
 
@@ -524,7 +471,7 @@ private fun QrHistoryCard(
         ) {
             if (thumbnail != null) {
                 Image(
-                    bitmap = thumbnail!!,
+                    bitmap = thumbnail,
                     contentDescription = null,
                     modifier = Modifier
                         .size(64.dp)
@@ -587,7 +534,7 @@ private fun QrHistoryCard(
                                 menuOpen = false
                                 val clipboard =
                                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("QR", item.content))
+                                clipboard.primaryClip = ClipData.newPlainText("QR", item.content)
                                 Toast.makeText(context, R.string.qr_copied, Toast.LENGTH_SHORT)
                                     .show()
                             },

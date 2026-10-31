@@ -54,14 +54,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -80,7 +72,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -148,7 +139,7 @@ fun QrResultDialog(
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = typeIcon(detected.type),
+                                imageVector = qrTypeIcon(detected.type),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(28.dp),
@@ -156,7 +147,7 @@ fun QrResultDialog(
                         }
                         Column {
                             Text(
-                                text = stringResource(typeTitle(detected.type)),
+                                text = stringResource(qrTypeLabel(detected.type)),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
@@ -250,6 +241,48 @@ fun QrResultDialog(
                             is QrDetected.Type.Geo -> {
                                 InfoRow(stringResource(R.string.qr_geo_lat), type.lat.toString())
                                 InfoRow(stringResource(R.string.qr_geo_lng), type.lng.toString())
+                            }
+
+                            is QrDetected.Type.Contact -> {
+                                type.name?.let {
+                                    InfoRow(stringResource(R.string.qr_contact_name), it)
+                                }
+                                if (type.phones.isNotEmpty()) {
+                                    InfoRow(
+                                        stringResource(R.string.qr_contact_phones),
+                                        type.phones.joinToString("\n"),
+                                    )
+                                }
+                                if (type.emails.isNotEmpty()) {
+                                    InfoRow(
+                                        stringResource(R.string.qr_contact_emails),
+                                        type.emails.joinToString("\n"),
+                                    )
+                                }
+                                type.organization?.let {
+                                    InfoRow(stringResource(R.string.qr_contact_organization), it)
+                                }
+                                type.title?.let {
+                                    InfoRow(stringResource(R.string.qr_contact_title), it)
+                                }
+                            }
+
+                            is QrDetected.Type.Event -> {
+                                type.summary?.let {
+                                    InfoRow(stringResource(R.string.qr_event_summary), it)
+                                }
+                                type.start?.let {
+                                    InfoRow(stringResource(R.string.qr_event_start), it)
+                                }
+                                type.end?.let {
+                                    InfoRow(stringResource(R.string.qr_event_end), it)
+                                }
+                                type.location?.let {
+                                    InfoRow(stringResource(R.string.qr_event_location), it)
+                                }
+                                type.description?.let {
+                                    InfoRow(stringResource(R.string.qr_event_description), it)
+                                }
                             }
 
                             is QrDetected.Type.Text ->
@@ -364,26 +397,6 @@ private fun InfoRow(label: String, value: String) {
             modifier = Modifier.weight(1f),
         )
     }
-}
-
-private fun typeIcon(type: QrDetected.Type): ImageVector = when (type) {
-    is QrDetected.Type.Wifi -> Icons.Default.Wifi
-    is QrDetected.Type.Url -> Icons.Default.Link
-    is QrDetected.Type.Email -> Icons.Default.Email
-    is QrDetected.Type.Phone -> Icons.Default.Phone
-    is QrDetected.Type.Sms -> Icons.AutoMirrored.Filled.Message
-    is QrDetected.Type.Geo -> Icons.Default.LocationOn
-    is QrDetected.Type.Text -> Icons.Default.QrCode
-}
-
-private fun typeTitle(type: QrDetected.Type): Int = when (type) {
-    is QrDetected.Type.Wifi -> R.string.qr_type_wifi
-    is QrDetected.Type.Url -> R.string.qr_type_url
-    is QrDetected.Type.Email -> R.string.qr_type_email
-    is QrDetected.Type.Phone -> R.string.qr_type_phone
-    is QrDetected.Type.Sms -> R.string.qr_type_sms
-    is QrDetected.Type.Geo -> R.string.qr_type_geo
-    is QrDetected.Type.Text -> R.string.qr_type_text
 }
 
 /** Returns a connect handler that requests the nearby/location permission on first use. */

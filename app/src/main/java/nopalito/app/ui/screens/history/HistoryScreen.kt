@@ -111,14 +111,14 @@ import kotlinx.coroutines.withContext
 import nopalito.app.R
 import nopalito.app.ui.DocPagePreview
 import nopalito.app.ui.DocumentPagesPreview
-import nopalito.app.ui.decodeThumbnail
-import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.components.FileTypeBadge
 import nopalito.app.ui.components.GradientHeroAction
 import nopalito.app.ui.components.PurpleWaveHeader
 import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.decodeDocxMedia
 import nopalito.app.ui.decodeDocxPages
+import nopalito.app.ui.decodeThumbnail
+import nopalito.app.ui.rememberThumbnail
 import nopalito.app.ui.renderPdfPages
 import nopalito.app.ui.screens.export.ExportArtifact
 import nopalito.app.ui.screens.export.ExportArtifactMapper

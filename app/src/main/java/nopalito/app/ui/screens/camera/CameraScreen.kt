@@ -23,10 +23,6 @@ package nopalito.app.ui.screens.camera
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.util.Log
 import android.widget.Toast
@@ -34,11 +30,8 @@ import androidx.camera.core.CameraControl
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
@@ -76,6 +69,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Computer
@@ -147,7 +141,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
@@ -165,9 +158,14 @@ import nopalito.app.ui.components.pageCountText
 import nopalito.app.ui.components.rememberHapticManager
 import nopalito.app.ui.screens.cloud.data.PcLinkErrorStrings
 import nopalito.app.ui.screens.cloud.model.PcLinkError
-import nopalito.app.ui.screens.qr.QrDetected
-import nopalito.app.ui.screens.qr.QrResultDialog
+import nopalito.app.ui.screens.qr.QrOverlay
+import nopalito.app.ui.screens.qr.QrPopupHost
+import nopalito.app.ui.screens.qr.QrResultSheet
+import nopalito.app.ui.screens.qr.QrSheetActions
+import nopalito.app.ui.screens.qr.QrSheetItem
+import nopalito.app.ui.screens.qr.rememberQrSheetActions
 import nopalito.app.ui.screens.qr.rememberWifiConnect
+import nopalito.app.ui.screens.qr.toSheetItem
 import nopalito.app.ui.screens.settings.CaptureMode
 import nopalito.imageprocessing.ImageSize
 import nopalito.imageprocessing.QuadStabilityMonitor
@@ -206,8 +204,9 @@ fun CameraScreen(
     val thumbnailCoords = remember { mutableStateOf(Offset.Zero) }
     var isDebugMode by remember { mutableStateOf(false) }
     val isTorchEnabled by cameraViewModel.isTorchEnabled.collectAsStateWithLifecycle()
-    val qrScanMode by cameraViewModel.qrScanMode.collectAsStateWithLifecycle()
-    val qrDetected by cameraViewModel.qrDetected.collectAsStateWithLifecycle()
+    val qrDetectionState by cameraViewModel.qrDetectionState.collectAsStateWithLifecycle()
+    val stillQrResults by cameraViewModel.stillQrResults.collectAsStateWithLifecycle()
+    val qrHasFresh = qrDetectionState.freshTrackCount > 0
     val linkQrDetected by cameraViewModel.linkQrDetected.collectAsStateWithLifecycle()
     val linkApproving by cameraViewModel.linkApproving.collectAsStateWithLifecycle()
     val linkApproved by cameraViewModel.linkApproved.collectAsStateWithLifecycle()
@@ -240,6 +239,7 @@ fun CameraScreen(
     // automatically on the first attempt (shared handler used by camera and history).
     val qrContext = LocalContext.current
     val onConnectWifi = rememberWifiConnect()
+    var expandedQrItem by remember { mutableStateOf<QrSheetItem?>(null) }
 
     val captureController = remember { CameraCaptureController() }
     val mainExecutor = remember { ContextCompat.getMainExecutor(qrContext) }
@@ -359,27 +359,12 @@ fun CameraScreen(
     // --- INE mode: the credential capture overlay and its 2-shot front/back flow ---
     fun toggleIneMode() {
         val enable = !ineMode
-        // QR scan and INE are mutually exclusive camera modes.
-        if (enable) cameraViewModel.setQrScanMode(false)
         // Snapshot the baseline on activation so guides count only this session's shots.
         if (enable) {
             hasNavigatedToEditor = false
             ineBaselinePageCount = document.pageCount()
         }
         viewModel.setIneMode(enable)
-    }
-
-    // --- QR/barcode scan mode: dim overlay + frame + animated scan line on the live camera ---
-    fun toggleQrScanMode() {
-        val enable = !qrScanMode
-        if (enable && ineMode) viewModel.exitIneMode()
-        cameraViewModel.setQrScanMode(enable)
-    }
-
-    // QR and INE are mutually exclusive. QR wins on app restore so re-opening while
-    // QR mode is active resumes scanning instead of a stale INE session.
-    LaunchedEffect(qrScanMode) {
-        if (qrScanMode && ineMode) viewModel.exitIneMode()
     }
 
     // When the camera is re-entered (editor â†’ camera) with INE still active and pages
@@ -410,17 +395,14 @@ fun CameraScreen(
     var showIneImportDialog by remember { mutableStateOf(false) }
     var ineImportSide by remember { mutableStateOf<Boolean?>(null) } // true = front
     var ineImportBaseline by remember { mutableIntStateOf(0) }
-    // Import source picker (normal mode only): exactly one sheet at a time, and
-    // the cloud browser overlay below it. QR/INE keep the direct picker below.
+    // Import source picker: exactly one sheet at a time, and
+    // the cloud browser overlay below it. INE keeps the direct picker below.
     var showImportSheet by remember { mutableStateOf(false) }
     var showCloudBrowser by remember { mutableStateOf(false) }
     val handleImportClick: () -> Unit = {
         if (ineMode) {
             ineImportBaseline = document.pageCount()
             showIneImportDialog = true
-        } else if (qrScanMode) {
-            // QR mode keeps the direct image-only picker and its flow.
-            onImportClicked()
         } else {
             showImportSheet = true
         }
@@ -530,7 +512,7 @@ fun CameraScreen(
                         cameraViewModel.onFileSaved(
                             cid, file, optical, effective,
                             captureController.boundCameraId ?: boundCameraInfo,
-                            effective == nopalito.app.domain.CaptureTier.ORIGINAL || pipelineFlags.keepOriginal,
+                            true,
                             frame,
                         )
                     },
@@ -601,6 +583,13 @@ fun CameraScreen(
 
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    // The analysis frame and the preview crop change with the screen
+    // orientation; drop stale tracks instead of drawing them with the old
+    // aspect ratio.
+    LaunchedEffect(LocalConfiguration.current.orientation) {
+        cameraViewModel.resetQrDetection()
+    }
+
     // --- Auto-capture with stability timer ---
     // Requires the quad to be present and stable for STABILITY_DELAY_MS and a
     // minimum number of consecutive low-movement updates.
@@ -614,7 +603,7 @@ fun CameraScreen(
     // locks). A null AF state means "focus state unavailable" and never
     // blocks; manual capture below stays available regardless.
     val afStateTick = captureController.lastAfState
-    LaunchedEffect(currentQuad, ineMode, qrScanMode, afStateTick) {
+    LaunchedEffect(currentQuad, ineMode, qrHasFresh, afStateTick) {
         val quad = currentQuad
         if (quad == null) {
             stabilityMonitor.reset()
@@ -623,8 +612,9 @@ fun CameraScreen(
         // Manual capture while the INE guide is active: the framed flow must be
         // user-paced so the front/back shots land in order.
         if (ineMode) return@LaunchedEffect
-        // QR mode reroutes analysis to barcode detection, so no document quad.
-        if (qrScanMode) return@LaunchedEffect
+        // A visible QR takes precedence: hold auto-capture while the user
+        // reads it instead of snapping the document underneath.
+        if (qrHasFresh) return@LaunchedEffect
 
         val isEffectivelyEnabled = autoDetect ?: true
         if (!isEffectivelyEnabled) return@LaunchedEffect
@@ -642,6 +632,16 @@ fun CameraScreen(
             onCapture()
         }
     }
+    // Shared compact popup: portrait renders it above the capture deck inside
+    // DocumentBar; landscape renders it above the bottom-aligned deck.
+    val qrPopup: @Composable () -> Unit = {
+        QrPopupHost(
+            state = qrDetectionState,
+            onExpand = { item -> expandedQrItem = item },
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+    }
+
     Box {
         CameraScreenScaffold(
             cameraPreview = {
@@ -693,8 +693,6 @@ fun CameraScreen(
             onTorchSwitched = {
                 cameraViewModel.setTorchEnabled(!isTorchEnabled)
             },
-            onQrClicked = ::toggleQrScanMode,
-            qrScanMode = qrScanMode,
             ineMode = ineMode,
             ineCaptured = ineCaptured,
             onIneSwitched = ::toggleIneMode,
@@ -712,6 +710,11 @@ fun CameraScreen(
             onAutoDetectChanged = onAutoDetectChanged,
             captureMode = captureMode,
             onCaptureModeChanged = onCaptureModeChanged,
+            qrOverlay = {
+                QrOverlay(state = qrDetectionState, modifier = Modifier.fillMaxSize())
+            },
+            qrPopup = qrPopup,
+            qrHasFresh = qrHasFresh,
         )
         if (showFocusWarning) {
             Surface(
@@ -854,40 +857,46 @@ fun CameraScreen(
         )
     }
 
-    qrDetected?.let { result ->
-        QrResultDialog(
-            detected = result,
-            onCopy = {
-                val clipboard =
-                    qrContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("QR", result.content))
-                Toast.makeText(qrContext, R.string.qr_copied, Toast.LENGTH_SHORT).show()
+    // Shared intent actions for both QR sheets (live popup expansion and
+    // imported-photo results). Built per item so every callback captures the
+    // code it acts on.
+    @Composable
+    fun qrSheetActions(item: QrSheetItem): QrSheetActions =
+        rememberQrSheetActions(item, onConnectWifi)
+
+    expandedQrItem?.let { item ->
+        val others = qrDetectionState.freshTracks
+            .map { it.toSheetItem() }
+            .filter { it.content != item.content }
+        QrResultSheet(
+            item = item,
+            others = others,
+            onSelectOther = { expandedQrItem = it },
+            actions = qrSheetActions(item),
+            onDismiss = { expandedQrItem = null },
+        )
+    }
+
+    // An imported photo with codes opens the info sheet directly instead of
+    // landing in the document editor. From that sheet the photo can still be
+    // imported as a page (a sheet with a QR on it is both things at once).
+    var stillItem by remember { mutableStateOf<QrSheetItem?>(null) }
+    LaunchedEffect(stillQrResults) {
+        val items = stillQrResults.orEmpty().map { it.item }
+        stillItem = items.firstOrNull { it == stillItem } ?: items.firstOrNull()
+    }
+    stillItem?.let { item ->
+        val others = stillQrResults.orEmpty().map { it.item }.filter { it != item }
+        QrResultSheet(
+            item = item,
+            others = others,
+            onSelectOther = { stillItem = it },
+            actions = qrSheetActions(item),
+            onDismiss = {
+                stillItem = null
+                cameraViewModel.dismissStillQr()
             },
-            onShare = {
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, result.content)
-                }
-                runCatching { qrContext.startActivity(Intent.createChooser(send, null)) }
-            },
-            onOpen = {
-                runCatching {
-                    qrContext.startActivity(Intent(Intent.ACTION_VIEW, result.content.toUri()))
-                }
-            },
-            onOpenMap = {
-                val geo = (result.type as? QrDetected.Type.Geo) ?: return@QrResultDialog
-                runCatching {
-                    qrContext.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            "geo:${geo.lat},${geo.lng}?q=${geo.lat},${geo.lng}".toUri()
-                        )
-                    )
-                }
-            },
-            onConnect = onConnectWifi,
-            onClose = { cameraViewModel.dismissQrResult() },
+            onImportAsPage = { cameraViewModel.importStillAsPage(it) },
         )
     }
 
@@ -1171,8 +1180,6 @@ private fun CameraScreenScaffold(
     onFinalizePressed: () -> Unit,
     onDebugModeSwitched: () -> Unit,
     onTorchSwitched: () -> Unit,
-    onQrClicked: () -> Unit = {},
-    qrScanMode: Boolean = false,
     ineMode: Boolean = false,
     ineCaptured: Int = 0,
     onIneSwitched: () -> Unit = {},
@@ -1188,6 +1195,9 @@ private fun CameraScreenScaffold(
     onAutoDetectChanged: ((Boolean) -> Unit)? = null,
     captureMode: CaptureMode? = null,
     onCaptureModeChanged: ((CaptureMode) -> Unit)? = null,
+    qrOverlay: (@Composable () -> Unit)? = null,
+    qrPopup: (@Composable () -> Unit)? = null,
+    qrHasFresh: Boolean = false,
 ) {
     var focusPoint by remember { mutableStateOf<Offset?>(null) }
     LaunchedEffect(focusPoint) {
@@ -1223,15 +1233,24 @@ private fun CameraScreenScaffold(
         captureMode ?: cameraViewModel?.captureMode?.collectAsStateWithLifecycle()?.value
         ?: CaptureMode.BATCH
 
+    // The auto-capture toggle moved into the bottom deck (next to ID); the
+    // top star button is hidden by passing nulls to MyScaffold.
+    val deckContext = LocalContext.current
+    val autoOnMsg = stringResource(R.string.auto_capture_on)
+    val autoOffMsg = stringResource(R.string.auto_capture_off)
+    val onAutoDetectToggled = {
+        val next = !effectiveAutoDetect
+        if (onAutoDetectChanged != null) onAutoDetectChanged(next)
+        else cameraViewModel?.setAutoDetectEnabled(next)
+        Toast.makeText(deckContext, if (next) autoOnMsg else autoOffMsg, Toast.LENGTH_LONG).show()
+    }
+
     Box {
         MyScaffold(
             navigation = navigation,
             cameraMode = true,
-            autoDetect = effectiveAutoDetect,
-            onAutoDetectChanged = onAutoDetectChanged ?: { enabled ->
-                cameraViewModel?.setAutoDetectEnabled(enabled)
-                Unit
-            },
+            autoDetect = null,
+            onAutoDetectChanged = null,
             captureMode = effectiveCaptureMode,
             onCaptureModeChanged = onCaptureModeChanged ?: { mode ->
                 cameraViewModel?.setCaptureMode(mode)
@@ -1251,16 +1270,20 @@ private fun CameraScreenScaffold(
                 !cameraUiState.isLandscape
             ) {
                 {
-                    CaptureDeck(
-                        torchEnabled = cameraUiState.isTorchEnabled,
-                        onTorchSwitched = onTorchSwitched,
-                        onCapture = onCapture,
-                        onImportClicked = onImportClicked,
-                        onQrClicked = onQrClicked,
-                        qrScanMode = qrScanMode,
-                        ineMode = ineMode,
-                        onIneSwitched = onIneSwitched,
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        qrPopup?.invoke()
+                        if (qrHasFresh) Spacer(Modifier.height(8.dp))
+                        CaptureDeck(
+                            torchEnabled = cameraUiState.isTorchEnabled,
+                            onTorchSwitched = onTorchSwitched,
+                            onCapture = onCapture,
+                            onImportClicked = onImportClicked,
+                            ineMode = ineMode,
+                            onIneSwitched = onIneSwitched,
+                            autoDetect = effectiveAutoDetect,
+                            onAutoDetectToggled = onAutoDetectToggled,
+                        )
+                    }
                 }
             } else null,
         ) { modifier ->
@@ -1283,8 +1306,6 @@ private fun CameraScreenScaffold(
                         onCapture,
                         onTorchSwitched,
                         onImportClicked,
-                        onQrClicked,
-                        qrScanMode,
                         ineMode,
                         onIneSwitched,
                         Modifier.pointerInput(Unit) {
@@ -1293,7 +1314,12 @@ private fun CameraScreenScaffold(
                                 captureController.tapToFocus(offset)
                                 onPreviewTap()
                             }
-                        }
+                        },
+                        qrOverlay = qrOverlay,
+                        qrPopup = qrPopup,
+                        qrHasFresh = qrHasFresh,
+                        autoDetect = effectiveAutoDetect,
+                        onAutoDetectToggled = onAutoDetectToggled,
                     )
                     if (ineMode) {
                         IneGuideOverlay(
@@ -1301,8 +1327,6 @@ private fun CameraScreenScaffold(
                             liveAnalysisState = cameraUiState.liveAnalysisState,
                             modifier = Modifier.matchParentSize(),
                         )
-                    } else if (qrScanMode) {
-                        QrScanOverlay(modifier = Modifier.matchParentSize())
                     }
                 }
             }
@@ -1361,11 +1385,14 @@ private fun CameraPreviewBox(
     onCapture: () -> Unit,
     onTorchSwitched: () -> Unit,
     onImportClicked: () -> Unit,
-    onQrClicked: () -> Unit = {},
-    qrScanMode: Boolean = false,
     ineMode: Boolean = false,
     onIneSwitched: () -> Unit = {},
     modifier: Modifier,
+    qrOverlay: (@Composable () -> Unit)? = null,
+    qrPopup: (@Composable () -> Unit)? = null,
+    qrHasFresh: Boolean = false,
+    autoDetect: Boolean = false,
+    onAutoDetectToggled: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -1375,7 +1402,9 @@ private fun CameraPreviewBox(
             cameraUiState,
             Modifier,
             ineMode = ineMode,
+            suppressDocumentOverlay = qrHasFresh,
         )
+        qrOverlay?.invoke()
         if (cameraUiState.isDebugMode) {
             MessageBox(
                 cameraUiState.liveAnalysisState,
@@ -1384,20 +1413,27 @@ private fun CameraPreviewBox(
         }
         FocusOverlay(focusPoint)
         if (cameraUiState.isLandscape) {
-            CaptureDeck(
-                torchEnabled = cameraUiState.isTorchEnabled,
-                onTorchSwitched = onTorchSwitched,
-                onCapture = onCapture,
-                onImportClicked = onImportClicked,
-                onQrClicked = onQrClicked,
-                qrScanMode = qrScanMode,
-                ineMode = ineMode,
-                onIneSwitched = onIneSwitched,
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(bottom = 12.dp)
-            )
+                    .padding(horizontal = 16.dp),
+            ) {
+                qrPopup?.invoke()
+                if (qrHasFresh) Spacer(Modifier.height(8.dp))
+                CaptureDeck(
+                    torchEnabled = cameraUiState.isTorchEnabled,
+                    onTorchSwitched = onTorchSwitched,
+                    onCapture = onCapture,
+                    onImportClicked = onImportClicked,
+                    ineMode = ineMode,
+                    onIneSwitched = onIneSwitched,
+                    autoDetect = autoDetect,
+                    onAutoDetectToggled = onAutoDetectToggled,
+                )
+            }
         }
     }
 }
@@ -1471,10 +1507,10 @@ private fun CaptureDeck(
     onCapture: () -> Unit,
     onImportClicked: () -> Unit,
     modifier: Modifier = Modifier,
-    onQrClicked: () -> Unit = {},
-    qrScanMode: Boolean = false,
     ineMode: Boolean = false,
     onIneSwitched: () -> Unit = {},
+    autoDetect: Boolean = false,
+    onAutoDetectToggled: () -> Unit = {},
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -1505,15 +1541,6 @@ private fun CaptureDeck(
         )
         CaptureButton(onClick = onCapture, modifier = Modifier.size(62.dp))
         DeckSideButton(
-            icon = Icons.Default.QrCodeScanner,
-            label = stringResource(R.string.qr_code),
-            contentDescription = stringResource(R.string.qr_code),
-            containerColor =
-                if (qrScanMode) Color(0xFF4CAF50) else Color.Transparent,
-            contentColor = Color.White,
-            onClick = onQrClicked,
-        )
-        DeckSideButton(
             icon = Icons.Default.Badge,
             label = stringResource(R.string.ine),
             contentDescription = stringResource(R.string.ine),
@@ -1521,6 +1548,17 @@ private fun CaptureDeck(
                 if (ineMode) Color(0xFF4CAF50) else Color.Transparent,
             contentColor = Color.White,
             onClick = onIneSwitched,
+        )
+        // Automatic capture: same star icon as the old top toggle. Green
+        // while active; the toast on toggle tells on/off plus what it does.
+        DeckSideButton(
+            icon = Icons.Default.AutoAwesome,
+            label = stringResource(R.string.auto_mode),
+            contentDescription = stringResource(R.string.auto_detect),
+            containerColor =
+                if (autoDetect) Color(0xFF4CAF50) else Color.Transparent,
+            contentColor = Color.White,
+            onClick = onAutoDetectToggled,
         )
     }
 }
@@ -1680,114 +1718,6 @@ private fun IneGuideOverlay(
     }
 }
 
-/**
- * QR scan mode overlay: dims everything except a centered square frame and sweeps
- * a green scan line through it to simulate scanning, same in-place pattern as the
- * INE guide (the live camera stays visible through the transparent hole).
- */
-@Composable
-private fun QrScanOverlay(modifier: Modifier = Modifier) {
-    val hint = stringResource(R.string.qr_detect_hint)
-    val transition = rememberInfiniteTransition(label = "qrScan")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearEasing),
-        ),
-        label = "qrScanLine",
-    )
-
-    BoxWithConstraints(modifier = modifier) {
-        val frameW = maxWidth * 0.72f
-        val frameH = frameW
-        // Raise the scan frame (and the hint above it) higher on screen.
-        val frameUp = 84.dp
-        val frameUpPx = with(LocalDensity.current) { frameUp.toPx() }
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val fw = frameW.toPx()
-            val fh = frameH.toPx()
-            val left = (size.width - fw) / 2f
-            val top = (size.height - fh) / 2f - frameUpPx
-            val corner = 28f
-
-            val path = Path().apply {
-                fillType = PathFillType.EvenOdd
-                addRect(Rect(0f, 0f, size.width, size.height))
-                addRoundRect(
-                    RoundRect(
-                        Rect(left, top, left + fw, top + fh),
-                        CornerRadius(corner),
-                    )
-                )
-            }
-            drawPath(path, Color.Black.copy(alpha = 0.68f))
-
-            // Corner brackets in scanner green.
-            val len = fw * 0.16f
-            val strokeWidth = 6f
-            val green = Color(0xFF0CAD55)
-            fun cornerBracket(cx: Float, cy: Float, dx: Float, dy: Float) {
-                drawLine(green, Offset(cx, cy), Offset(cx + dx * len, cy), strokeWidth)
-                drawLine(green, Offset(cx, cy), Offset(cx, cy + dy * len), strokeWidth)
-            }
-            cornerBracket(left, top, 1f, 1f)
-            cornerBracket(left + fw, top, -1f, 1f)
-            cornerBracket(left, top + fh, 1f, -1f)
-            cornerBracket(left + fw, top + fh, -1f, -1f)
-
-            // Animated scan line sweeping top â†’ bottom through the frame. Fades in at
-            // the top edge and out at the bottom edge so the loop restarts smoothly
-            // (no visible teleport), while always reading as top â†’ bottom.
-            val lineY = top + 10f + progress * (fh - 20f)
-            val fade = minOf(1f, progress * 24f, (1f - progress) * 24f)
-            val trailLen = fh * 0.06f
-            val trailSteps = 5
-            for (i in 0 until trailSteps) {
-                val t = i.toFloat() / (trailSteps - 1)
-                drawLine(
-                    color = green.copy(alpha = fade * (1f - t) * 0.5f),
-                    start = Offset(left + 12f, lineY - t * trailLen),
-                    end = Offset(left + fw - 12f, lineY - t * trailLen),
-                    strokeWidth = 4f,
-                )
-            }
-            drawLine(
-                color = green.copy(alpha = 0.95f * fade),
-                start = Offset(left + 12f, lineY),
-                end = Offset(left + fw - 12f, lineY),
-                strokeWidth = 4f,
-            )
-        }
-
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = Color.Black.copy(alpha = 0.55f),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (maxHeight - frameH) / 2f - 52.dp - frameUp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
-            ) {
-                Icon(
-                    Icons.Default.QrCodeScanner,
-                    contentDescription = null,
-                    tint = Color(0xFF86E6B1),
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = hint,
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun CapturedImage(image: ImageBitmap, thumbnailCoords: MutableState<Offset>) {
     Surface(
@@ -1884,6 +1814,7 @@ private fun CameraPreviewWithOverlay(
     cameraUiState: CameraUiState,
     modifier: Modifier,
     ineMode: Boolean = false,
+    suppressDocumentOverlay: Boolean = false,
 ) {
     val captureState = cameraUiState.captureState
 
@@ -1900,11 +1831,15 @@ private fun CameraPreviewWithOverlay(
         modifier = modifier.fillMaxSize()
     ) {
         cameraPreview()
-        AnalysisOverlay(
-            cameraUiState.liveAnalysisState,
-            cameraUiState.isDebugMode,
-            ineMode,
-        )
+        // A visible QR takes over: only its brackets draw, never the
+        // document quad underneath.
+        if (!suppressDocumentOverlay) {
+            AnalysisOverlay(
+                cameraUiState.liveAnalysisState,
+                cameraUiState.isDebugMode,
+                ineMode,
+            )
+        }
         captureState.frozenImage?.let {
             Image(
                 bitmap = it.asImageBitmap(),
